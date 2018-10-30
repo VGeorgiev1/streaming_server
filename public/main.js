@@ -1,4 +1,4 @@
-var canvas = document.getElementById("preview");
+var canvas = document.getElementById("preview")
 var context = canvas.getContext('2d');
 
 canvas.width = 900;
