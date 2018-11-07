@@ -13,7 +13,6 @@ var ICE_SERVERS = [
 var peers = {};                /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
 var peer_media_elements = {};  /* keep track of our <video>/<audio> tags, indexed by peer_id */
 var signaling_socket = null;
-var connection = new Connection(SIGNALING_SERVER,null, {use_audio: true, use_video:false})
 class Connection{
     Connection(SIGNALING_SERVER,CHANNEL,CONSTRAINTS){
         this.signaling_server = SIGNALING_SERVER;
@@ -240,6 +239,6 @@ class Connection{
     part_chat_channel(channel) {
          this.signaling_socket.emit('part', channel);
     }
-    
-    
 }
+var connection = new Connection(SIGNALING_SERVER,null, {use_audio: true, use_video:false})
+
