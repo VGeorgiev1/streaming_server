@@ -3,13 +3,13 @@ class PublicRoom{
         this.name = NAME;
         this.peers = {}
     }
-    addPeer(socket){
+    addPeer(socket, userdata){
         if(socket.id in this.peers){
             console.log("["+ socket.id + "] ERROR: already joined ", channel);
             return;
         }
         for(let peer_id in this.peers){
-            this.peers[peer_id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false})
+            this.peers[peer_id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false, 'userdata': userdata})
             socket.emit('addPeer', {'peer_id': peer_id, 'should_create_offer': true})
         }
         this.peers[socket.id] = socket

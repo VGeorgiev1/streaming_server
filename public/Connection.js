@@ -39,7 +39,7 @@ class Connection{
         navigator.mediaDevices.enumerateDevices().then(devices =>{
             for(let i=0;i<devices.length;i++){
                 if(devices[i].kind === 'audioinput') this.constrains.use_audio = true;
-                if(devices[i].kind === 'videoinput') this.constrains.use_video = true, console.log("video detected");
+                if(devices[i].kind === 'videoinput') this.constrains.use_video = true;
             }
             callback()
         })
@@ -221,8 +221,8 @@ class Connection{
                 }
             }
             peer_connection.onaddstream = function(event) {
-                console.log("onAddStream", event);
-                var remote_media = self.constrains.use_video ? $("<video>") : $("<audio>");
+                console.log(config.userdata)
+                var remote_media = config.userdata.use_video ? $("<video>") : $("<audio>");
                 remote_media.attr("autoplay", "autoplay");
                 if (MUTE_AUDIO_BY_DEFAULT) {
                     remote_media.attr("muted", "true");
@@ -264,7 +264,8 @@ class Connection{
         });
     }
     join_chat_channel(channel, userdata) { 
-        this.signaling_socket.emit('join', {"channel": channel, "userdata": userdata});
+        self = this
+        this.signaling_socket.emit('join', {"channel": channel, "userdata": self.constrains});
     }
     part_chat_channel(channel) {
         this.signaling_socket.emit('part', channel);
