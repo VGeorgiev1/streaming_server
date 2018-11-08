@@ -27,8 +27,12 @@ class Connection{
         this.channel = CHANNEL;
         this.signaling_socket = io();
         this.local_media_stream = null
+        
+        this.createConnectDisconnectHandlers()
+        this.createSessionDescriptor()
         this.createHandlers()
-        this.setup_local_media()
+       
+        
         console.log('in sconstructor')
     }
     async findDevices(){
@@ -48,7 +52,7 @@ class Connection{
     attachMediaStream(element, stream){
         element.srcObject = stream;
     }
-    async setup_local_media(callback, errorback) {
+    setup_local_media(callback, errorback) {
         if (this.local_media_stream != null) {  /* ie, if we've already been initialized */
             if (callback) callback();
             return; 
@@ -56,19 +60,21 @@ class Connection{
         navigator.getUserMedia = this.findWebRTC()
 
         if(Object.keys(this.constrains).length == 0){
-            await this.findDevices()
+             this.findDevices()
         }
-
+        let self = this
         navigator.getUserMedia({"audio":this.constrains.use_audio, "video":this.constrains.use_video}, 
-            (stream) =>{
-                this.local_media_stream = stream;
+            (stream)=>{
+                
+                self.local_media_stream = stream;
+                console.log(self.local_media_stream)
                 console.log("succes")
                 var local_media = USE_VIDEO ? $("<video>") : $("<audio>");
                 local_media.attr("autoplay", "autoplay");
                 local_media.prop("muted", false); /* always mute ourselves by default */
                 local_media.attr("controls", "");
                 $('body').append(local_media);
-                this.attachMediaStream(local_media[0], stream);
+                self.attachMediaStream(local_media[0], stream);
                 if (callback) callback();
             },
             ()=>{
@@ -79,16 +85,17 @@ class Connection{
           
     }
     createConnectDisconnectHandlers(){
+        let self = this
         this.signaling_socket.on('connect', function() {
-            this.setup_local_media(function() {
-                this.join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
+            self.setup_local_media(function() {
+                self.join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
             });
         });
         this.signaling_socket.on('disconnect', function() {
-            for (peer_id in peer_media_elements) {
+            for (let peer_id in peer_media_elements) {
                 peer_media_elements[peer_id].remove();
             }
-            for (peer_id in peers) {
+            for (let peer_id in peers) {
                 peers[peer_id].close();
             }
             peers = {};
@@ -102,6 +109,7 @@ class Connection{
          * the 'offerer' sends a description to the 'answerer' (with type
          * "offer"), then the answerer sends one back (with type "answer").  
          */
+        let self = this
         this.signaling_socket.on('sessionDescription', function(config) {
             console.log('Remote description received: ', config);
             var peer_id = config.peer_id;
@@ -120,7 +128,7 @@ class Connection{
                                 console.log("Answer description is: ", local_description);
                                 peer.setLocalDescription(local_description,
                                     function() { 
-                                        this.signaling_socket.emit('relaySessionDescription', 
+                                        self.signaling_socket.emit('relaySessionDescription', 
                                             {'peer_id': peer_id, 'session_description': local_description});
                                         console.log("Answer setLocalDescription succeeded");
                                     },
@@ -149,6 +157,7 @@ class Connection{
         this.signaling_socket.on('iceCandidate', function(config) {
             var peer = peers[config.peer_id];
             var ice_candidate = config.ice_candidate;
+            
             peer.addIceCandidate(new RTCIceCandidate(ice_candidate));
         });
 
@@ -182,6 +191,7 @@ class Connection{
         * in the channel you will connect directly to the other 5, so there will be a total of 15 
         * connections in the network). 
         */
+        let self = this
         this.signaling_socket.on('addPeer', function(config) {
             console.log('Signaling server said to add peer:', config);
             var peer_id = config.peer_id;
@@ -200,7 +210,7 @@ class Connection{
 
             peer_connection.onicecandidate = function(event) {
                 if (event.candidate) {
-                    this.signaling_socket.emit('relayICECandidate', {
+                    self.signaling_socket.emit('relayICECandidate', {
                         'peer_id': peer_id, 
                         'ice_candidate': {
                             'sdpMLineIndex': event.candidate.sdpMLineIndex,
@@ -219,11 +229,13 @@ class Connection{
                 remote_media.attr("controls", "");
                 peer_media_elements[peer_id] = remote_media;
                 $('body').append(remote_media);
-                attachMediaStream(remote_media[0], event.stream);
+                
+                self.attachMediaStream(remote_media[0], event.stream);
             }
 
             /* Add our local stream */
-            peer_connection.addStream(this.local_media_stream);
+           
+            peer_connection.addStream(self.local_media_stream);
 
             /* Only one side of the peer connection should create the
             * offer, the signaling server picks one to be the offerer. 
@@ -237,7 +249,7 @@ class Connection{
                         console.log("Local offer description is: ", local_description);
                         peer_connection.setLocalDescription(local_description,
                             function() { 
-                                this.signaling_socket.emit('relaySessionDescription', 
+                                self.signaling_socket.emit('relaySessionDescription', 
                                     {'peer_id': peer_id, 'session_description': local_description});
                                 console.log("Offer setLocalDescription succeeded"); 
                             },
@@ -259,5 +271,5 @@ class Connection{
 }
 console.log("asd")
 
-var connection = new Connection(SIGNALING_SERVER,null, null)
+var connection = new Connection(SIGNALING_SERVER,null, {use_audio: true, use_video: false})
 

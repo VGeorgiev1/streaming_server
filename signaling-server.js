@@ -26,5 +26,7 @@ main.get('/', function(req, res){ res.sendFile(__dirname + '/client.html'); });
 // main.get('/index.html', function(req, res){ res.sendfile('newclient.html'); });
 // main.get('/client.html', function(req, res){ res.sendfile('newclient.html'); });
 io.sockets.on('connection', function (socket) {
-    public_room.addPeer(socket)     
+    socket.on('join', ()=>{
+        public_room.addPeer(socket);
+    })    
 })

@@ -8,33 +8,36 @@ class PublicRoom{
             console.log("["+ socket.id + "] ERROR: already joined ", channel);
             return;
         }
-        for(peer in this.peers){
-            peer.emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false})
-            socket.emit('addPeer', {'peer_id': id, 'should_create_offer': true})
+        for(let peer_id in this.peers){
+            this.peers[peer_id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false})
+            socket.emit('addPeer', {'peer_id': peer_id, 'should_create_offer': true})
         }
         this.peers[socket.id] = socket
         this.createCDHandlers(socket)
         this.createRTCHandlers(socket)
     }
     createRTCHandlers(socket){
+        let self = this
         socket.on('relayICECandidate', function(config) {
-            if (config.peer_id in this.peers) {
-                this.peers[peer].emit('iceCandidate', {'peer_id': socket.id, 'ice_candidate':  config.ice_candidate});
+            console.log(config.ice_candidate)
+            if (config.peer_id in self.peers) {
+                self.peers[config.peer_id].emit('iceCandidate', {'peer_id': socket.id, 'ice_candidate':  config.ice_candidate});
             }
         });
     
         socket.on('relaySessionDescription', function(config) {
-            if (peer_id in this.peers) {
-                this.peers[peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description});
+            if (config.peer_id in self.peers) {
+                self.peers[config.peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description});
             }
         });
     }
     createCDHandlers(socket){
+        let self = this
         socket.on('disconnect', function () {
-            for(peer in this.peers){
-                this.part(peer.id)
+            for(let peer in self.peers){
+                self.part(peer)
             }
-            delete this.peers[socket.id];
+            delete self.peers[socket.id];
         });
     } 
     part(id) {
