@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
     <head>
+        <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
         <script src="./public/Connection.js"></script>
         <!-- This adapter.js file de-prefixes the webkit* and moz* prefixed RTC
@@ -16,9 +17,15 @@
                 height:  240px;
                 border:  1px solid black;
             }
+            audio::-webkit-media-controls-mute-button {
+                display:none;
+            }
         </style>
-        <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        
     </head>
+    <script>
+        
+    </script>
     <body >
         
     </body>
