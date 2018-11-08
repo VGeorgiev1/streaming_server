@@ -39,7 +39,7 @@ class Connection{
         navigator.mediaDevices.enumerateDevices().then(devices =>{
             for(let i=0;i<devices.length;i++){
                 if(devices[i].kind === 'audioinput') this.constrains.use_audio = true;
-                if(devices[i].kind === 'videoinput') this.constrains.use_video = true;
+                if(devices[i].kind === 'videoinput') this.constrains.use_video = true, console.log("video detected");
             }
             callback()
         })
@@ -68,7 +68,7 @@ class Connection{
                 self.local_media_stream = stream;
                 console.log(self.local_media_stream)
                 console.log("succes")
-                var local_media = USE_VIDEO ? $("<video>") : $("<audio>");
+                var local_media = self.constrains.use_video ? $("<video>") : $("<audio>");
                 local_media.attr("autoplay", "autoplay");
                 local_media.prop("muted", false); /* always mute ourselves by default */
                 local_media.attr("controls", "");
@@ -222,7 +222,7 @@ class Connection{
             }
             peer_connection.onaddstream = function(event) {
                 console.log("onAddStream", event);
-                var remote_media = USE_VIDEO ? $("<video>") : $("<audio>");
+                var remote_media = self.constrains.use_video ? $("<video>") : $("<audio>");
                 remote_media.attr("autoplay", "autoplay");
                 if (MUTE_AUDIO_BY_DEFAULT) {
                     remote_media.attr("muted", "true");

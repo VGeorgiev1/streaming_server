@@ -19,7 +19,6 @@ class PublicRoom{
     createRTCHandlers(socket){
         let self = this
         socket.on('relayICECandidate', function(config) {
-            console.log(config.ice_candidate)
             if (config.peer_id in self.peers) {
                 self.peers[config.peer_id].emit('iceCandidate', {'peer_id': socket.id, 'ice_candidate':  config.ice_candidate});
             }
