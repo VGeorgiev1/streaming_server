@@ -10,9 +10,10 @@ class PublicRoom{
         }
         for(let peer_id in this.peers){
             this.peers[peer_id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false, 'userdata': userdata})
-            socket.emit('addPeer', {'peer_id': peer_id, 'should_create_offer': true})
+            socket.emit('addPeer', {'peer_id': peer_id, 'should_create_offer': true, 'userdata': this.peers[peer_id].userdata})
         }
         this.peers[socket.id] = socket
+        this.peers[socket.id].userdata = userdata
         this.createCDHandlers(socket)
         this.createRTCHandlers(socket)
     }
