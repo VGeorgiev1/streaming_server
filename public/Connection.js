@@ -35,13 +35,14 @@ class Connection{
         
         console.log('in sconstructor')
     }
-    async findDevices(){
-        let devices = await navigator.mediaDevices.enumerateDevices()
-        
-        for(let i=0;i<devices.length;i++){
-            if(devices[i].kind === 'audioinput') this.constrains.use_audio = true;
-            if(devices[i].kind === 'videoinput') this.constrains.use_video = true;
-        }
+    async findDevices(callback){
+        navigator.mediaDevices.enumerateDevices().then(devices =>{
+            for(let i=0;i<devices.length;i++){
+                if(devices[i].kind === 'audioinput') this.constrains.use_audio = true;
+                if(devices[i].kind === 'videoinput') this.constrains.use_video = true;
+            }
+            callback()
+        })
     }
     findWebRTC(){
         return (navigator.getUserMedia ||
@@ -59,9 +60,7 @@ class Connection{
         }
         navigator.getUserMedia = this.findWebRTC()
 
-        if(Object.keys(this.constrains).length == 0){
-             this.findDevices()
-        }
+        
         let self = this
         navigator.getUserMedia({"audio":this.constrains.use_audio, "video":this.constrains.use_video}, 
             (stream)=>{
@@ -87,9 +86,11 @@ class Connection{
     createConnectDisconnectHandlers(){
         let self = this
         this.signaling_socket.on('connect', function() {
-            self.setup_local_media(function() {
-                self.join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
-            });
+            self.findDevices(()=> {
+                    self.setup_local_media(function() {
+                        self.join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
+                })
+            })
         });
         this.signaling_socket.on('disconnect', function() {
             for (let peer_id in peer_media_elements) {
@@ -271,5 +272,5 @@ class Connection{
 }
 console.log("asd")
 
-var connection = new Connection(SIGNALING_SERVER,null, {use_audio: true, use_video: false})
+var connection = new Connection(SIGNALING_SERVER,null, null)
 
