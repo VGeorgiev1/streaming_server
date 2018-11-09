@@ -221,7 +221,7 @@ class Connection{
                 }
             }
             peer_connection.onaddstream = function(event) {
-                
+                console.log(config)
                 var remote_media = config.constrains.use_video ? $("<video>") : $("<audio>");
                 console.log(remote_media)
                 remote_media.attr("autoplay", "autoplay");
