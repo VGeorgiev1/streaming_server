@@ -221,8 +221,8 @@ class Connection{
                 }
             }
             peer_connection.onaddstream = function(event) {
-                console.log(config.userdata.use_video)
-                var remote_media = config.userdata.use_video ? $("<video>") : $("<audio>");
+                
+                var remote_media = config.constrains.use_video ? $("<video>") : $("<audio>");
                 console.log(remote_media)
                 remote_media.attr("autoplay", "autoplay");
                 if (MUTE_AUDIO_BY_DEFAULT) {
@@ -266,7 +266,7 @@ class Connection{
     }
     join_chat_channel(channel) { 
         self = this
-        this.signaling_socket.emit('join', {"channel": channel, "userdata": self.constrains});
+        this.signaling_socket.emit('join', {"constrains": self.constrains});
     }
     part_chat_channel(channel) {
         this.signaling_socket.emit('part', channel);
