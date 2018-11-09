@@ -33,7 +33,7 @@ class Connection{
         this.createHandlers()
        
         
-        console.log('in sconstructor')
+        
     }
     async findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices =>{
@@ -64,8 +64,7 @@ class Connection{
             (stream)=>{
                 
                 self.local_media_stream = stream;
-                console.log(self.local_media_stream)
-                console.log("succes")
+               
                 var local_media = self.constrains.use_video ? $("<video>") : $("<audio>");
                 local_media.attr("autoplay", "autoplay");
                 local_media.prop("muted", true); /* always mute ourselves by default */
@@ -110,26 +109,26 @@ class Connection{
          */
         let self = this
         this.signaling_socket.on('sessionDescription', function(config) {
-            console.log('Remote description received: ', config);
+            
             var peer_id = config.peer_id;
             var peer = peers[peer_id];
             var remote_description = config.session_description;
-            console.log(config.session_description);
+          
 
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer.setRemoteDescription(desc, 
                 function() {
-                    console.log("setRemoteDescription succeeded");
+                    
                     if (remote_description.type == "offer") {
-                        console.log("Creating answer");
+                       
                         peer.createAnswer(
                             function(local_description) {
-                                console.log("Answer description is: ", local_description);
+                               
                                 peer.setLocalDescription(local_description,
                                     function() { 
                                         self.signaling_socket.emit('relaySessionDescription', 
                                             {'peer_id': peer_id, 'session_description': local_description});
-                                        console.log("Answer setLocalDescription succeeded");
+                                       
                                     },
                                     function() { Alert("Answer setLocalDescription failed!"); }
                                 );
@@ -144,7 +143,7 @@ class Connection{
                     console.log("setRemoteDescription error: ", error);
                 }
             );
-            console.log("Description Object: ", desc);
+            
 
         });
     }
@@ -174,10 +173,13 @@ class Connection{
         this.signaling_socket.on('removePeer', function(config) {
             console.log('Signaling server said to remove peer:', config);
             var peer_id = config.peer_id;
-            for (peer_id in peer_media_elements) {
+            console.log(peer_media_elements, config.peer_id)
+            if (peer_id in peer_media_elements) {
+              
                 peer_media_elements[peer_id].remove();
             }
-            for (peer_id in peers) {
+            if (peer_id in peers) {
+              
                 peers[peer_id].close();
             }
 
@@ -194,6 +196,7 @@ class Connection{
         this.signaling_socket.on('addPeer', function(config) {
             console.log('Signaling server said to add peer:', config);
             var peer_id = config.peer_id;
+           
             if (peer_id in peers) {
                 /* This could happen if the user joins multiple channels where the other peer is also in. */
                 console.log("Already connected to peer ", peer_id);
@@ -219,9 +222,9 @@ class Connection{
                 }
             }
             peer_connection.onaddstream = function(event) {
-                console.log(config)
+               
                 var remote_media = config.constrains.use_video ? $("<video>") : $("<audio>");
-                console.log(remote_media)
+               
                 remote_media.attr("autoplay", "autoplay");
                 if (MUTE_AUDIO_BY_DEFAULT) {
                     remote_media.attr("muted", "true");
@@ -243,10 +246,9 @@ class Connection{
             * create an offer, then send back an answer 'sessionDescription' to us
             */
             if (config.should_create_offer) {
-                console.log("Creating RTC offer to ", peer_id);
+               
                 peer_connection.createOffer(
-                    function (local_description) { 
-                        console.log("Local offer description is: ", local_description);
+                    function (local_description) {   console.log("Local offer description is: ", local_description);
                         peer_connection.setLocalDescription(local_description,
                             function() { 
                                 self.signaling_socket.emit('relaySessionDescription', 
