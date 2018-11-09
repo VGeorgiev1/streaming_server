@@ -88,7 +88,7 @@ class Connection{
         this.signaling_socket.on('connect', function() {
             self.findDevices(()=> {
                     self.setup_local_media(function() {
-                        self.join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
+                        self.join_chat_channel(DEFAULT_CHANNEL);
                 })
             })
         });
@@ -263,7 +263,7 @@ class Connection{
             }
         });
     }
-    join_chat_channel(channel, userdata) { 
+    join_chat_channel(channel) { 
         self = this
         this.signaling_socket.emit('join', {"channel": channel, "userdata": self.constrains});
     }
