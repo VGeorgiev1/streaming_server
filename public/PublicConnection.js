@@ -59,8 +59,6 @@ class Connection{
             return; 
         }
         navigator.getUserMedia = this.findWebRTC()
-
-        
         let self = this
         navigator.getUserMedia({"audio":this.constrains.use_audio, "video":this.constrains.use_video}, 
             (stream)=>{
@@ -70,7 +68,7 @@ class Connection{
                 console.log("succes")
                 var local_media = self.constrains.use_video ? $("<video>") : $("<audio>");
                 local_media.attr("autoplay", "autoplay");
-                local_media.prop("muted", false); /* always mute ourselves by default */
+                local_media.prop("muted", true); /* always mute ourselves by default */
                 local_media.attr("controls", "");
                 $('body').append(local_media);
                 self.attachMediaStream(local_media[0], stream);
