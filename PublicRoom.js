@@ -4,7 +4,6 @@ class PublicRoom{
         this.peers = {}
     }
     addPeer(socket, data){
-        console.log(data.constrains)
         if(socket.id in this.peers){
             console.log("["+ socket.id + "] ERROR: already joined ", channel);
             return;

@@ -176,10 +176,10 @@ class Connection{
         this.signaling_socket.on('removePeer', function(config) {
             console.log('Signaling server said to remove peer:', config);
             var peer_id = config.peer_id;
-            if (peer_id in peer_media_elements) {
+            for (peer_id in peer_media_elements) {
                 peer_media_elements[peer_id].remove();
             }
-            if (peer_id in peers) {
+            for (peer_id in peers) {
                 peers[peer_id].close();
             }
 
