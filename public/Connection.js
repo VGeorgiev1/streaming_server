@@ -221,8 +221,9 @@ class Connection{
                 }
             }
             peer_connection.onaddstream = function(event) {
-                console.log(config.userdata)
+                console.log(config.userdata.use_video)
                 var remote_media = config.userdata.use_video ? $("<video>") : $("<audio>");
+                console.log(remote_media)
                 remote_media.attr("autoplay", "autoplay");
                 if (MUTE_AUDIO_BY_DEFAULT) {
                     remote_media.attr("muted", "true");
