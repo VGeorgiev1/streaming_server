@@ -27,14 +27,14 @@ export default class PublicConnection{
        
         
         this.signaling_socket.on('connect', ()=> {
-            UTILS.findDevices((found_fonstrains)=> {
-                this.constrains.use_audio = found_fonstrains.audio
-                this.constrains.use_video = found_fonstrains.video
+            UTILS.findDevices((found_constrains)=> {
+                this.constrains.use_audio = found_constrains.audio
+                this.constrains.use_video = found_constrains.video
 
                 if (this.local_media_stream != null) {  /* ie, if we've already been initialized */
                     return; 
                 }
-                UTILS.setup_local_media(this.constrains, $('body'),
+                UTILS.setup_local_media(found_constrains, $('body'),
                 (stream) => {
                     this.local_media_stream = stream
                     this.join_chat_channel();
@@ -178,12 +178,11 @@ export default class PublicConnection{
             if (config.should_create_offer) {
                
                 peer_connection.createOffer(
-                    (local_description) => {   console.log("Local offer description is: ", local_description);
+                    (local_description) => {  
                         peer_connection.setLocalDescription(local_description,
                             () => { 
                                 this.signaling_socket.emit('relaySessionDescription', 
                                     {'peer_id': peer_id, 'session_description': local_description});
-                                console.log("Offer setLocalDescription succeeded"); 
                             },
                             () => { Alert("Offer setLocalDescription failed!"); }
                         );

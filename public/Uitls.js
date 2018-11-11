@@ -28,7 +28,8 @@ function setup_media(constrains,stream,elem,options,callback){
 }
 function setup_local_media(constrains, elem, callback, errorback) {
     navigator.getUserMedia = findWebRTC()
-    navigator.getUserMedia({"audio":constrains.use_audio, "video":constrains.use_video}, 
+    console.log(constrains)
+    navigator.getUserMedia(constrains, 
         (stream)=>{
             
             setup_media(constrains,stream, elem,{muted:true})
