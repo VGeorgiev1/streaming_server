@@ -9,14 +9,22 @@ export default class PublicConnection{
     constructor(SIGNALING_SERVER,CHANNEL,CONSTRAINTS){
         this.signaling_server = SIGNALING_SERVER;
         this.constrains = {};
-        CONSTRAINTS ? (
+        if(CONSTRAINTS != 'screen-share'){
+            CONSTRAINTS ? (
                       this.constrains.use_video = CONSTRAINTS.use_video,
                       this.constrains.use_audio = CONSTRAINTS.use_audio)
                     : this.findAvailableDevices = true;
+            this.local_media_stream = null
+        }else{
+            this.is_screen_share = true
+            this.constrains.use_video = true;
+            this.constrains.use_audi = false;
+            this.local_media_stream = document.getElementById('mine').srcObject
+        }
         this.peers = {};
         this.peer_media_elements = {}                
         this.channel = CHANNEL;
-        this.local_media_stream = null
+       
         this.signaling_socket = io()
         this.createConnectDisconnectHandlers()
         this.createSessionDescriptor()
@@ -25,7 +33,7 @@ export default class PublicConnection{
     
     createConnectDisconnectHandlers(){
        
-        
+        if(!this.is_screen_share){
         this.signaling_socket.on('connect', ()=> {
             UTILS.findDevices((found_constrains)=> {
                 this.constrains.use_audio = found_constrains.audio
@@ -44,6 +52,10 @@ export default class PublicConnection{
                 })
             })
         });
+        }else{
+            console.log('asd')
+            this.join_chat_channel();
+        }
         this.signaling_socket.on('disconnect',()=>{
             for (let peer_id in this.peer_media_elements) {
                 this.peer_media_elements[peer_id].remove();
@@ -167,7 +179,7 @@ export default class PublicConnection{
             }
 
             /* Add our local stream */
-           
+            
             peer_connection.addStream(this.local_media_stream);
 
             /* Only one side of the peer connection should create the

@@ -28,7 +28,7 @@ function setup_media(constrains,stream,elem,options,callback){
 }
 function setup_local_media(constrains, elem, callback, errorback) {
     navigator.getUserMedia = findWebRTC()
-    console.log(constrains)
+    
     navigator.getUserMedia(constrains, 
         (stream)=>{
             

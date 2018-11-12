@@ -25,9 +25,9 @@
     </head>
     <script type="module">
         import PublicConnection from './public/PublicConnection.js'
-        
-        var SIGNALING_SERVER = "http://localhost";
-        let connection = new PublicConnection(SIGNALING_SERVER,null, null)
+        window.PublicConnection = PublicConnection
+        //var SIGNALING_SERVER = "http://localhost";
+        //let connection = new PublicConnection(SIGNALING_SERVER,null,null)
     </script>
     <body >
         
