@@ -1,4 +1,5 @@
 class PublicRoom{
+    
     constructor(NAME){
         this.name = NAME;
         this.peers = {}
