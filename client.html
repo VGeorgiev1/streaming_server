@@ -3,7 +3,7 @@
     <head>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-        <script type="module" src="./public/PublicConnection.js"></script>
+        <script type="module" src="./public/Broadcaster.js"></script>
         <!-- This adapter.js file de-prefixes the webkit* and moz* prefixed RTC
              methods. When RTC becomes a more solid standard, this adapter should no
              longer be necessary. -->
@@ -24,10 +24,10 @@
         
     </head>
     <script type="module">
-        import PublicConnection from './public/PublicConnection.js'
-        window.PublicConnection = PublicConnection
-        //var SIGNALING_SERVER = "http://localhost";
-        //let connection = new PublicConnection(SIGNALING_SERVER,null,null)
+        import Broadcaster from './public/Broadcaster.js'
+        window.Broadcaster = Broadcaster
+        var SIGNALING_SERVER = "http://localhost";
+        let connection = new Broadcaster(SIGNALING_SERVER,null,{"audio": true, "video": false})
     </script>
     <body >
         

@@ -1,4 +1,4 @@
-export class Room{
+export default class Room{
     constructor(name){
         this.name = name;
         this.connections = {};
@@ -30,7 +30,6 @@ export class Room{
     }
     kickUser(id){
         this.connections[id].emit('removePeer', {'peer_id': id})
-        
         delete this.connections[id];
     }
     closeRoom(){
