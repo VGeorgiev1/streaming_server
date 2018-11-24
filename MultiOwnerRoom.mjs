@@ -1,29 +1,27 @@
 import Room from './Room'
 import * as fs from 'fs';
-export class MultiOwnerRoom extends Room{
+export default class MultiOwnerRoom extends Room{
     constructor(name, rules){
         super(name)
-        console.log(typeof rules)
-        this.owners = {};
-        this.viewers = {};
+        this.viewers = []
+        this.owners = []    
         if(typeof rules == 'string'){
-            
             this.rules = JSON.parse(fs.readFileSync(rules), "utf8")
             console.log(this.rules.owner_rules)
         }else{
-           
             this.rules = rules
         }
     }
-    addOwner(socket){
-        if(socket in this.owners)
-            console.log('Owner already exists!');
-        this.owners[socket.id] = socket
+    addOwner(socket,data){
+        if(this.owners.indexOf(socket.id) != -1)
+            console.log("Owner already exists!")
+        this.addPeer(socket,data)
     }
-    addViewer(socket){
-        if(socket in this.viewers)
-        console.log('Viewer already exists!');
-        this.viewers[socket.id] = viewers
+    addViewer(socket,data){
+        if(this.viewers.indexOf(socket.id) != -1)
+            console.log("Owner already exists!")
+        this.addPeer(socket,data)
     }
+    
 }
 let room = new MultiOwnerRoom('mahrume', './OwnerRules.json');

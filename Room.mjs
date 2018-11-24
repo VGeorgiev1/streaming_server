@@ -4,23 +4,42 @@ export default class Room{
         this.connections = {};
         this.alive = true;
     }
-    addPeer(socket){
+    addPeer(socket, data){
         if(this.connections[socket.id])
             console.log('Peer already exist!');
+        
+        for(let id in this.connections){
+            this.connections[id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false, 'constrains': data.constrains})
+            socket.emit('addPeer', {'peer_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
+        }
+        
         this.connections[socket.id] = socket
+        this.connections[socket.id].constrains = data.constrains
         this.handshakeHandlers(socket);
         this.connectDisconnectHandlers(socket)
     }
-    connectDisconnectHandlers(socket, connectHandler, disconnectHandler){
-        socket.on('disconnect', disconnectHandler);
-        socket.on('connect', connectHandler);
-    }
-    handshakeHandlers(socket, onRelayIceCandidate ,relaySessionDescription){
-        socket.on('relayICECandidate', (config) => {
-            onRelayIceCandidate(config);
+    connectDisconnectHandlers(socket, disconnectHandler){
+        socket.on('disconnect', () =>{
+            for(let peer in this.connections){
+                this.kickUser(socket.id)
+            }
+            console.log(socket.id)
+            delete this.connections[socket.id];
+            if(disconnectHandler)
+                disconnectHandler()
         });
+    }
+    handshakeHandlers(socket, onRelayIceCandidate,relaySessionDescription){
+        socket.on('relayICECandidate', (config) => {
+            if (config.peer_id in this.connections) {
+                this.connections[config.peer_id].emit('iceCandidate', {'peer_id': socket.id, 'ice_candidate':  config.ice_candidate});
+            }
+        });
+        
         socket.on('relaySessionDescription', (config) => {
-            relaySessionDescription(config);
+            if (config.peer_id in this.connections) {
+                this.connections[config.peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description});
+            }
         });
     }
     getPeer(id){
@@ -34,7 +53,7 @@ export default class Room{
     }
     closeRoom(){
         for(let connection in this.connections){
-            this.kickUser(connection.id);
+            this.kickUser(connection);
         }
         this.alive = false;
     }

@@ -26,7 +26,7 @@
     <script type="module">
         import Broadcaster from './public/Broadcaster.js'
         window.Broadcaster = Broadcaster
-        var SIGNALING_SERVER = "http://localhost";
+        var SIGNALING_SERVER = "http://localhost:3000";
         let connection = new Broadcaster(SIGNALING_SERVER,null,{"audio": true, "video": false})
     </script>
     <body >
