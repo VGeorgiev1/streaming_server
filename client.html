@@ -27,7 +27,7 @@
         import Broadcaster from './public/Broadcaster.js'
         import Viewer from './public/Viewer.js'
         window.Broadcaster = Broadcaster
-        var SIGNALING_SERVER = "http://localhost:3000";
+        var SIGNALING_SERVER = "http://localhost";
         $('#broadcaster').click((e)=>{
             e.preventDefault()
             let connection = new Broadcaster(SIGNALING_SERVER,null)

@@ -6,7 +6,7 @@ export default class Connection {
     constructor(SIGNALING_SERVER, CHANNEL, type) {
         this.signaling_server = SIGNALING_SERVER;
         console.log(SIGNALING_SERVER)
-        this.signaling_socket = io(SIGNALING_SERVER)
+        this.signaling_socket = io()
         this.channel = CHANNEL
         this.peers = {};
         this.peer_media_elements = {};
