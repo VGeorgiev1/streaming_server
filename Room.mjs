@@ -20,10 +20,7 @@ export default class Room{
     }
     connectDisconnectHandlers(socket, disconnectHandler){
         socket.on('disconnect', () =>{
-            for(let peer in this.connections){
-                this.kickUser(socket.id)
-            }
-            console.log(socket.id)
+            this.kickUser(socket.id)
             delete this.connections[socket.id];
             if(disconnectHandler)
                 disconnectHandler()
@@ -48,8 +45,9 @@ export default class Room{
         return this.connections[id];
     }
     kickUser(id){
-        this.connections[id].emit('removePeer', {'peer_id': id})
-        delete this.connections[id];
+        for(let c_id in this.connections){
+            this.connections[c_id].emit('removePeer', {'peer_id': id})
+        }
     }
     closeRoom(){
         for(let connection in this.connections){

@@ -2,7 +2,7 @@ import Connection from "./Connection.js"
 
 export default class Broadcaster extends Connection{ 
     constructor(SIGNALING_SERVER,CHANNEL,CONSTRAINTS,RULE){
-        super(SIGNALING_SERVER)
+        super(SIGNALING_SERVER,null, 'broadcaster')
         this.constrains = {};
         if(CONSTRAINTS != 'screen-share'){
             CONSTRAINTS ? (

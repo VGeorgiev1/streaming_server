@@ -3,16 +3,19 @@ var ICE_SERVERS = [
 ];
 
 export default class Connection {
-    constructor(SIGNALING_SERVER, CHANNEL) {
+    constructor(SIGNALING_SERVER, CHANNEL, type) {
         this.signaling_server = SIGNALING_SERVER;
         console.log(SIGNALING_SERVER)
         this.signaling_socket = io(SIGNALING_SERVER)
         this.channel = CHANNEL
         this.peers = {};
         this.peer_media_elements = {};
+        this.type = type
     }
     regAddPeer(){
+        
         this.regHandler('addPeer', (config) => {
+            console.log(config)
             var peer_id = config.peer_id;
             if (peer_id in this.peers) {
                 return;
@@ -21,6 +24,8 @@ export default class Connection {
                 { "iceServers": ICE_SERVERS },
                 { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
             );
+            
+
             this.peers[peer_id] = peer_connection;
             peer_connection.onicecandidate = (event) => {
                 if (event.candidate) {
@@ -33,11 +38,12 @@ export default class Connection {
                     });
                 }
             }
-            peer_connection.onaddstream = (event) => {
-                if (config.constrains != 'viewer')
-                    this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.stream, $('body'), { muted: false, returnElm: true });
+            peer_connection.ontrack = (event) => {
+                this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
             }
-            peer_connection.addStream(this.local_media_stream);
+            if(this.type !='viewer'){
+                this.local_media_stream.getTracks().forEach(track => peer_connection.addTrack(track, this.local_media_stream));
+            }
             if (config.should_create_offer) {
                 peer_connection.createOffer(
                     (local_description) => {
@@ -51,7 +57,7 @@ export default class Connection {
                     },
                     (error) => {
                         console.log("Error sending offer: ", error);
-                    });
+                    },{offerToReceiveAudio : true});
             }
         })
     }
@@ -92,6 +98,7 @@ export default class Connection {
         });
     }
     regConnectHandler(callback) {
+        console.log('asd')
         this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
@@ -130,7 +137,7 @@ export default class Connection {
         element.srcObject = stream;
     }
     setup_media(constrains, stream, elem, options, callback) {
-        console.log(constrains)
+
         var media = constrains.video ? $("<video>") : $("<audio>");
         media.attr("autoplay", "autoplay");
         media.prop("muted", options.muted); /* always mute ourselves by default */
@@ -140,19 +147,18 @@ export default class Connection {
         if (options.returnElm) return media
     }
     setup_local_media(constrains, elem, callback, errorback) {
-        navigator.getUserMedia = this.findWebRTC()
-
-        navigator.getUserMedia(constrains,
+        console.log(constrains)
+        navigator.mediaDevices.getUserMedia(constrains).then(
             (stream) => {
-
-                this.setup_media(constrains, stream, elem, { muted: true })
-                if (callback) callback(stream);
-            },
+                if(this.type == 'broadcaster'){
+                  this.setup_media(constrains, stream, elem, { muted: true })
+                }
+                callback(stream)
+            }).catch(
             () => {
                 alert("You chose not to provide access to the camera/microphone, demo will not work.");
                 if (errorback) errorback();
-            }
-        )
+            })
 
     }
 }

@@ -37,6 +37,7 @@ main.get('/', function(req, res){
 
 io.sockets.on('connection', function (socket) {
     socket.on('join', (data)=>{
+        console.log(data)
         public_room.addOwner(socket,data);
     })
 })
