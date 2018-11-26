@@ -30,7 +30,7 @@
         var SIGNALING_SERVER = "http://localhost:3000";
         $('#broadcaster').click((e)=>{
             e.preventDefault()
-            let connection = new Broadcaster(SIGNALING_SERVER,null,{"audio": true, "video": false})
+            let connection = new Broadcaster(SIGNALING_SERVER,null)
         })
         $('#viewer').click((e)=>{
             e.preventDefault()
