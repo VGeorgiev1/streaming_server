@@ -39,6 +39,7 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
+                console.log('one track')
                 this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
             }
             if(this.type !='viewer'){
@@ -106,7 +107,18 @@ export default class Connection {
     }
 
     regDiscconectHandler(callback) {
-        this.signaling_socket.on('disconnect', callback);
+        this.regHandler('disconnect', ()=>{
+            for (let peer_id in this.peer_media_elements) {
+                this.peer_media_elements[peer_id].remove();
+            }
+            for (let peer_id in this.peers) {
+                this.peers[peer_id].close();
+            }
+            this.peers = {};
+            this.peer_media_elements = {};
+            callback()
+        })
+        
     }
     regHandler(event, callback) {
         this.signaling_socket.on(event, callback);

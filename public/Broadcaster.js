@@ -36,16 +36,7 @@ export default class Broadcaster extends Connection{
         }else{
             this.regConnectHandler(this.join_channel)
         }
-        this.regDiscconectHandler(()=>{
-            for (let peer_id in this.peer_media_elements) {
-                this.peer_media_elements[peer_id].remove();
-            }
-            for (let peer_id in this.peers) {
-                this.peers[peer_id].close();
-            }
-            this.peers = {};
-            this.peer_media_elements = {};
-        })
+        this.regDiscconectHandler(()=>{console.log('User left!')})
     }
     createHandlers(){
         this.regHandler('removePeer', (config)=>{
