@@ -157,7 +157,7 @@ export default class Connection {
         media.attr("autoplay", "autoplay");
         media.prop("muted", options.muted); /* always mute ourselves by default */
         media.attr("controls", "");
-
+        elem.append(media)
         this.attachMediaStream(media[0], stream);
         if (options.returnElm) return media
     }
