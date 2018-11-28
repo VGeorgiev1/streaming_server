@@ -40,10 +40,10 @@ export default class Connection {
             }
             peer_connection.ontrack = (event) => {
                 if(this.peer_media_elements[peer_id]){
-                    this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
+                    this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
                 }
-                this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
+                this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
             }
             if(this.type !='viewer'){
                 this.local_media_stream.getTracks().forEach(track => peer_connection.addTrack(track, this.local_media_stream));
