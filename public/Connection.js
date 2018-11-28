@@ -39,8 +39,11 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
-                console.log('one track')
-                this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
+                if(this.peer_media_elements[peer_id]){
+                    this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
+                    return;
+                }
+                this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
             }
             if(this.type !='viewer'){
                 this.local_media_stream.getTracks().forEach(track => peer_connection.addTrack(track, this.local_media_stream));
@@ -154,7 +157,7 @@ export default class Connection {
         media.attr("autoplay", "autoplay");
         media.prop("muted", options.muted); /* always mute ourselves by default */
         media.attr("controls", "");
-        elem.append(media);
+
         this.attachMediaStream(media[0], stream);
         if (options.returnElm) return media
     }
@@ -163,7 +166,8 @@ export default class Connection {
         navigator.mediaDevices.getUserMedia(constrains).then(
             (stream) => {
                 if(this.type == 'broadcaster'){
-                  this.setup_media(constrains, stream, elem, { muted: true })
+                  let mEl = this.setup_media(constrains, stream, elem, { muted: true,returnElm:true })
+                  elem.append(mEl)  
                 }
                 callback(stream)
             }).catch(
