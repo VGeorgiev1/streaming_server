@@ -39,6 +39,7 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
+                console.log('event fired')
                 if(this.peer_media_elements[peer_id]){
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
@@ -61,7 +62,7 @@ export default class Connection {
                     },
                     (error) => {
                         console.log("Error sending offer: ", error);
-                    },{offerToReceiveAudio : true});
+                    },{offerToReceiveAudio : true, offerToReceiveVide : true});
             }
         })
     }
