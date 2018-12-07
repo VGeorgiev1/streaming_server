@@ -12,5 +12,8 @@ export default class Viewer extends Connection{
         this.regConnectHandler(()=>{
             this.join_channel(this.constrains)
         })
+        this.regDiscconectHandler(()=>{
+            console.log('')
+        })
     }
 }

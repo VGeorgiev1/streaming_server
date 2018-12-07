@@ -12,10 +12,11 @@ export default class Broadcaster extends Connection{
             this.local_media_stream = null
         }else{
             this.is_screen_share = true
+            this.constrains.video = true
+            this.constrains.audio = false
             this.local_media_stream = document.getElementById('mine').srcObject
         }
         this.createConnectDisconnectHandlers()
-        this.createHandlers()
     }
     
     createConnectDisconnectHandlers(){
@@ -34,21 +35,12 @@ export default class Broadcaster extends Connection{
                 })
             })
         }else{
-            this.regConnectHandler(this.join_channel)
+            console.log('after constructor')
+            this.regConnectHandler(()=>{
+                this.join_channel(this.constrains)    
+            })
         }
         this.regDiscconectHandler(()=>{console.log('User left!')})
     }
-    createHandlers(){
-        this.regHandler('removePeer', (config)=>{
-            var peer_id = config.peer_id;
-            if (peer_id in this.peer_media_elements) {
-                this.peer_media_elements[peer_id].remove();
-            }
-            if (peer_id in this.peers) {
-                this.peers[peer_id].close();
-            }
-            delete this.peers[peer_id];
-            delete this.peer_media_elements[config.peer_id];
-        })
-    }
+    
 }

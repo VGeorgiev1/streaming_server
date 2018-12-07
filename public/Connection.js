@@ -5,8 +5,8 @@ var ICE_SERVERS = [
 export default class Connection {
     constructor(SIGNALING_SERVER, CHANNEL, type) {
         this.signaling_server = SIGNALING_SERVER;
-        console.log(SIGNALING_SERVER)
         this.signaling_socket = io()
+        
         this.channel = CHANNEL
         this.peers = {};
         this.peer_media_elements = {};
@@ -39,7 +39,6 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
-                console.log('event fired')
                 if(this.peer_media_elements[peer_id]){
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
@@ -103,7 +102,7 @@ export default class Connection {
         });
     }
     regConnectHandler(callback) {
-        console.log('asd')
+       
         this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
