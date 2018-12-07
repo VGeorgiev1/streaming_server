@@ -30,10 +30,14 @@
         var SIGNALING_SERVER = "http://localhost";
         $('#broadcaster').click((e)=>{
             e.preventDefault()
+            e.hide()
+            $('#viewer').hide()
             let connection = new Broadcaster(SIGNALING_SERVER,null)
         })
         $('#viewer').click((e)=>{
             e.preventDefault()
+            e.hide()
+            $('#broadcaster').hide()
             let viewer = new Viewer(SIGNALING_SERVER,null, {"viewer":true})
         })
     </script>
