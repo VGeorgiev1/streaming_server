@@ -42,7 +42,6 @@ class PublicRoom{
         });
     } 
     part(peer, id) {
-        console.log(id)
         this.peers[peer].emit('removePeer', {'peer_id': id})
     }
 }

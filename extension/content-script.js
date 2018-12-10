@@ -2,7 +2,6 @@ let screen_stream;
 chrome.extension.onMessage.addListener((reqeust,sender, response) => {
     let port = chrome.runtime.connect();
     port.onMessage.addListener(function (obj) {
-        console.log(obj.sourceId)
         navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {

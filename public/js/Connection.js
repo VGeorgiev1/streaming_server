@@ -1,19 +1,19 @@
 var ICE_SERVERS = [
-    {url:"stun:stun.l.google.com:19302"}
+    { url: "stun:stun.l.google.com:19302" }
 ];
 
 export default class Connection {
     constructor(SIGNALING_SERVER, CHANNEL, type) {
         this.signaling_server = SIGNALING_SERVER;
         this.signaling_socket = io()
-        
+
         this.channel = CHANNEL
         this.peers = {};
         this.peer_media_elements = {};
         this.type = type
     }
-    regAddPeer(){
-        
+    regAddPeer() {
+
         this.regHandler('addPeer', (config) => {
             console.log(config)
             var peer_id = config.peer_id;
@@ -24,7 +24,7 @@ export default class Connection {
                 { "iceServers": ICE_SERVERS },
                 { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
             );
-            
+
 
             this.peers[peer_id] = peer_connection;
             peer_connection.onicecandidate = (event) => {
@@ -39,13 +39,13 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
-                if(this.peer_media_elements[peer_id]){
+                if (this.peer_media_elements[peer_id]) {
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
                 }
                 this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
             }
-            if(this.type !='viewer'){
+            if (this.type != 'viewer') {
                 this.local_media_stream.getTracks().forEach(track => peer_connection.addTrack(track, this.local_media_stream));
             }
             if (config.should_create_offer) {
@@ -61,56 +61,61 @@ export default class Connection {
                     },
                     (error) => {
                         console.log("Error sending offer: ", error);
-                    },{offerToReceiveAudio : true, offerToReceiveVide : true});
+                    }, { offerToReceiveAudio: true, offerToReceiveVide: true });
             }
         })
     }
-    regiceCandidate(){
+    regiceCandidate() {
         this.regHandler('iceCandidate', (config) => {
             this.peers[config.peer_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
         })
     }
-    regSessionDescriptor(){
+    regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
             var peer_id = config.peer_id;
             var peer = this.peers[peer_id];
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);
-                var stuff = peer.setRemoteDescription(desc, 
-                    () => {
-                        if (remote_description.type == "offer") {
-                            peer.createAnswer(
-                                (local_description) => { 
-                                    peer.setLocalDescription(local_description,
-                                        ()=>{ 
-                                            this.signaling_socket.emit('relaySessionDescription', 
-                                                {'peer_id': peer_id, 'session_description': local_description});
-                                        },
-                                        () =>{ Alert("Answer setLocalDescription failed!"); }
-                                    );
-                                },
-                                (error) => {
-                                    console.log("Error creating answer: ", error);
-                                    console.log(peer);
-                                });
-                        }
-                    },
-                    (error) => {
-                        console.log("setRemoteDescription error: ", error);
+            var stuff = peer.setRemoteDescription(desc,
+                () => {
+                    if (remote_description.type == "offer") {
+                        peer.createAnswer(
+                            (local_description) => {
+                                peer.setLocalDescription(local_description,
+                                    () => {
+                                        this.signaling_socket.emit('relaySessionDescription',
+                                            { 'peer_id': peer_id, 'session_description': local_description });
+                                    },
+                                    () => { Alert("Answer setLocalDescription failed!"); }
+                                );
+                            },
+                            (error) => {
+                                console.log("Error creating answer: ", error);
+                                console.log(peer);
+                            });
                     }
-                );
+                },
+                (error) => {
+                    console.log("setRemoteDescription error: ", error);
+                }
+            );
         });
     }
+    regDiscconectHandler() {
+
+    }
     regConnectHandler(callback) {
-       
         this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
-        this.signaling_socket.on('connect', callback);
+        this.regRemovePeer()
+        this.regHandler('connect', () => {
+            if (callback)
+                callback()
+        })
     }
-
-    regDiscconectHandler(callback) {
-        this.regHandler('disconnect', ()=>{
+    regRemovePeer(callback) {
+        this.regHandler('removePeer', () => {
             for (let peer_id in this.peer_media_elements) {
                 this.peer_media_elements[peer_id].remove();
             }
@@ -119,9 +124,7 @@ export default class Connection {
             }
             this.peers = {};
             this.peer_media_elements = {};
-            callback()
         })
-        
     }
     regHandler(event, callback) {
         this.signaling_socket.on(event, callback);
@@ -130,7 +133,7 @@ export default class Connection {
         this.signaling_socket.emit('part', 'let me out');
     }
     join_channel(constrains) {
-        this.signaling_socket.emit('join', { "constrains": constrains });
+        this.signaling_socket.emit('join', { "constrains": constrains , "channel": this.channel});
     }
     async findDevices(callback) {
         navigator.mediaDevices.enumerateDevices().then(devices => {
@@ -163,18 +166,18 @@ export default class Connection {
     }
     setup_local_media(constrains, elem, callback, errorback) {
         console.log(constrains)
-        navigator.mediaDevices.getUserMedia(constrains).then(
+        navigator.mediaDevices.getUserMedia(constrains)
+        .then(
             (stream) => {
-                if(this.type == 'broadcaster'){
-                  let mEl = this.setup_media(constrains, stream, elem, { muted: true,returnElm:true })
-                  elem.append(mEl)  
+                if (this.type == 'broadcaster') {
+                    let mEl = this.setup_media(constrains, stream, elem, { muted: true, returnElm: true })
+                    elem.append(mEl)
                 }
-                callback(stream)
-            }).catch(
-            () => {
+                if(callback)
+                    callback(stream)
+        }).catch(() => {
                 alert("You chose not to provide access to the camera/microphone, demo will not work.");
                 if (errorback) errorback();
-            })
-
+        })
     }
 }

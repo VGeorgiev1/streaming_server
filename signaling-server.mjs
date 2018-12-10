@@ -12,32 +12,41 @@ import * as http from 'http';
 import SocketIO from 'socket.io';
 import MultiOwnerRoom from "./MultiOwnerRoom"
 import path from 'path';
-
-
-var main = express()
-
-
-
-var server = http.createServer(main)
-
+import pug from 'pug'
+import bodyParser from 'body-parser'
+import { WSAELOOP } from 'constants';
+var app = express()
+var server = http.createServer(app)
+var rooms = {}
 let io = new SocketIO(server);
+rooms['Vladislav'] = new MultiOwnerRoom('Vladislav')
+app.use("/public",express.static(path.join(path.resolve() + '/public')));
 
-
-main.use("/public",express.static(path.join(path.resolve() + '/public')));
-
+app.set('view engine', 'pug');
+app.use(bodyParser.urlencoded({ extended: true }))
 
 server.listen(PORT, null, function() {
     console.log("Listening on port " + PORT);
 });
-var public_room = new MultiOwnerRoom("my rooms");
 
-main.get('/', function(req, res){
-    res.sendFile(path.join(path.resolve() + '/client.html')) 
+app.get('/', (req, res)=>{
+    res.render('home')
 });
-
+app.get('/room/create',(req, res)=>{
+    res.render('create')
+})
+app.post('/room/create', (req,res)=>{
+    rooms[req.body.name] = new MultiOwnerRoom(req.body.name)
+    res.send("Room successfuly created!")
+})
+app.get('/room/list', (req,res)=>{
+    res.render('list', {rooms: Object.keys(rooms)})
+})
+app.get('/room/:name',(req,res)=>{
+    res.render('room', {name: req.params.name})
+})
 io.sockets.on('connection', function (socket) {
     socket.on('join', (data)=>{
-        console.log(data)
-        public_room.addOwner(socket,data);
+        rooms[data.channel].addOwner(socket,data.constrains)
     })
 })

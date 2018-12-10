@@ -7,20 +7,19 @@ export default class MultiOwnerRoom extends Room{
         this.owners = []    
         if(typeof rules == 'string'){
             this.rules = JSON.parse(fs.readFileSync(rules), "utf8")
-            console.log(this.rules.owner_rules)
         }else{
             this.rules = rules
         }
     }
-    addOwner(socket,data){
+    addOwner(socket,constrains){
         if(this.owners.indexOf(socket.id) != -1)
             console.log("Owner already exists!")
-        this.addPeer(socket,data)
+        this.addPeer(socket,constrains)
     }
-    addViewer(socket,data){
+    addViewer(socket,constrains){
         if(this.viewers.indexOf(socket.id) != -1)
             console.log("Owner already exists!")
-        this.addPeer(socket,data)
+        this.addPeer(socket,constrains)
     }
     
 }

@@ -4,17 +4,17 @@ export default class Room{
         this.connections = {};
         this.alive = true;
     }
-    addPeer(socket, data){
+    addPeer(socket, constrains){
         if(this.connections[socket.id])
             console.log('Peer already exist!');
         
         for(let id in this.connections){
-            this.connections[id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false, 'constrains': data.constrains})
+            this.connections[id].emit('addPeer', {'peer_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
             socket.emit('addPeer', {'peer_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
         }
         
         this.connections[socket.id] = socket
-        this.connections[socket.id].constrains = data.constrains
+        this.connections[socket.id].constrains = constrains
         this.handshakeHandlers(socket);
         this.connectDisconnectHandlers(socket)
     }
