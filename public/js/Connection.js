@@ -43,7 +43,8 @@ export default class Connection {
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
                 }
-                this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], $('body'), { muted: false, returnElm: true });
+                this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
+                $('body').append(this.peer_media_elements[peer_id])
             }
             if (this.type != 'viewer') {
                 this.local_media_stream.getTracks().forEach(track => peer_connection.addTrack(track, this.local_media_stream));
@@ -154,15 +155,23 @@ export default class Connection {
     attachMediaStream(element, stream) {
         element.srcObject = stream;
     }
-    setup_media(constrains, stream, elem, options, callback) {
-
-        var media = constrains.video ? $("<video>") : $("<audio>");
+    setup_media(constrains, stream, options, callback) {
+        let container = $("<div>")
+        let media = constrains.video ? $("<video>") : $("<audio>");
         media.attr("autoplay", "autoplay");
         media.prop("muted", options.muted); /* always mute ourselves by default */
         media.attr("controls", "");
-        elem.append(media)
         this.attachMediaStream(media[0], stream);
-        if (options.returnElm) return media
+        container.append(media)
+        if (options.returnElm) return container
+    }
+    mute_audio(){
+        let tracks = this.local_media_stream.getAudioTracks()
+        if(tracks[0].enabled == true){
+            tracks[0].enabled = false;
+            return;
+        }
+        tracks[0].enabled = true;
     }
     setup_local_media(constrains, elem, callback, errorback) {
         console.log(constrains)
@@ -170,7 +179,8 @@ export default class Connection {
         .then(
             (stream) => {
                 if (this.type == 'broadcaster') {
-                    let mEl = this.setup_media(constrains, stream, elem, { muted: true, returnElm: true })
+                    let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
+                    mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
                     elem.append(mEl)
                 }
                 if(callback)

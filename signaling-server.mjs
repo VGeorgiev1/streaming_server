@@ -20,6 +20,8 @@ var server = http.createServer(app)
 var rooms = {}
 let io = new SocketIO(server);
 rooms['Vladislav'] = new MultiOwnerRoom('Vladislav')
+
+
 app.use("/public",express.static(path.join(path.resolve() + '/public')));
 
 app.set('view engine', 'pug');
