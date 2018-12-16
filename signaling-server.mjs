@@ -14,7 +14,6 @@ import MultiOwnerRoom from "./MultiOwnerRoom"
 import path from 'path';
 import pug from 'pug'
 import bodyParser from 'body-parser'
-import { WSAELOOP } from 'constants';
 import pg from 'pg'
 const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 let client = new pg.Client(connectionString)
