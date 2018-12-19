@@ -5,4 +5,27 @@ html
     form(method='POST', action='/room/create')
       label Room name: 
       input(type='text' name="name")
+      fieldset#audio
+        input(type='radio', name='audio')
+        | Audio allowed
+        br
+      fieldset#video
+        input(type='radio', name='video')
+        | Video allowed
+        br
+      fieldset#screen
+        input(type='radio', name='screen')
+        | Screen-share allowed
+        br
       input(type='submit', value='Submit')
+  script.
+    document.querySelectorAll('input[type=radio]').forEach((i)=>{
+      i.addEventListener("click", (e)=>{
+        e.preventDefault()
+      })
+      i.addEventListener("mouseup", (e)=>{
+        e.preventDefault()
+        i.checked = !i.checked
+      })			
+    })  
+

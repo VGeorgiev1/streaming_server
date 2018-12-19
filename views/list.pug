@@ -1,4 +1,4 @@
 ul
   each room in rooms
-    a(href="/room/" + room)
-        li=room
+    a(href="/room/" + room.id)
+        li=room.name

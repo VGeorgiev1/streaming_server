@@ -5,11 +5,7 @@ export default class MultiOwnerRoom extends Room{
         super(name)
         this.viewers = []
         this.owners = []    
-        if(typeof rules == 'string'){
-            this.rules = JSON.parse(fs.readFileSync(rules), "utf8")
-        }else{
-            this.rules = rules
-        }
+        this.rules = rules
     }
     addOwner(socket,constrains){
         if(this.owners.indexOf(socket.id) != -1)
