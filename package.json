@@ -6,7 +6,9 @@
     "start": "nodemon --experimental-modules signaling-server.mjs"
   },
   "dependencies": {
+    "bcrypt": "^3.0.2",
     "body-parser": "^1.15.2",
+    "cookie-parser": "^1.4.3",
     "event-stream": "3.3.4",
     "express": "^4.14.0",
     "nodemon": "^1.18.6",

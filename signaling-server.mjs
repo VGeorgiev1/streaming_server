@@ -14,26 +14,32 @@ import path from 'path';
 import pug from 'pug'
 import bodyParser from 'body-parser'
 import DbManager from './db.mjs'
+import bcrypt from 'bcrypt'
+import cookieParser from 'cookie-parser'
 const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
-var rooms = {}
+var roomsContainer = []
 let io = new SocketIO(server);
 const db = new DbManager(connectionString) 
-
-rooms['Vladislav'] = new MultiOwnerRoom('Vladislav')
+var SALT_ROUNDS = 10
 
 
 app.use("/public",express.static(path.join(path.resolve() + '/public')));
 
 app.set('view engine', 'pug');
+
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cookieParser());
 
-server.listen(PORT, null, function() {
-    console.log("Listening on port " + PORT);
-    db.initializeTables()
-});
-
+db.initializeTables().then(() => {
+    db.getAllRooms().then((rooms) => {
+        roomsContainer = rooms
+        server.listen(PORT, null, () => {
+            console.log("Listening on port " + PORT);
+        });
+    })
+})
 app.get('/', (req, res)=>{
     res.render('home')
 });
@@ -46,10 +52,42 @@ app.post('/room/create', async (req,res)=>{
 })
 app.get('/room/list', async (req,res)=>{
     let rooms = await db.getAllRooms()
+    let rules = await db.getRules(rooms[0].rulesid)
     res.render('list', {"rooms": rooms})
 })
-app.get('/room/:id',(req,res)=>{
-    
+app.get('/register', (req,res)=>{
+    res.render('register')
+})
+app.post('/register', async(req,res)=>{
+    let hash = await bcrypt.hash(req.body.password, SALT_ROUNDS)
+    let id = await db.registerUser(req.body.name, hash)
+    if(id){
+        res.cookie('id', id)
+        res.send("You are now registered!")
+    }else{
+        res.send("There is already a user with this username!")
+    }
+})
+app.get('/login', (req,res)=>{
+    if(req.cookies.id) console.log('user already logged')
+    res.render('login')
+})
+app.post('/login', async(req,res)=>{
+    let user = await db.logUser(req.body)
+    if(user){
+        let authenticated = bcrypt.compareSync(req.body.password, user.password)
+        if(authenticated){
+            res.send("Hello in "+ user.username)
+        }else{
+            res.send("The password and username doesn't match!")
+        }
+    }else{
+        res.send("There is no user with this username!")
+    }
+})
+app.get('/room/:id',async (req,res)=>{
+    let rules = await db.getRules(req.params.id)
+
 })
 io.sockets.on('connection', function (socket) {
     socket.on('join', (data)=>{
