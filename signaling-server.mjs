@@ -23,14 +23,22 @@ var roomsContainer = []
 let io = new SocketIO(server);
 const db = new DbManager(connectionString) 
 var SALT_ROUNDS = 10
-
-
+app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use("/public",express.static(path.join(path.resolve() + '/public')));
 
 app.set('view engine', 'pug');
 
-app.use(bodyParser.urlencoded({ extended: true }))
-app.use(cookieParser());
+var loginware = function (req, res, next) {
+    db.findSession(req.cookies.sessionToken).then((ses)=>{
+        if(ses){
+            req.authenticated = true
+            
+        }
+        next()
+    })
+}
+app.use(loginware)
 
 db.initializeTables().then(() => {
     db.getAllRooms().then((rooms) => {
@@ -40,15 +48,23 @@ db.initializeTables().then(() => {
         });
     })
 })
-app.get('/', (req, res)=>{
-    res.render('home')
+app.get('/', async(req, res)=>{
+    let rooms = await db.getAllRooms()
+    let rules = await db.getRules(rooms[0].rulesid)
+    res.render('list', {"rooms": rooms})
 });
 app.get('/room/create',(req, res)=>{
-    res.render('create')
+    if(!req.authenticated) {res.redirect('/login')}
+    else{
+        res.render('create')
+    }
 })
 app.post('/room/create', async (req,res)=>{
-    await db.createRoom(req.body)
-    res.send('Room created!')
+    if(!req.authenticated){res.redirect('/login')}
+    else{
+        await db.createRoom(req.body)
+        res.send('Room created!')
+    }
 })
 app.get('/room/list', async (req,res)=>{
     let rooms = await db.getAllRooms()
@@ -56,9 +72,13 @@ app.get('/room/list', async (req,res)=>{
     res.render('list', {"rooms": rooms})
 })
 app.get('/register', (req,res)=>{
-    res.render('register')
+    if(req.authenticated) {res.redirect('/')}
+    else{
+        res.render('register')
+    }
 })
 app.post('/register', async(req,res)=>{
+   
     let hash = await bcrypt.hash(req.body.password, SALT_ROUNDS)
     let id = await db.registerUser(req.body.name, hash)
     if(id){
@@ -69,15 +89,26 @@ app.post('/register', async(req,res)=>{
     }
 })
 app.get('/login', (req,res)=>{
-    if(req.cookies.id) console.log('user already logged')
-    res.render('login')
+    if(req.authenticated) {res.redirect('/')}
+    else{
+        res.render('login')
+    }
+})
+app.get('/logout', async(req,res)=>{
+    if(!req.authenticated){res.redirect('/')}
+    else{
+        await db.destroySession(req.cookies['sessionToken'])
+        res.clearCookie("sessionToken");
+        res.send('Logout!')
+    }
 })
 app.post('/login', async(req,res)=>{
     let user = await db.logUser(req.body)
     if(user){
         let authenticated = bcrypt.compareSync(req.body.password, user.password)
         if(authenticated){
-            res.send("Hello in "+ user.username)
+            let token = await db.createSession(user.id);
+            res.cookie('sessionToken' , token).send("Hello in "+ user.username)
         }else{
             res.send("The password and username doesn't match!")
         }
@@ -87,10 +118,9 @@ app.post('/login', async(req,res)=>{
 })
 app.get('/room/:id',async (req,res)=>{
     let rules = await db.getRules(req.params.id)
-
 })
 io.sockets.on('connection', function (socket) {
     socket.on('join', (data)=>{
-        rooms[data.channel].addOwner(socket,data.constrains)
+        rooms[data.channel].addPeer(socket,data.constrains, data.id)
     })
 })

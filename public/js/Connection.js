@@ -3,7 +3,7 @@ var ICE_SERVERS = [
 ];
 
 export default class Connection {
-    constructor(SIGNALING_SERVER, CHANNEL, type) {
+    constructor(SIGNALING_SERVER, CHANNEL, type, id) {
         this.signaling_server = SIGNALING_SERVER;
         this.signaling_socket = io()
 
@@ -134,7 +134,7 @@ export default class Connection {
         this.signaling_socket.emit('part', 'let me out');
     }
     join_channel(constrains) {
-        this.signaling_socket.emit('join', { "constrains": constrains , "channel": this.channel});
+        this.signaling_socket.emit('join', { "constrains": constrains , "channel": this.channel, "id": this.id});
     }
     async findDevices(callback) {
         navigator.mediaDevices.enumerateDevices().then(devices => {

@@ -14,9 +14,7 @@ export default class MultiOwnerRoom extends Room{
     }
     addViewer(socket,constrains){
         if(this.viewers.indexOf(socket.id) != -1)
-            console.log("Owner already exists!")
+            console.log("Viewer already exists!")
         this.addPeer(socket,constrains)
     }
-    
 }
-let room = new MultiOwnerRoom('mahrume', './OwnerRules.json');

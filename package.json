@@ -9,6 +9,7 @@
     "bcrypt": "^3.0.2",
     "body-parser": "^1.15.2",
     "cookie-parser": "^1.4.3",
+    "crypto": "^1.0.1",
     "event-stream": "3.3.4",
     "express": "^4.14.0",
     "nodemon": "^1.18.6",
