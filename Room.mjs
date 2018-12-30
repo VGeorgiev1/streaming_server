@@ -1,10 +1,10 @@
 export default class Room{
     constructor(name){
-        this.name = name;
+        this.name = name
         this.connections = {};
         this.alive = true;
     }
-    addPeer(socket, constrains){
+    addPeer(socket, constrains, dissconnectHandler){
         if(this.connections[socket.id])
             console.log('Peer already exist!');
         
@@ -16,14 +16,14 @@ export default class Room{
         this.connections[socket.id] = socket
         this.connections[socket.id].constrains = constrains
         this.handshakeHandlers(socket);
-        this.connectDisconnectHandlers(socket)
+        this.connectDisconnectHandlers(socket, dissconnectHandler)
     }
     connectDisconnectHandlers(socket, disconnectHandler){
         socket.on('disconnect', () =>{
             this.kickUser(socket.id)
             delete this.connections[socket.id];
             if(disconnectHandler)
-                disconnectHandler()
+                disconnectHandler(socket)
         });
     }
     handshakeHandlers(socket, onRelayIceCandidate,relaySessionDescription){

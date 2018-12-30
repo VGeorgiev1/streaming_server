@@ -3,10 +3,10 @@ var ICE_SERVERS = [
 ];
 
 export default class Connection {
-    constructor(SIGNALING_SERVER, CHANNEL, type, id) {
+    constructor(SIGNALING_SERVER, CHANNEL,socket, type, id) {
         this.signaling_server = SIGNALING_SERVER;
-        this.signaling_socket = io()
-
+        this.signaling_socket = socket
+        this.id = id
         this.channel = CHANNEL
         this.peers = {};
         this.peer_media_elements = {};
@@ -174,7 +174,6 @@ export default class Connection {
         tracks[0].enabled = true;
     }
     setup_local_media(constrains, elem, callback, errorback) {
-        console.log(constrains)
         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {

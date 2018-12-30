@@ -9,13 +9,18 @@ var PORT = process.env.PORT || 3000;
 import express from 'express' 
 import * as http from 'http';
 import SocketIO from 'socket.io';
-import MultiOwnerRoom from "./MultiOwnerRoom"
+import MultiBroadcasterRoom from "./MultiBroadcasterRoom.mjs"
 import path from 'path';
 import pug from 'pug'
 import bodyParser from 'body-parser'
 import DbManager from './db.mjs'
 import bcrypt from 'bcrypt'
 import cookieParser from 'cookie-parser'
+import RoomContainer from './RoomContainer.mjs'
+import Room from './Room.mjs';
+import StreamingRoom from './StreamingRoom.mjs';
+import crypto from 'crypto'
+
 const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
@@ -33,16 +38,17 @@ var loginware = function (req, res, next) {
     db.findSession(req.cookies.sessionToken).then((ses)=>{
         if(ses){
             req.authenticated = true
-            
         }
         next()
     })
 }
 app.use(loginware)
-
+let room_container = new RoomContainer()
 db.initializeTables().then(() => {
-    db.getAllRooms().then((rooms) => {
-        roomsContainer = rooms
+    db.getAllRoomsAndRules().then((rooms) => {
+        rooms.forEach(room => {
+           room_container.addRoom(room)
+        });
         server.listen(PORT, null, () => {
             console.log("Listening on port " + PORT);
         });
@@ -50,7 +56,7 @@ db.initializeTables().then(() => {
 })
 app.get('/', async(req, res)=>{
     let rooms = await db.getAllRooms()
-    let rules = await db.getRules(rooms[0].rulesid)
+    //let rules = await db.getRules(rooms[0].rulesid)
     res.render('list', {"rooms": rooms})
 });
 app.get('/room/create',(req, res)=>{
@@ -62,8 +68,12 @@ app.get('/room/create',(req, res)=>{
 app.post('/room/create', async (req,res)=>{
     if(!req.authenticated){res.redirect('/login')}
     else{
-        await db.createRoom(req.body)
-        res.send('Room created!')
+        req.body.type = 'streaming'
+        let userId = await db.getLoggedUser(req.cookies.sessionToken)
+        let id = await db.createRoom(userId,req.body)
+        console.log(id)
+        room_container.addRoom({id:id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: userId})
+        res.redirect('/room/'+id)
     }
 })
 app.get('/room/list', async (req,res)=>{
@@ -78,7 +88,6 @@ app.get('/register', (req,res)=>{
     }
 })
 app.post('/register', async(req,res)=>{
-   
     let hash = await bcrypt.hash(req.body.password, SALT_ROUNDS)
     let id = await db.registerUser(req.body.name, hash)
     if(id){
@@ -102,6 +111,9 @@ app.get('/logout', async(req,res)=>{
         res.send('Logout!')
     }
 })
+app.get('/try', async(req,res)=>{
+    console.log(room_container)
+})
 app.post('/login', async(req,res)=>{
     let user = await db.logUser(req.body)
     if(user){
@@ -117,10 +129,19 @@ app.post('/login', async(req,res)=>{
     }
 })
 app.get('/room/:id',async (req,res)=>{
-    let rules = await db.getRules(req.params.id)
+    let room = room_container.getRoom(req.params.id)
+    if(!room){res.send("Rooms does not exists!")}
+    let userId;
+    if(req.authenticated){
+        userId = await db.getLoggedUser(req.cookies.sessionToken)
+        console.log(userId)
+    }else{
+        userId = crypto.randomBytes(10).toString("hex")
+    }
+    let isOwner = room.isBroadcaster(userId)
+    console.log(isOwner)
+    res.render('room', {name: req.params.id, id: userId, isOwner: isOwner});
 })
 io.sockets.on('connection', function (socket) {
-    socket.on('join', (data)=>{
-        rooms[data.channel].addPeer(socket,data.constrains, data.id)
-    })
+    room_container.subscribeSocket(socket);
 })

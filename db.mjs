@@ -16,7 +16,7 @@ export default class DbManager {
             await client.query('BEGIN')
             client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY, username VARCHAR(25) UNIQUE, password VARCHAR(60))")
             client.query("CREATE TABLE IF NOT EXISTS rules(id SERIAL PRIMARY KEY, audio BOOLEAN, video BOOLEAN, screen BOOLEAN)")
-            client.query("CREATE TABLE IF NOT EXISTS rooms(id SERIAL PRIMARY KEY, owner INTEGER REFERENCES users(id), name VARCHAR(40) not null, rulesId INTEGER REFERENCES rules(id) not null)")
+            client.query("CREATE TABLE IF NOT EXISTS rooms(id SERIAL PRIMARY KEY, owner INTEGER REFERENCES users(id),type VARCHAR(10), name VARCHAR(40) not null, rulesId INTEGER REFERENCES rules(id) not null)")
             client.query("CREATE TABLE IF NOT EXISTS sessions(userId INTEGER REFERENCES users(id) UNIQUE, sessionToken VARCHAR(60) UNIQUE)")
             await client.query('COMMIT')
         } catch (e) {
@@ -68,7 +68,13 @@ export default class DbManager {
             return undefined
         }
     }
-    async createRoom(req) {
+    async getLoggedUser(sessionToken){
+        let client = await this.pool.connect()
+        let res = await client.query("SELECT * FROM sessions as s LEFT JOIN users as u ON s.userId = u.id WHERE sessiontoken=$1", [sessionToken])
+        client.release()
+        return res.rows[0].id
+    }
+    async createRoom(owner,req) {
         let client = await this.pool.connect()
         let values = []
         //values.push(req.name)
@@ -77,12 +83,20 @@ export default class DbManager {
         })
         
         let res = await client.query("INSERT INTO rules(audio, video, screen) VALUES ($1,$2,$3) returning id", values)
-        await client.query("INSERT INTO rooms(name, rulesId) VALUES ($1,$2)", [req.name,res.rows[0].id])
+        let room_res = await client.query("INSERT INTO rooms(owner,name,type,rulesId) VALUES ($1,$2,$3,$4) returning id", [owner,req.name,req.type,res.rows[0].id])
         client.release()
+        
+        return room_res.rows[0].id
     }
     async getAllRooms(){
         let client = await this.pool.connect()
         let res = await client.query("SELECT * FROM rooms")
+        client.release()
+        return res.rows
+    }
+    async getAllRoomsAndRules(){
+        let client = await this.pool.connect()
+        let res = await client.query("SELECT * FROM rules as rl INNER JOIN rooms as rm ON rl.id = rm.rulesId")
         client.release()
         return res.rows
     }

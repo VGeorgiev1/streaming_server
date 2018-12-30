@@ -1,7 +1,7 @@
 import Connection from "./Connection.js"
 export default class Broadcaster extends Connection{ 
-    constructor(SIGNALING_SERVER,CHANNEL,CONSTRAINTS,id){
-        super(SIGNALING_SERVER,CHANNEL, 'broadcaster',id)
+    constructor(SIGNALING_SERVER,CHANNEL,socket,CONSTRAINTS,id){
+        super(SIGNALING_SERVER,CHANNEL,socket, 'broadcaster',id)
         this.constrains = {};
         if(CONSTRAINTS != 'screen-share'){
             CONSTRAINTS ? (
@@ -17,7 +17,6 @@ export default class Broadcaster extends Connection{
         }
         this.createConnectDisconnectHandlers()
     }
-    
     createConnectDisconnectHandlers(){
         if(!this.is_screen_share){
             this.regConnectHandler(()=> {
@@ -37,5 +36,4 @@ export default class Broadcaster extends Connection{
             this.regConnectHandler(()=>{console.log('im here')})
         }
     }
-    
 }
