@@ -22,6 +22,7 @@ import StreamingRoom from './StreamingRoom.mjs';
 import crypto from 'crypto'
 
 const connectionString = process.env.DATABASE_URL + "?ssl=true" // || 'postgres://localhost:5432/stream_app';
+console.log(connectionString)
 var app = express()
 var server = http.createServer(app)
 var roomsContainer = []
