@@ -12,8 +12,12 @@ export default class Connection {
         this.peer_media_elements = {};
         this.type = type
     }
-    setMediaBitrates(sdp, bitrate) {
-        return sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + bitrate + '\r\n');
+    setMediaBitrates(sdp, audioBitrate, videoBitrate) {
+        console.log(this)
+        sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + audioBitrate + '\r\n');
+        sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBitrate + '\r\n');
+        return sdp
+
     }
     regAddPeer() {
 
@@ -58,7 +62,7 @@ export default class Connection {
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
-                                    { 'peer_id': peer_id, 'session_description': local_description , 'audio_bitrate': 50});
+                                    { 'peer_id': peer_id, 'session_description': local_description , 'audio_bitrate': 50, 'video_bitrate': 256});
                             },
                             () => { Alert("Offer setLocalDescription failed!"); }
                         );
@@ -75,6 +79,7 @@ export default class Connection {
         })
     }
     changeSdpSettings(){
+       
         for(let peerId in this.peers){
             let peer_connection = this.peers[peerId]
             peer_connection.createOffer(
@@ -82,7 +87,7 @@ export default class Connection {
                     peer_connection.setLocalDescription(local_description,
                         () => {
                             this.signaling_socket.emit('relaySessionDescription',
-                                { 'peer_id': peerId, 'session_description': local_description , "audio_bitrate": 8});
+                                { 'peer_id': peerId, 'session_description': local_description , "audio_bitrate": Number($('#slider').val()),  "video_bitrate": Number($('#slider1').val())});
                         },
                         () => { Alert("Offer setLocalDescription failed!"); }
                     );
@@ -205,7 +210,8 @@ export default class Connection {
                 if (this.type == 'broadcaster') {
                     let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
                     mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
-                    mEl.append($('<button>').html('Change the bitrate').click(this.changeSdpSettings.bind(this)))
+                    mEl.append($('<input id="slider" type="range" min="8" max="500" value="50">').change(this.changeSdpSettings.bind(this))) 
+                    mEl.append($('<input id="slider1" type="range" min="50" max="500" value="256">').change(this.changeSdpSettings.bind(this))) 
                     elem.append(mEl)
                 }
                 if(callback)
