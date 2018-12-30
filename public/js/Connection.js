@@ -12,10 +12,13 @@ export default class Connection {
         this.peer_media_elements = {};
         this.type = type
     }
+    setMediaBitrates(sdp, bitrate) {
+        return sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + bitrate + '\r\n');
+    }
     regAddPeer() {
 
         this.regHandler('addPeer', (config) => {
-            console.log(config)
+            
             var peer_id = config.peer_id;
             if (peer_id in this.peers) {
                 return;
@@ -24,7 +27,6 @@ export default class Connection {
                 { "iceServers": ICE_SERVERS },
                 { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
             );
-
 
             this.peers[peer_id] = peer_connection;
             peer_connection.onicecandidate = (event) => {
@@ -52,17 +54,18 @@ export default class Connection {
             if (config.should_create_offer) {
                 peer_connection.createOffer(
                     (local_description) => {
+                        //local_description.sdp = this.setMediaBitrates(local_description.sdp)
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
-                                    { 'peer_id': peer_id, 'session_description': local_description });
+                                    { 'peer_id': peer_id, 'session_description': local_description , 'audio_bitrate': 50});
                             },
                             () => { Alert("Offer setLocalDescription failed!"); }
                         );
                     },
                     (error) => {
                         console.log("Error sending offer: ", error);
-                    }, { offerToReceiveAudio: true, offerToReceiveVide: true });
+                    }, { offerToReceiveAudio: true, offerToReceiveVideo: true });
             }
         })
     }
@@ -70,6 +73,25 @@ export default class Connection {
         this.regHandler('iceCandidate', (config) => {
             this.peers[config.peer_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
         })
+    }
+    changeSdpSettings(){
+        for(let peerId in this.peers){
+            let peer_connection = this.peers[peerId]
+            peer_connection.createOffer(
+                (local_description) => {
+                    peer_connection.setLocalDescription(local_description,
+                        () => {
+                            this.signaling_socket.emit('relaySessionDescription',
+                                { 'peer_id': peerId, 'session_description': local_description , "audio_bitrate": 8});
+                        },
+                        () => { Alert("Offer setLocalDescription failed!"); }
+                    );
+                },
+                (error) => {
+                    console.log("Error sending offer: ", error);
+                }, { offerToReceiveAudio: true, offerToReceiveVideo: true }
+            );
+        }
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
@@ -79,9 +101,12 @@ export default class Connection {
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer.setRemoteDescription(desc,
                 () => {
+                    console.log(remote_description.type)
                     if (remote_description.type == "offer") {
+                        console.log('wat the hek')
                         peer.createAnswer(
                             (local_description) => {
+                                local_description.sdp = this.setMediaBitrates(local_description.sdp, config.audio_bitrate)
                                 peer.setLocalDescription(local_description,
                                     () => {
                                         this.signaling_socket.emit('relaySessionDescription',
@@ -180,6 +205,7 @@ export default class Connection {
                 if (this.type == 'broadcaster') {
                     let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
                     mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
+                    mEl.append($('<button>').html('Change the bitrate').click(this.changeSdpSettings.bind(this)))
                     elem.append(mEl)
                 }
                 if(callback)

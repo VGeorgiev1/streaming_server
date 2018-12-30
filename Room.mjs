@@ -32,10 +32,9 @@ export default class Room{
                 this.connections[config.peer_id].emit('iceCandidate', {'peer_id': socket.id, 'ice_candidate':  config.ice_candidate});
             }
         });
-        
         socket.on('relaySessionDescription', (config) => {
             if (config.peer_id in this.connections) {
-                this.connections[config.peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description});
+                this.connections[config.peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description, 'audio_bitrate': config.audio_bitrate});
             }
         });
     }
