@@ -21,7 +21,7 @@ import Room from './Room.mjs';
 import StreamingRoom from './StreamingRoom.mjs';
 import crypto from 'crypto'
 
-const connectionString = process.env.DATABASE_URL + "?ssl=true" // || 'postgres://localhost:5432/stream_app';
+const connectionString= "postgres://mfgpxwzllzuyon:60477619289e40e9e11e2223ef2cb9205f45051362241070fb10b4ef63cdf72b@ec2-54-225-100-12.compute-1.amazonaws.com:5432/dekfnttkubm1j1?ssl=true"// || 'postgres://localhost:5432/stream_app';
 console.log(connectionString)
 var app = express()
 var server = http.createServer(app)
