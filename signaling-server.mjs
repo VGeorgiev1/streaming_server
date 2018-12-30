@@ -21,7 +21,7 @@ import Room from './Room.mjs';
 import StreamingRoom from './StreamingRoom.mjs';
 import crypto from 'crypto'
 
-const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
+const connectionString = process.env.DATABASE_URL// || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
 var roomsContainer = []
