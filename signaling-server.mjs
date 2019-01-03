@@ -21,8 +21,7 @@ import Room from './Room.mjs';
 import StreamingRoom from './StreamingRoom.mjs';
 import crypto from 'crypto'
 
-const connectionString= "postgres://mfgpxwzllzuyon:60477619289e40e9e11e2223ef2cb9205f45051362241070fb10b4ef63cdf72b@ec2-54-225-100-12.compute-1.amazonaws.com:5432/dekfnttkubm1j1?ssl=true"// || 'postgres://localhost:5432/stream_app';
-console.log(connectionString)
+const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
 var roomsContainer = []
@@ -56,6 +55,7 @@ db.initializeTables().then(() => {
     })
 })
 app.get('/', async(req, res)=>{
+    console.log('connection')
     let rooms = await db.getAllRooms()
     //let rules = await db.getRules(rooms[0].rulesid)
     res.render('list', {"rooms": rooms})
@@ -131,6 +131,7 @@ app.post('/login', async(req,res)=>{
 })
 app.get('/room/:id',async (req,res)=>{
     let room = room_container.getRoom(req.params.id)
+    console.log(room)
     if(!room){res.send("Rooms does not exists!")}
     let userId;
     if(req.authenticated){

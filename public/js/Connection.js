@@ -12,15 +12,8 @@ export default class Connection {
         this.peer_media_elements = {};
         this.type = type
     }
-    setMediaBitrates(sdp, audioBitrate, videoBitrate) {
-        console.log(this)
-        sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + audioBitrate + '\r\n');
-        sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBitrate + '\r\n');
-        return sdp
 
-    }
     regAddPeer() {
-
         this.regHandler('addPeer', (config) => {
             
             var peer_id = config.peer_id;
@@ -62,7 +55,7 @@ export default class Connection {
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
-                                    { 'peer_id': peer_id, 'session_description': local_description , 'audio_bitrate': 50, 'video_bitrate': 256});
+                                    { 'peer_id': peer_id, 'session_description': local_description , });
                             },
                             () => { Alert("Offer setLocalDescription failed!"); }
                         );
@@ -78,24 +71,12 @@ export default class Connection {
             this.peers[config.peer_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
         })
     }
-    changeSdpSettings(){
-       
-        for(let peerId in this.peers){
-            let peer_connection = this.peers[peerId]
-            peer_connection.createOffer(
-                (local_description) => {
-                    peer_connection.setLocalDescription(local_description,
-                        () => {
-                            this.signaling_socket.emit('relaySessionDescription',
-                                { 'peer_id': peerId, 'session_description': local_description , "audio_bitrate": Number($('#slider').val()),  "video_bitrate": Number($('#slider1').val())});
-                        },
-                        () => { Alert("Offer setLocalDescription failed!"); }
-                    );
-                },
-                (error) => {
-                    console.log("Error sending offer: ", error);
-                }, { offerToReceiveAudio: true, offerToReceiveVideo: true }
-            );
+    setProperties(sdp, properties){
+        if(properties.audio_bitrate){
+            sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + properties.audio_bitrate + '\r\n');
+        }
+        if(properties.video_bitrate){
+            sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + properties.video_bitrate + '\r\n');
         }
     }
     regSessionDescriptor() {
@@ -106,12 +87,11 @@ export default class Connection {
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer.setRemoteDescription(desc,
                 () => {
-                    console.log(remote_description.type)
                     if (remote_description.type == "offer") {
-                        console.log('wat the hek')
                         peer.createAnswer(
                             (local_description) => {
-                                local_description.sdp = this.setMediaBitrates(local_description.sdp, config.audio_bitrate)
+                                if(config)
+                                    local_description.sdp = this.setProperties(local_description.sdp, config.properties)
                                 peer.setLocalDescription(local_description,
                                     () => {
                                         this.signaling_socket.emit('relaySessionDescription',
@@ -204,7 +184,7 @@ export default class Connection {
         tracks[0].enabled = true;
     }
     setup_local_media(constrains, elem, callback, errorback) {
-        navigator.mediaDevices.getUserMedia(constrains)
+        navigator.mediaDevices.getUserMedia(constrains,)
         .then(
             (stream) => {
                 if (this.type == 'broadcaster') {
@@ -216,7 +196,8 @@ export default class Connection {
                 }
                 if(callback)
                     callback(stream)
-        }).catch(() => {
+        }).catch((e) => {
+                console.log(e.message)
                 alert("You chose not to provide access to the camera/microphone, demo will not work.");
                 if (errorback) errorback();
         })

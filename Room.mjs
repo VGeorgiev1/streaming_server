@@ -34,7 +34,7 @@ export default class Room{
         });
         socket.on('relaySessionDescription', (config) => {
             if (config.peer_id in this.connections) {
-                this.connections[config.peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description, 'audio_bitrate': config.audio_bitrate, 'video_bitrate': config.video_bitrate});
+                this.connections[config.peer_id].emit('sessionDescription', {'peer_id': socket.id, 'session_description': config.session_description, 'properties': config.properties});
             }
         });
     }
