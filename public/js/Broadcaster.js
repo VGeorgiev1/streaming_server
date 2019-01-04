@@ -37,13 +37,13 @@ export default class Broadcaster extends Connection{
             peer_connection.createOffer(
                 (local_description) => {
                     peer_connection.setLocalDescription(local_description,
-                        () => {
+                        () => { 
                             this.signaling_socket.emit('relaySessionDescription',
                                 { 'peer_id': peerId, 'session_description': local_description , "properties": properties});
                         },
                         () => { Alert("Offer setLocalDescription failed!"); }
                     );
-                },
+                }, 
                 (error) => {
                     console.log("Error sending offer: ", error);
                 }, { offerToReceiveAudio: this.offers.audio, offerToReceiveVideo: this.offers.video }

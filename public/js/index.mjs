@@ -4,7 +4,10 @@ window.onload = ()=>{
     let socket = io()
     var SIGNALING_SERVER = "http://localhost";
     if(isOwner){
-        let connection = new Broadcaster("http://localhost",channel, socket ,{audio: true, video:true},id)
+        let connection = new Broadcaster("http://localhost",channel, socket ,null,id)
+        $('body').append($('<input id="slider" type="range" min="8" max="500" value="50">').change(console.log(this.value)))//connection.setAudioBitrates()))
+        
+        
     }
     else{
         let connection = new Viewer("http://localhost",channel, socket,id)

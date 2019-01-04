@@ -51,7 +51,7 @@ export default class Connection {
             if (config.should_create_offer) {
                 peer_connection.createOffer(
                     (local_description) => {
-                        //local_description.sdp = this.setMediaBitrates(local_description.sdp)
+                       
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
@@ -188,10 +188,9 @@ export default class Connection {
         .then(
             (stream) => {
                 if (this.type == 'broadcaster') {
+                    mEl.append($('<input id="slider" type="range" min="8" max="500" value="50">').change(this.changeSdpSettings.bind(this))) 
                     let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
                     mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
-                    mEl.append($('<input id="slider" type="range" min="8" max="500" value="50">').change(this.changeSdpSettings.bind(this))) 
-                    mEl.append($('<input id="slider1" type="range" min="50" max="500" value="256">').change(this.changeSdpSettings.bind(this))) 
                     elem.append(mEl)
                 }
                 if(callback)
