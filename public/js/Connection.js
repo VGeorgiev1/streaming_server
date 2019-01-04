@@ -173,7 +173,7 @@ export default class Connection {
         let container = document.createElement('div')
         let media = constrains.video ? document.createElement('video') : document.createElement('audio');
         media.autoplay = "autoplay"
-        media.muted = options.muted.toString() /* always mute ourselves by default */
+        media.muted = options.muted 
         media.controls = "controls";
         this.attachMediaStream(media, stream);
         container.append(media)

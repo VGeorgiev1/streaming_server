@@ -1,54 +1,70 @@
 import pg from 'pg'
 import crypto from 'crypto'
 export default class DbManager {
-    constructor(connectionString) {
+    constructor(connectionString,ssl) {
+        this.ssl
         this.connectionString = connectionString
-        this.pool = new pg.Pool(this.connectionString)
+        //this.pool = new pg.Pool(this.connectionString)
         this.roomOptions = ['audio','video','screen']
         this.optionsMapping = {
             on : true,
             undefined : false
         }
     }
+    createClient(){
+        let conString = this.connectionString
+        let sll = this.sll
+        return  new pg.Client({
+            connectionString: conString,
+            ssl: sll
+        })
+    }
     async initializeTables() {
-        let client = await this.pool.connect()
+        let client = this.createClient()
+        await client.connect()
         try {
-            await client.query('BEGIN')
+            client.query('BEGIN')
             client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY, username VARCHAR(25) UNIQUE, password VARCHAR(60))")
             client.query("CREATE TABLE IF NOT EXISTS rules(id SERIAL PRIMARY KEY, audio BOOLEAN, video BOOLEAN, screen BOOLEAN)")
             client.query("CREATE TABLE IF NOT EXISTS rooms(id SERIAL PRIMARY KEY, owner INTEGER REFERENCES users(id),type VARCHAR(10), name VARCHAR(40) not null, rulesId INTEGER REFERENCES rules(id) not null)")
             client.query("CREATE TABLE IF NOT EXISTS sessions(userId INTEGER REFERENCES users(id) UNIQUE, sessionToken VARCHAR(60) UNIQUE)")
+            
             await client.query('COMMIT')
         } catch (e) {
             await client.query('ROLLBACK')
             throw e
         } finally {
-            client.release()
+            client.end();
         }
+            
+        
     }
     async findSession(token){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("SELECT * FROM sessions WHERE sessiontoken=$1", [token])
-        client.release()
+        client.end();
 
         return res.rows[0]
     }
     async destroySession(token){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("DELETE FROM sessions WHERE sessiontoken=$1", [token])
-        client.release()
+        client.end();
     }
     async createSession(name){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("INSERT INTO sessions(userId,sessiontoken) VALUES($1,$2) ON CONFLICT(sessiontoken) DO UPDATE SET sessiontoken = excluded.sessiontoken returning sessiontoken", [name, crypto.randomBytes(20).toString("hex")])
-        client.release()
+        client.end();
         return res.rows[0]['sessiontoken']
     }
     async registerUser(name, hash){        
-        let client = await this.pool.connect()
-       
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("INSERT INTO users(username,password) VALUES($1,$2) ON CONFLICT DO NOTHING returning id", [name, hash])
-        client.release()
+        client.end()
 
         if(res.rows.length == 0){
             
@@ -57,25 +73,29 @@ export default class DbManager {
         return res.rows[0]
     }
     async logUser(req){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
+
         try{
             let res = await client.query('SELECT * FROM users WHERE username=$1', [req.name])
-            client.release()
+            client.end();
             return res.rows[0]
         }catch(e){
             console.log(e)
-            client.release()
+            client.end();
             return undefined
         }
     }
     async getLoggedUser(sessionToken){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("SELECT * FROM sessions as s LEFT JOIN users as u ON s.userId = u.id WHERE sessiontoken=$1", [sessionToken])
-        client.release()
+        client.end();
         return res.rows[0].id
     }
     async createRoom(owner,req) {
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let values = []
         //values.push(req.name)
         this.roomOptions.map((option)=>{
@@ -84,26 +104,29 @@ export default class DbManager {
         
         let res = await client.query("INSERT INTO rules(audio, video, screen) VALUES ($1,$2,$3) returning id", values)
         let room_res = await client.query("INSERT INTO rooms(owner,name,type,rulesId) VALUES ($1,$2,$3,$4) returning id", [owner,req.name,req.type,res.rows[0].id])
-        client.release()
+        client.end();
         
         return room_res.rows[0].id
     }
     async getAllRooms(){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("SELECT * FROM rooms")
-        client.release()
+        client.end();
         return res.rows
     }
     async getAllRoomsAndRules(){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("SELECT * FROM rules as rl INNER JOIN rooms as rm ON rl.id = rm.rulesId")
-        client.release()
+        client.end();
         return res.rows
     }
     async getRules(id){
-        let client = await this.pool.connect()
+        const client = this.createClient()
+        await client.connect()
         let res = await client.query("SELECT * FROM rules WHERE id=$1", [id])
-        client.release()
+        client.end();
         return res.rows
     }
 }

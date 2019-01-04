@@ -20,13 +20,12 @@ import RoomContainer from './RoomContainer.mjs'
 import Room from './Room.mjs';
 import StreamingRoom from './StreamingRoom.mjs';
 import crypto from 'crypto'
-
-const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
+const connectionString =  process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
 var roomsContainer = []
 let io = new SocketIO(server);
-const db = new DbManager(connectionString) 
+const db = new DbManager(connectionString, connectionString == process.env.DATABASE_URL) 
 var SALT_ROUNDS = 10
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
