@@ -55,7 +55,7 @@ export default class Connection {
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
-                                    { 'peer_id': peer_id, 'session_description': local_description , });
+                                    { 'peer_id': peer_id, 'session_description': local_description});
                             },
                             () => { Alert("Offer setLocalDescription failed!"); }
                         );
@@ -78,6 +78,7 @@ export default class Connection {
         if(properties.video_bitrate){
             sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + properties.video_bitrate + '\r\n');
         }
+        return sdp
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
@@ -90,15 +91,18 @@ export default class Connection {
                     if (remote_description.type == "offer") {
                         peer.createAnswer(
                             (local_description) => {
-                                if(config)
-                                    local_description.sdp = this.setProperties(local_description.sdp, config.properties)
-                                peer.setLocalDescription(local_description,
-                                    () => {
-                                        this.signaling_socket.emit('relaySessionDescription',
-                                            { 'peer_id': peer_id, 'session_description': local_description });
-                                    },
-                                    () => { Alert("Answer setLocalDescription failed!"); }
-                                );
+                                if(config){
+                                    if(config.properties){
+                                        local_description.sdp = this.setProperties(local_description.sdp, config.properties)
+                                    }
+                                    peer.setLocalDescription(local_description,
+                                        () => {
+                                            this.signaling_socket.emit('relaySessionDescription',
+                                                { 'peer_id': peer_id, 'session_description': local_description });
+                                        },
+                                        (e) => { console.log(e.message) }
+                                    );
+                                }
                             },
                             (error) => {
                                 console.log("Error creating answer: ", error);
@@ -166,31 +170,23 @@ export default class Connection {
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {
-        let container = $("<div>")
-        let media = constrains.video ? $("<video>") : $("<audio>");
-        media.attr("autoplay", "autoplay");
-        media.prop("muted", options.muted); /* always mute ourselves by default */
-        media.attr("controls", "");
-        this.attachMediaStream(media[0], stream);
+        let container = document.createElement('div')
+        let media = constrains.video ? document.createElement('video') : document.createElement('audio');
+        media.autoplay = "autoplay"
+        media.muted = options.muted.toString() /* always mute ourselves by default */
+        media.controls = "controls";
+        this.attachMediaStream(media, stream);
         container.append(media)
         if (options.returnElm) return container
     }
-    mute_audio(){
-        let tracks = this.local_media_stream.getAudioTracks()
-        if(tracks[0].enabled == true){
-            tracks[0].enabled = false;
-            return;
-        }
-        tracks[0].enabled = true;
-    }
+
     setup_local_media(constrains, elem, callback, errorback) {
-        navigator.mediaDevices.getUserMedia(constrains,)
+        navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
                 if (this.type == 'broadcaster') {
-                    mEl.append($('<input id="slider" type="range" min="8" max="500" value="50">').change(this.changeSdpSettings.bind(this))) 
                     let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
-                    mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
+                    //mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
                     elem.append(mEl)
                 }
                 if(callback)

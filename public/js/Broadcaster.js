@@ -5,8 +5,8 @@ export default class Broadcaster extends Connection{
         this.constrains = {};
         if(CONSTRAINTS != 'screen-share'){
             CONSTRAINTS ? (
-                      this.offers.video = this.constrains.video = CONSTRAINTS.video,
-                      this.offers.audio = this.constrains.audio = CONSTRAINTS.audio)
+                      this.constrains.video = CONSTRAINTS.video,
+                      this.constrains.audio = CONSTRAINTS.audio)
                     : this.findDevices((constrains)=>{this.constrains = constrains})
             this.local_media_stream = null
         }else{
@@ -15,21 +15,32 @@ export default class Broadcaster extends Connection{
             this.constrains.audio = false
             this.local_media_stream = document.getElementById('mine').srcObject
         }
+        this.offers = {}
+        this.offers.audio = this.constrains.audio
+        this.offers.video = this.constrains.video
         this.audioBitrate = 50
         this.videoBitrate = 256    
         this.createConnectDisconnectHandlers()
     }
     setAudioBitrates(audioBitrate) {
-        if(this.constrains.audio){
+        if(this.constrains.audio && audioBitrate >=8 && audioBitrate<=500){
             this.audioBitrate = audioBitrate
-            changeSdpSettings({audio_bitrate: this.audioBitrate})
+            this.changeSdpSettings({audio_bitrate: this.audioBitrate})
         }
     }
     setVideoBitrates(videoBitrate){
-        if(this.constrains.video){
+        if(this.constrains.video && videoBitrate >=8 && videoBitrate<=500){
             this.videoBitrate = videoBitrate
-            changeSdpSettings({video_bitrate: this.videoBitrate})
+            this.changeSdpSettings({video_bitrate: this.videoBitrate})
         }
+    }
+    mute_audio(){
+        let tracks = this.local_media_stream.getAudioTracks()
+        if(tracks[0].enabled == true){
+            tracks[0].enabled = false;
+            return;
+        }
+        tracks[0].enabled = true;
     }
     changeSdpSettings(properties){
         for(let peerId in this.peers){
@@ -41,7 +52,7 @@ export default class Broadcaster extends Connection{
                             this.signaling_socket.emit('relaySessionDescription',
                                 { 'peer_id': peerId, 'session_description': local_description , "properties": properties});
                         },
-                        () => { Alert("Offer setLocalDescription failed!"); }
+                        (e) => { console.log(e.message) }
                     );
                 }, 
                 (error) => {
@@ -56,7 +67,7 @@ export default class Broadcaster extends Connection{
                 if (this.local_media_stream != null) {  /* ie, if we've already been initialized */
                     return; 
                 }
-                this.setup_local_media(this.constrains, $('body'),
+                this.setup_local_media(this.constrains, document.getElementsByTagName('body')[0],
                 (stream) => {
                     this.local_media_stream = stream
                     this.join_channel(this.constrains);
