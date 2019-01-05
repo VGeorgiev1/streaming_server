@@ -54,7 +54,6 @@ db.initializeTables().then(() => {
     })
 })
 app.get('/', async(req, res)=>{
-    console.log('connection')
     let rooms = await db.getAllRooms()
     //let rules = await db.getRules(rooms[0].rulesid)
     res.render('list', {"rooms": rooms})
@@ -73,6 +72,7 @@ app.post('/room/create', async (req,res)=>{
         let id = await db.createRoom(userId,req.body)
         console.log(id)
         room_container.addRoom({id:id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: userId})
+        console.log(room_container)
         res.redirect('/room/'+id)
     }
 })
@@ -119,7 +119,7 @@ app.post('/login', async(req,res)=>{
     if(user){
         let authenticated = bcrypt.compareSync(req.body.password, user.password)
         if(authenticated){
-            let token = await db.createSession(user.id);
+            let token = await db.checkForSessionOrCreate(user.id)
             res.cookie('sessionToken' , token).send("Hello in "+ user.username)
         }else{
             res.send("The password and username doesn't match!")
@@ -129,18 +129,18 @@ app.post('/login', async(req,res)=>{
     }
 })
 app.get('/room/:id',async (req,res)=>{
-    let room = room_container.getRoom(req.params.id)
-    console.log(room)
+    let room = room_container.getRoom(req.params.id.toString())
+    
     if(!room){res.send("Rooms does not exists!")}
     let userId;
     if(req.authenticated){
         userId = await db.getLoggedUser(req.cookies.sessionToken)
-        console.log(userId)
+        
     }else{
         userId = crypto.randomBytes(10).toString("hex")
     }
     let isOwner = room.isBroadcaster(userId)
-    console.log(isOwner)
+   
     res.render('room', {name: req.params.id, id: userId, isOwner: isOwner});
 })
 io.sockets.on('connection', function (socket) {

@@ -108,6 +108,18 @@ export default class DbManager {
         
         return room_res.rows[0].id
     }
+    async checkForSessionOrCreate(id){
+        const client = this.createClient()
+        await client.connect()
+        let res =await client.query("SELECT * FROM sessions WHERE userid=$1", [id])
+        client.end()
+        if(res.rows.length == 0){
+            return await this.createSession(id)
+        }else{
+            return res.rows[0]['sessiontoken']
+        }
+        
+    }
     async getAllRooms(){
         const client = this.createClient()
         await client.connect()
