@@ -2,7 +2,7 @@ import Room from './Room'
 import * as fs from 'fs';
 export default class StreamingRoom extends Room{
     constructor(name, rules,ownerId){
-        super(name)
+        super(name, 'streaming')
         this.viewers = []
         this.rules = rules
         this.owner = ownerId
@@ -14,12 +14,12 @@ export default class StreamingRoom extends Room{
         }
         else if(this.owner == peerId){
             this.active = true;
-            console.log(this.owner, peerId)
-            console.log('activate')
+            
         }else{
             this.viewers.push(peerId)
             constrains = null
         }
+        console.log('wat')
         this.addPeer(socket,constrains, (disconnectSocket)=>{
             if(disconnectSocket.id == socket.id){
                 this.active = false
@@ -29,7 +29,5 @@ export default class StreamingRoom extends Room{
     isActive(){
         return this.active
     }
-    isBroadcaster(id){
-        return id == this.owner
-    }
+    
 }

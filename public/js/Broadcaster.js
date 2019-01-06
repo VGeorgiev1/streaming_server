@@ -1,5 +1,5 @@
 import Connection from "./Connection.js"
-export default class Broadcaster extends Connection{ 
+export default class Broadcaster extends Connection{
     constructor(SIGNALING_SERVER,CHANNEL,socket,CONSTRAINTS,id){
         super(SIGNALING_SERVER,CHANNEL,socket, 'broadcaster',id)
         this.constrains = {};
@@ -7,7 +7,7 @@ export default class Broadcaster extends Connection{
             CONSTRAINTS ? (
                       this.constrains.video = CONSTRAINTS.video,
                       this.constrains.audio = CONSTRAINTS.audio)
-                    : this.findDevices((constrains)=>{this.constrains = constrains})
+                      : this.constrains = null
             this.local_media_stream = null
         }else{
             this.is_screen_share = true
@@ -15,9 +15,7 @@ export default class Broadcaster extends Connection{
             this.constrains.audio = false
             this.local_media_stream = document.getElementById('mine').srcObject
         }
-        this.offers = {}
-        this.offers.audio = this.constrains.audio
-        this.offers.video = this.constrains.video
+        
         this.audioBitrate = 50
         this.videoBitrate = 256    
         this.createConnectDisconnectHandlers()
@@ -61,20 +59,36 @@ export default class Broadcaster extends Connection{
             );
         }
     }
+    getRoomRules(callback){
+        this.signaling_socket.emit('getRules', this.channel)
+        this.regHandler('rules', callback)
+    }
+    setOffersAndConstrains(constrains){
+        this.offers = {}
+        this.offers.audio = constrains.audio
+        this.offers.video = constrains.video
+        this.constrains = constrains
+    }
     createConnectDisconnectHandlers(){
         if(!this.is_screen_share){
             this.regConnectHandler(()=> {
-                if (this.local_media_stream != null) {  /* ie, if we've already been initialized */
+                if (this.local_media_stream != null) {  
                     return; 
                 }
-                this.setup_local_media(this.constrains, document.getElementsByTagName('body')[0],
-                (stream) => {
-                    this.local_media_stream = stream
-                    this.join_channel(this.constrains);
-                },
-                () => {
-                    console.log("Couldn't set up media!")
+                this.getRoomRules((rules)=>{
+                    this.findConstrains(rules,(constrains)=>{
+                        this.setOffersAndConstrains(constrains)
+                        this.setup_local_media(constrains, document.getElementsByTagName('body')[0],
+                        (stream) => {
+                            this.local_media_stream = stream
+                            this.join_channel(this.constrains);
+                        },
+                        () => {
+                            console.log("Couldn't set up media!")
+                        })
+                    })
                 })
+                
             })
         }else{
             this.regConnectHandler(()=>{console.log('im here')})

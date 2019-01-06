@@ -150,12 +150,18 @@ export default class Connection {
     join_channel(constrains) {
         this.signaling_socket.emit('join', { "constrains": constrains , "channel": this.channel, "id": this.id});
     }
-    async findDevices(callback) {
+    async findConstrains(rules,callback) {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             let use_audio, use_video = false
             for (let i = 0; i < devices.length; i++) {
                 if (devices[i].kind === 'audioinput') use_audio = true;
                 if (devices[i].kind === 'videoinput') use_video = true;
+            }
+            if(!rules.audio && rules.audio != null){
+                use_audio = false
+            }
+            if(!rules.video && rules.video != null){
+                use_audio = false
             }
             callback({ 'audio': use_audio, 'video': use_video })
         })

@@ -6,6 +6,7 @@ export default class DbManager {
         this.connectionString = connectionString
         //this.pool = new pg.Pool(this.connectionString)
         this.roomOptions = ['audio','video','screen']
+        this.roomTypes = ['streaming', 'conferent']
         this.optionsMapping = {
             on : true,
             undefined : false
@@ -26,7 +27,7 @@ export default class DbManager {
             client.query('BEGIN')
             client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY, username VARCHAR(25) UNIQUE, password VARCHAR(60))")
             client.query("CREATE TABLE IF NOT EXISTS rules(id SERIAL PRIMARY KEY, audio BOOLEAN, video BOOLEAN, screen BOOLEAN)")
-            client.query("CREATE TABLE IF NOT EXISTS rooms(id SERIAL PRIMARY KEY, owner INTEGER REFERENCES users(id),type VARCHAR(10), name VARCHAR(40) not null, rulesId INTEGER REFERENCES rules(id) not null)")
+            client.query("CREATE TABLE IF NOT EXISTS rooms(id SERIAL PRIMARY KEY, owner INTEGER REFERENCES users(id),type VARCHAR(10), name VARCHAR(40) not null, rulesId INTEGER REFERENCES rules(id))")
             client.query("CREATE TABLE IF NOT EXISTS sessions(userId INTEGER REFERENCES users(id) UNIQUE, sessionToken VARCHAR(60) UNIQUE)")
             
             await client.query('COMMIT')
@@ -96,16 +97,23 @@ export default class DbManager {
     async createRoom(owner,req) {
         const client = this.createClient()
         await client.connect()
-        let values = []
-        //values.push(req.name)
-        this.roomOptions.map((option)=>{
-            values.push(this.optionsMapping[req[option]])
-        })
-        
-        let res = await client.query("INSERT INTO rules(audio, video, screen) VALUES ($1,$2,$3) returning id", values)
-        let room_res = await client.query("INSERT INTO rooms(owner,name,type,rulesId) VALUES ($1,$2,$3,$4) returning id", [owner,req.name,req.type,res.rows[0].id])
+        let rulesId = null;
+        let options = []
+        if(req.options){
+            for(let i=0;i<this.roomOptions.length;i++){
+                if(req.option.indexOf(this.roomOptions[i]) != -1){
+                    options[i] = true
+                }else{
+                    options[i] = false
+                }
+            }
+        }
+        if(req.type == 'conferent'){
+            rulesId = (await client.query("INSERT INTO rules(audio, video, screen) VALUES ($1,$2,$3) returning id", options)).rows[0].id
+        }
+        let room_res = await client.query("INSERT INTO rooms(owner,name,type,rulesId) VALUES ($1,$2,$3,$4) returning id", [owner,req.name,req.type,rulesId])
+
         client.end();
-        
         return room_res.rows[0].id
     }
     async checkForSessionOrCreate(id){
@@ -130,7 +138,7 @@ export default class DbManager {
     async getAllRoomsAndRules(){
         const client = this.createClient()
         await client.connect()
-        let res = await client.query("SELECT * FROM rules as rl INNER JOIN rooms as rm ON rl.id = rm.rulesId")
+        let res = await client.query("SELECT * FROM rules as rl RIGHT JOIN rooms as rm ON rl.id = rm.rulesId")
         client.end();
         return res.rows
     }

@@ -1,6 +1,7 @@
 export default class Room{
-    constructor(name){
+    constructor(name,type){
         this.name = name
+        this.type = type
         this.connections = {};
         this.alive = true;
     }
@@ -17,6 +18,11 @@ export default class Room{
         this.connections[socket.id].constrains = constrains
         this.handshakeHandlers(socket);
         this.connectDisconnectHandlers(socket, dissconnectHandler)
+    }
+    rulesHandler(socket){
+        socket.on('getRules', ()=>{
+            socket.emit('rules', this.rules)
+        })
     }
     connectDisconnectHandlers(socket, disconnectHandler){
         socket.on('disconnect', () =>{
@@ -53,5 +59,8 @@ export default class Room{
             this.kickUser(connection);
         }
         this.alive = false;
+    }
+    isBroadcaster(id){
+        return id == this.owner || this.broadcasters.indexOf(id) != -1
     }
 }

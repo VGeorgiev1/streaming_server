@@ -1,16 +1,16 @@
 import Room from './Room'
 import * as fs from 'fs';
-export default class MultiBroadcasterRoom extends Room{
+export default class ConferentRoom extends Room{
     constructor(name,rules,ownerId){
-        super(name)
+        super(name, 'conferent')
         this.viewers = []
         this.broadcasters = []
         this.owner = ownerId
         this.rules = rules
         this.activated = false
     }
-    addSocket(id,socket,constrains){
-        if(this.viewers.indexOf(id) != -1)
+    addSocket(socket,constrains,peerId){
+        if(this.viewers.indexOf(peerId) != -1)
             console.log("Viewer already exists!")
         this.addPeer(socket,constrains)
     }

@@ -9,7 +9,6 @@ var PORT = process.env.PORT || 3000;
 import express from 'express' 
 import * as http from 'http';
 import SocketIO from 'socket.io';
-import MultiBroadcasterRoom from "./MultiBroadcasterRoom.mjs"
 import path from 'path';
 import pug from 'pug'
 import bodyParser from 'body-parser'
@@ -18,7 +17,7 @@ import bcrypt from 'bcrypt'
 import cookieParser from 'cookie-parser'
 import RoomContainer from './RoomContainer.mjs'
 import Room from './Room.mjs';
-import StreamingRoom from './StreamingRoom.mjs';
+
 import crypto from 'crypto'
 const connectionString =  process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
@@ -67,12 +66,9 @@ app.get('/room/create',(req, res)=>{
 app.post('/room/create', async (req,res)=>{
     if(!req.authenticated){res.redirect('/login')}
     else{
-        req.body.type = 'streaming'
         let userId = await db.getLoggedUser(req.cookies.sessionToken)
         let id = await db.createRoom(userId,req.body)
-        console.log(id)
-        room_container.addRoom({id:id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: userId})
-        console.log(room_container)
+        room_container.addRoom({id:id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: userId,type:req.body.type})
         res.redirect('/room/'+id)
     }
 })
@@ -112,7 +108,6 @@ app.get('/logout', async(req,res)=>{
     }
 })
 app.get('/try', async(req,res)=>{
-    console.log(room_container)
 })
 app.post('/login', async(req,res)=>{
     let user = await db.logUser(req.body)
@@ -141,7 +136,7 @@ app.get('/room/:id',async (req,res)=>{
     }
     let isOwner = room.isBroadcaster(userId)
    
-    res.render('room', {name: req.params.id, id: userId, isOwner: isOwner});
+    res.render('room', {channel: req.params.id, id: userId, isOwner: isOwner});
 })
 io.sockets.on('connection', function (socket) {
     room_container.subscribeSocket(socket);
