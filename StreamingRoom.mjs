@@ -19,7 +19,6 @@ export default class StreamingRoom extends Room{
             this.viewers.push(peerId)
             constrains = null
         }
-        console.log('wat')
         this.addPeer(socket,constrains, (disconnectSocket)=>{
             if(disconnectSocket.id == socket.id){
                 this.active = false
@@ -28,6 +27,9 @@ export default class StreamingRoom extends Room{
     }
     isActive(){
         return this.active
+    }
+    isBroadcaster(id){
+        return id == this.owner
     }
     
 }

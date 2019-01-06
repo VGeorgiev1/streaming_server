@@ -3,7 +3,7 @@ import Viewer from './Viewer.js'
 window.onload = ()=>{
     let socket = io()
     var SIGNALING_SERVER = "http://localhost";
-    if(isOwner){
+    if(isBroadcaster){
         let connection = new Broadcaster("http://localhost",channel, socket ,null,id)
         $('body').append($('<input id="slider" type="range" min="8" max="500" value="50">').change(function(){
             connection.setAudioBitrates($(this).val())
@@ -14,7 +14,6 @@ window.onload = ()=>{
         $('body').append(($('<button>').html('Mute').click(function(){
             connection.mute_audio()
         })))
-        
     }
     else{
         let connection = new Viewer("http://localhost",channel, socket,id)

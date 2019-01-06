@@ -134,9 +134,9 @@ app.get('/room/:id',async (req,res)=>{
     }else{
         userId = crypto.randomBytes(10).toString("hex")
     }
-    let isOwner = room.isBroadcaster(userId)
-   
-    res.render('room', {channel: req.params.id, id: userId, isOwner: isOwner});
+    let isBroadcaster = room.isBroadcaster(userId)
+    
+    res.render('room', {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster});
 })
 io.sockets.on('connection', function (socket) {
     room_container.subscribeSocket(socket);
