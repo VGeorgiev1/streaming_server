@@ -12,7 +12,6 @@ export default class RoomContainer{
         socket.on('join', (data)=>{
             if(!this.rooms[data.channel]) throw new Error("No such channel!")
             else{
-                console.log(socket.id)
                 this.rooms[data.channel].addSocket(socket,data.constrains, data.id)
             }
         })

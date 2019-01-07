@@ -60,7 +60,4 @@ export default class Room{
         }
         this.alive = false;
     }
-    isBroadcaster(id){
-        return id == this.owner || this.broadcasters.indexOf(id) != -1
-    }
 }

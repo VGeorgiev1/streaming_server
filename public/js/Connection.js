@@ -15,7 +15,6 @@ export default class Connection {
 
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
-            
             var peer_id = config.peer_id;
             if (peer_id in this.peers) {
                 return;
@@ -91,6 +90,7 @@ export default class Connection {
                     if (remote_description.type == "offer") {
                         peer.createAnswer(
                             (local_description) => {
+                                console.log(local_description)
                                 if(config){
                                     if(config.properties){
                                         local_description.sdp = this.setProperties(local_description.sdp, config.properties)
@@ -106,7 +106,6 @@ export default class Connection {
                             },
                             (error) => {
                                 console.log("Error creating answer: ", error);
-                                console.log(peer);
                             });
                     }
                 },
@@ -120,11 +119,15 @@ export default class Connection {
 
     }
     regConnectHandler(callback) {
+        console.log('whatzefuk')
         this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
         this.regRemovePeer()
+        
+        console.log('whatzefuk')
         this.regHandler('connect', () => {
+            console.log('whathehell')
             if (callback)
                 callback()
         })

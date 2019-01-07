@@ -1,10 +1,10 @@
 import Broadcaster from './Broadcaster.js'
 import Viewer from './Viewer.js'
 window.onload = ()=>{
-    let socket = io()
+    window.Broadcaster = Broadcaster
     var SIGNALING_SERVER = "http://localhost";
-    if(isBroadcaster){
-        let connection = new Broadcaster("http://localhost",channel, socket ,null,id)
+    if(window.isBroadcaster){
+        let connection = new Broadcaster("http://localhost",window.channel, io() ,null,id)
         $('body').append($('<input id="slider" type="range" min="8" max="500" value="50">').change(function(){
             connection.setAudioBitrates($(this).val())
         }))
@@ -16,6 +16,7 @@ window.onload = ()=>{
         })))
     }
     else{
-        let connection = new Viewer("http://localhost",channel, socket,id)
+        console.log('viewer')
+        let connection = new Viewer("http://localhost",window.channel,io(),id)
     }
 }

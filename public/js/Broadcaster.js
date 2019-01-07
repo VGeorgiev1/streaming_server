@@ -14,6 +14,7 @@ export default class Broadcaster extends Connection{
             this.constrains.video = true
             this.constrains.audio = false
             this.local_media_stream = document.getElementById('mine').srcObject
+            console.log(this.local_media_stream)
         }
         
         this.audioBitrate = 50
@@ -68,10 +69,12 @@ export default class Broadcaster extends Connection{
         this.offers.audio = constrains.audio
         this.offers.video = constrains.video
         this.constrains = constrains
+        console.log(this.constrains)
     }
     createConnectDisconnectHandlers(){
         if(!this.is_screen_share){
             this.regConnectHandler(()=> {
+                
                 if (this.local_media_stream != null) {  
                     return; 
                 }
@@ -91,7 +94,11 @@ export default class Broadcaster extends Connection{
                 
             })
         }else{
-            this.regConnectHandler(()=>{console.log('im here')})
+            this.regConnectHandler(()=>{
+               
+                this.setOffersAndConstrains(this.constrains)
+                this.join_channel(this.constrains)
+            })
         }
     }
 }

@@ -2,9 +2,9 @@ doctype html
 html
   head
     script.
-      var channel = "#{channel}"
-      var id = "#{id}"
-      var isBroadcaster = "#{isBroadcaster}" == 'true'
+      window.channel = "#{channel}"
+      window.id = "#{id}"
+      window.isBroadcaster = "#{isBroadcaster}" == 'true'
     script(src='https://cdn.socket.io/socket.io-1.4.5.js')
     script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
     script(type='module', src='/public/js/index.mjs')
