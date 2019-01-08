@@ -151,7 +151,6 @@ app.get('/room/:id',async (req,res)=>{
             if(err)
                 console.log(err)
             userId = ses.dataValues.user.dataValues.id
-            console.log(userId)
             let isBroadcaster = room.isBroadcaster(userId)
             res.render('room', {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster});
         })
