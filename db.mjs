@@ -38,8 +38,9 @@ export default class DbManager {
             video: false,
             screen: false
         }
-        if(req.options){
+        if(req.option){
             for (let i = 0; i < this.roomOptions.length; i++) {
+                console.log(req.options)
                 if (req.option.indexOf(this.roomOptions[i]) != -1) {
                     options[this.roomOptions[i]] = true;
                 }

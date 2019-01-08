@@ -147,10 +147,11 @@ app.get('/room/:id',async (req,res)=>{
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
     if(req.authenticated){
-        db.getLoggedUser(req.cookies.sessionToken).then((user,err)=>{
+        db.getLoggedUser(req.cookies.sessionToken).then((ses,err)=>{
             if(err)
                 console.log(err)
-            userId = user.dataValues.id
+            userId = ses.dataValues.user.dataValues.id
+            console.log(userId)
             let isBroadcaster = room.isBroadcaster(userId)
             res.render('room', {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster});
         })
