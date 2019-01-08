@@ -153,8 +153,8 @@
 import Sequelize from 'sequelize'
 
 let sequelize = null;
-if (process.env.HEROKU_POSTGRESQL_BRONZE_URL) {
-    sequelize = new Sequelize(process.env.HEROKU_POSTGRESQL_BRONZE_URL, {
+if (process.env.process.env.DATABASE_URL) {
+    sequelize = new Sequelize(process.env.process.env.DATABASE_URL, {
         dialect: 'postgres',
         protocol: 'postgres',
         port: match[4],
