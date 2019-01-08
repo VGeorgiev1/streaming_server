@@ -24,7 +24,7 @@ var app = express()
 var server = http.createServer(app)
 var roomsContainer = []
 let io = new SocketIO(server);
-const db = new DbManager(connectionString, connectionString == process.env.DATABASE_URL) 
+//const db = new DbManager(connectionString, connectionString == process.env.DATABASE_URL) 
 var SALT_ROUNDS = 10
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -42,16 +42,6 @@ var loginware = function (req, res, next) {
 }
 app.use(loginware)
 let room_container = new RoomContainer()
-db.initializeTables().then(() => {
-    db.getAllRoomsAndRules().then((rooms) => {
-        rooms.forEach(room => {
-           room_container.addRoom(room)
-        });
-        server.listen(PORT, null, () => {
-            console.log("Listening on port " + PORT);
-        });
-    })
-})
 app.get('/', async(req, res)=>{
     let rooms = await db.getAllRooms()
     //let rules = await db.getRules(rooms[0].rulesid)
