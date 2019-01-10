@@ -3,6 +3,13 @@ export default class Broadcaster extends Connection{
     constructor(SIGNALING_SERVER,CHANNEL,socket,CONSTRAINTS,id){
         super(SIGNALING_SERVER,CHANNEL,socket, 'broadcaster',id)
         this.constrains = {};
+        this.audioBitrate = 50
+        this.videoBitrate = 256
+
+        this.tracks = {}
+        this.senders = {}
+        this.audioDevices = []
+        this.videoDevices = []
         if(CONSTRAINTS != 'screen-share'){
             CONSTRAINTS ? (
                       this.constrains.video = CONSTRAINTS.video,
@@ -17,9 +24,13 @@ export default class Broadcaster extends Connection{
             console.log(this.local_media_stream)
         }
         
-        this.audioBitrate = 50
-        this.videoBitrate = 256    
         this.createConnectDisconnectHandlers()
+    }
+    getAudioDevices(){
+        return this.audioDevices;
+    }
+    getVideoDevices(){
+        return this.videoDevices;
     }
     setAudioBitrates(audioBitrate) {
         if(this.constrains.audio && audioBitrate >=8 && audioBitrate<=500){
@@ -69,7 +80,20 @@ export default class Broadcaster extends Connection{
         this.offers.audio = constrains.audio
         this.offers.video = constrains.video
         this.constrains = constrains
-        console.log(this.constrains)
+    }
+    changeVideoTrack(id){
+        navigator.mediaDevices.getUserMedia({audio: this.constrains.audi, video: {deviceId: { exact: id}}}).then((stream)=>{
+            for(let peer in this.peers){
+                this.senders[peer].replaceTrack(stream.getVideoTracks()[0])
+            }
+        })
+    }
+    changeAudioTrack(id){
+        navigator.mediaDevices.getUserMedia({audio: {deviceId: { exact: id}, video: this.constrains.video}}).then((stream)=>{
+            for(let peer in this.peers){
+                this.senders[peer].replaceTrack(stream.getAudioTracks()[0])
+            }
+        })
     }
     createConnectDisconnectHandlers(){
         if(!this.is_screen_share){

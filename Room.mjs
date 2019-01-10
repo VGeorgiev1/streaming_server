@@ -24,6 +24,7 @@ export default class Room{
             socket.emit('rules', this.rules)
         })
     }
+
     connectDisconnectHandlers(socket, disconnectHandler){
         socket.on('disconnect', () =>{
             this.kickUser(socket.id)

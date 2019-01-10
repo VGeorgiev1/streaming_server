@@ -12,7 +12,7 @@ export default class Connection {
         this.peer_media_elements = {};
         this.type = type
     }
-
+    
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
             var peer_id = config.peer_id;
@@ -36,17 +36,26 @@ export default class Connection {
                     });
                 }
             }
+            peer_connection.onnegotiationneeded = ()=>{
+                console.log('wohoo')
+            }
             peer_connection.ontrack = (event) => {
+                console.log('wohoo')
                 if (this.peer_media_elements[peer_id]) {
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
                 }
                 this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-                $('body').append(this.peer_media_elements[peer_id])
+                document.getElementsByTagName('body')[0].append(this.peer_media_elements[peer_id])
             }
+
             if (this.type != 'viewer') {
-                this.local_media_stream.getTracks().forEach(track => peer_connection.addTrack(track, this.local_media_stream));
+                this.local_media_stream.getTracks().forEach((track) =>{
+                    this.senders[peer_id] = peer_connection.addTrack(track, this.local_media_stream)
+                });
+                
             }
+            
             if (config.should_create_offer) {
                 peer_connection.createOffer(
                     (local_description) => {
@@ -79,6 +88,9 @@ export default class Connection {
         }
         return sdp
     }
+    removeTrack(){
+        
+    }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
             var peer_id = config.peer_id;
@@ -90,7 +102,6 @@ export default class Connection {
                     if (remote_description.type == "offer") {
                         peer.createAnswer(
                             (local_description) => {
-                                console.log(local_description)
                                 if(config){
                                     if(config.properties){
                                         local_description.sdp = this.setProperties(local_description.sdp, config.properties)
@@ -115,19 +126,12 @@ export default class Connection {
             );
         });
     }
-    regDiscconectHandler() {
-
-    }
     regConnectHandler(callback) {
-        console.log('whatzefuk')
         this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
         this.regRemovePeer()
-        
-        console.log('whatzefuk')
         this.regHandler('connect', () => {
-            console.log('whathehell')
             if (callback)
                 callback()
         })
@@ -157,8 +161,8 @@ export default class Connection {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             let use_audio, use_video = false
             for (let i = 0; i < devices.length; i++) {
-                if (devices[i].kind === 'audioinput') use_audio = true;
-                if (devices[i].kind === 'videoinput') use_video = true;
+                if (devices[i].kind === 'audioinput') use_audio = true, this.audioDevices.push(devices[i]);
+                if (devices[i].kind === 'videoinput') use_video = true, this.videoDevices.push(devices[i]);
             }
             if(!rules.audio && rules.audio != null){
                 use_audio = false
@@ -166,6 +170,7 @@ export default class Connection {
             if(!rules.video && rules.video != null){
                 use_audio = false
             }
+            
             callback({ 'audio': use_audio, 'video': use_video })
         })
     }
@@ -188,14 +193,12 @@ export default class Connection {
         container.append(media)
         if (options.returnElm) return container
     }
-
     setup_local_media(constrains, elem, callback, errorback) {
         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
                 if (this.type == 'broadcaster') {
                     let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
-                    //mEl.append($('<button>').html('Mute').click(this.mute_audio.bind(this)))
                     elem.append(mEl)
                 }
                 if(callback)
