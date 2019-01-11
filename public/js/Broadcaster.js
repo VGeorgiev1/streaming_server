@@ -1,7 +1,7 @@
 import Connection from "./Connection.js"
 export default class Broadcaster extends Connection{
-    constructor(SIGNALING_SERVER,CHANNEL,socket,CONSTRAINTS,id){
-        super(SIGNALING_SERVER,CHANNEL,socket, 'broadcaster',id)
+    constructor(SIGNALING_SERVER,socket,CONSTRAINTS,id){
+        super(SIGNALING_SERVER,socket, 'broadcaster',id)
         this.constrains = {};
         this.audioBitrate = 50
         this.videoBitrate = 256
@@ -21,12 +21,14 @@ export default class Broadcaster extends Connection{
             this.constrains.video = true
             this.constrains.audio = false
             this.local_media_stream = document.getElementById('mine').srcObject
-            console.log(this.local_media_stream)
         }
         
-        this.createConnectDisconnectHandlers()
+        //this.createConnectDisconnectHandlers()
     }
+    
     getAudioDevices(){
+        while(this.audioDevices.length == 0)
+            ;
         return this.audioDevices;
     }
     getVideoDevices(){
@@ -95,10 +97,9 @@ export default class Broadcaster extends Connection{
             }
         })
     }
-    createConnectDisconnectHandlers(){
+    createConnectDisconnectHandlers(callback){
         if(!this.is_screen_share){
             this.regConnectHandler(()=> {
-                
                 if (this.local_media_stream != null) {  
                     return; 
                 }
@@ -109,13 +110,14 @@ export default class Broadcaster extends Connection{
                         (stream) => {
                             this.local_media_stream = stream
                             this.join_channel(this.constrains);
+                            if(callback)
+                                callback()
                         },
                         () => {
-                            console.log("Couldn't set up media!")
+                            console.log("Couldn't set up media: ")
                         })
                     })
                 })
-                
             })
         }else{
             this.regConnectHandler(()=>{

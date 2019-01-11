@@ -3,16 +3,18 @@ var ICE_SERVERS = [
 ];
 
 export default class Connection {
-    constructor(SIGNALING_SERVER, CHANNEL,socket, type, id) {
+    constructor(SIGNALING_SERVER,socket, type, id) {
         this.signaling_server = SIGNALING_SERVER;
         this.signaling_socket = socket
         this.id = id
-        this.channel = CHANNEL
         this.peers = {};
         this.peer_media_elements = {};
         this.type = type
     }
-    
+    subscribeTo(CHANNEL, callback){
+        this.channel = CHANNEL
+        this.createConnectDisconnectHandlers(callback)
+    }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
             var peer_id = config.peer_id;
@@ -194,6 +196,7 @@ export default class Connection {
         if (options.returnElm) return container
     }
     setup_local_media(constrains, elem, callback, errorback) {
+        console.log(constrains)
         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
