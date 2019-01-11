@@ -42,6 +42,7 @@ export default class Broadcaster extends Connection{
     }
     setVideoBitrates(videoBitrate){
         if(this.constrains.video && videoBitrate >=8 && videoBitrate<=500){
+            
             this.videoBitrate = videoBitrate
             this.changeSdpSettings({video_bitrate: this.videoBitrate})
         }
@@ -59,6 +60,7 @@ export default class Broadcaster extends Connection{
             let peer_connection = this.peers[peerId]
             peer_connection.createOffer(
                 (local_description) => {
+                    local_description.sdp = this.setProperties(local_description.sdp,properties)
                     peer_connection.setLocalDescription(local_description,
                         () => { 
                             this.signaling_socket.emit('relaySessionDescription',

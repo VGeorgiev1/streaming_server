@@ -88,6 +88,7 @@ export default class Connection {
         if(properties.video_bitrate){
             sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + properties.video_bitrate + '\r\n');
         }
+        
         return sdp
     }
     removeTrack(){

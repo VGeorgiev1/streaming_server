@@ -15,13 +15,20 @@ window.onload = ()=>{
             $('body').append(($('<button>').html('Mute').click(function(){
                 window.connection.mute_audio()
             })))
-            let select = $('body').append(('<select id="mic">'))
+            let select_mics = $('<select id="mic">')
+            let select_cams = $('<select id="cam">')
             let mics = window.connection.getAudioDevices()
-           
+            let cameras = window.connection.getVideoDevices();
             for(let i=0;i < mics.length;i++){
-                 console.log(mics[i])
-            //     //select.append($('<option id= >'))
-             }
+                select_mics.append($(`<option id='${mics[i].deviceId}'>`).html(mics[i].label).click(function(){
+                    console.log(this)
+                }))
+            }
+            for(let i=0;i < cameras.length;i++){
+                select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
+            }
+            $('body').append(select_mics)
+            $('body').append(select_cams)
         })
     }
     else{
