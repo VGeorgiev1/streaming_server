@@ -185,15 +185,14 @@ export default class Connection {
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {
-        let container = document.createElement('div')
+        //let container = document.createElement('div')
         let media = constrains.video ? document.createElement('video') : document.createElement('audio');
         media.autoplay = "autoplay"
         media.muted = options.muted 
         media.controls = "controls";
         this.attachMediaStream(media, stream);
-        container.append(media)
-        this.media_element = media
-        if (options.returnElm) return container
+        //container.append(media)
+        if (options.returnElm) return media
     }
     setup_local_media(constrains, elem, callback, errorback) {
         console.log(constrains)
@@ -202,6 +201,7 @@ export default class Connection {
             (stream) => {
                 if (this.type == 'broadcaster') {
                     let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
+                    this.media_element = mEl
                     elem.append(mEl)
                 }
                 if(callback)
