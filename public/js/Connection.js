@@ -191,6 +191,7 @@ export default class Connection {
         media.controls = "controls";
         this.attachMediaStream(media, stream);
         container.append(media)
+        this.media_element = media
         if (options.returnElm) return container
     }
     setup_local_media(constrains, elem, callback, errorback) {
