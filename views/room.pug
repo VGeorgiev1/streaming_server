@@ -4,10 +4,12 @@ html
     script.
       window.channel = "#{channel}"
       window.id = "#{id}"
-      window.isBroadcaster = "#{isBroadcaster}" == 'true'
     script(src='https://cdn.socket.io/socket.io-1.4.5.js')
     script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
-    script(type='module', src='/public/js/index.mjs')
+    if !isBroadcaster
+      script(type='module', src='/public/js/viewer.mjs')
+    else
+      script(type='module', src='/public/js/broadcaster.mjs')
     style.
       html, body {
       background-color: #333;
