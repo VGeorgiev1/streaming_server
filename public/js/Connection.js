@@ -38,11 +38,8 @@ export default class Connection {
                     });
                 }
             }
-            peer_connection.onnegotiationneeded = ()=>{
-                console.log('wohoo')
-            }
             peer_connection.ontrack = (event) => {
-                console.log('wohoo')
+                
                 if (this.peer_media_elements[peer_id]) {
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
@@ -52,10 +49,10 @@ export default class Connection {
             }
 
             if (this.type != 'viewer') {
+                this.senders[peer_id] = {}
                 this.local_media_stream.getTracks().forEach((track) =>{
-                    this.senders[peer_id] = peer_connection.addTrack(track, this.local_media_stream)
+                    this.senders[peer_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
                 });
-                
             }
             
             if (config.should_create_offer) {

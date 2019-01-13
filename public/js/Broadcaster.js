@@ -85,19 +85,25 @@ export default class Broadcaster extends Connection{
         this.offers.video = constrains.video
         this.constrains = constrains
     }
-    changeVideoTrack(id){
-        navigator.mediaDevices.getUserMedia({audio: this.constrains.audi, video: {deviceId: { exact: id}}}).then((stream)=>{
+    changeTracks(constrains){
+        this.local_media_stream.getTracks().forEach(track=> track.stop())
+        navigator.mediaDevices.getUserMedia(constrains).then((stream)=>{
+            this.local_media_stream = stream
             for(let peer in this.peers){
-                this.senders[peer].replaceTrack(stream.getVideoTracks()[0])
+                this.local_media_stream.getTracks().forEach(track =>{
+                    this.senders[peer][track.kind].replaceTrack(track)
+                })
             }
+            this.attachMediaStream(this.media_element, stream)
+        }).catch(e=>{
+            console.log(e.message)
         })
     }
-    changeAudioTrack(id){
-        navigator.mediaDevices.getUserMedia({audio: {deviceId: { exact: id}, video: this.constrains.video}}).then((stream)=>{
-            for(let peer in this.peers){
-                this.senders[peer].replaceTrack(stream.getAudioTracks()[0])
-            }
-        })
+    changeVideoTrack(id, callback){
+        this.changeTracks({audio: this.constrains.audio, video : {deviceId: { exact: id}}});
+    }
+    changeAudioTrack(id, callback){
+        this.changeTracks({audio: {deviceId: { exact: id}, video: this.constrains.video}})
     }
     createConnectDisconnectHandlers(callback){
         if(!this.is_screen_share){
