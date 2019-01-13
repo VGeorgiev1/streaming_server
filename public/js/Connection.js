@@ -39,7 +39,6 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
-                
                 if (this.peer_media_elements[peer_id]) {
                     this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
                     return;
@@ -185,13 +184,11 @@ export default class Connection {
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {
-        //let container = document.createElement('div')
         let media = constrains.video ? document.createElement('video') : document.createElement('audio');
         media.autoplay = "autoplay"
         media.muted = options.muted 
         media.controls = "controls";
         this.attachMediaStream(media, stream);
-        //container.append(media)
         if (options.returnElm) return media
     }
     setup_local_media(constrains, elem, callback, errorback) {
@@ -208,7 +205,6 @@ export default class Connection {
                     callback(stream)
         }).catch((e) => {
                 console.log(e.message)
-                alert("You chose not to provide access to the camera/microphone, demo will not work.");
                 if (errorback) errorback();
         })
     }
