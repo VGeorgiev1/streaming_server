@@ -13,8 +13,12 @@ window.onload = ()=>{
         $('body').append(($('<button>').html('Mute').click(function(){
             connection.mute_audio()
         })))
-        let select_mics = $('<select id="mic">')
-        let select_cams = $('<select id="cam">')
+        let select_mics = $('<select id="mic">').on('change', function(){
+           connection.changeAudioTrack($(this).children(":selected").attr("id"))
+        })
+        let select_cams = $('<select id="cam">').on('change', function(){
+            connection.changeVideoTrack($(this).children(":selected").attr("id"))
+         })
         let mics = connection.getAudioDevices()
         let cameras = connection.getVideoDevices();
         for(let i=0;i < mics.length;i++){
