@@ -14,7 +14,7 @@ export default class ConferentRoom extends Room{
         this.broadcasters.push(id)
     }
     isBroadcaster(id){
-        return this.broadcasters.indexOf(id) != -1
+        return true//return this.broadcasters.indexOf(id) != -1
     }
     addSocket(socket,constrains,peerId){
         if(!this.isBroadcaster()){
