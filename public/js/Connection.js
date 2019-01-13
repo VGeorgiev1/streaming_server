@@ -181,6 +181,7 @@ export default class Connection {
             navigator.msGetUserMedia)
     }
     attachMediaStream(element, stream) {
+        console.log(element)
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {

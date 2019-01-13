@@ -5,7 +5,7 @@ export default class Broadcaster extends Connection{
         this.constrains = {};
         this.audioBitrate = 50
         this.videoBitrate = 256
-
+        this.media_element = null
         this.tracks = {}
         this.senders = {}
         this.audioDevices = []
