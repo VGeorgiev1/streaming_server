@@ -17,6 +17,7 @@ export default class Connection {
     }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
+            console.log(config)
             var peer_id = config.peer_id;
             if (peer_id in this.peers) {
                 return;
@@ -93,6 +94,7 @@ export default class Connection {
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
             var peer_id = config.peer_id;
+            console.log(config)
             var peer = this.peers[peer_id];
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);

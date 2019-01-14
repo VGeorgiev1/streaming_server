@@ -22,8 +22,7 @@ export default class Broadcaster extends Connection{
             this.constrains.audio = false
             this.local_media_stream = document.getElementById('mine').srcObject
         }
-        
-        //this.createConnectDisconnectHandlers()
+    
     }
     
     getAudioDevices(){
@@ -119,7 +118,7 @@ export default class Broadcaster extends Connection{
                             this.local_media_stream = stream
                             this.join_channel(this.constrains);
                             if(callback)
-                                callback()
+                                callback(stream)
                         },
                         () => {
                             console.log("Couldn't set up media: ")
