@@ -26,8 +26,8 @@ export default class StreamingRoom extends Room{
     }
     addBroadcaster(socket, constrains, peerId, dissconnectHandler){
         for(let id in this.connections){
-            this.connections[id].socket.emit('addPeer', {'peer_id': this.owner, 'should_create_offer': false, 'constrains': constrains})
-            socket.emit('addPeer', {'peer_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
+            this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
+            socket.emit('addPeer', {'socket_id': this.connections[id].socket.id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
         }
         this.connections[this.owner] = {}
         this.connections[this.owner].socket = socket;
@@ -41,8 +41,8 @@ export default class StreamingRoom extends Room{
         }
         this.connections[peerId] = {}
         if(this.connections[this.owner]){
-            this.connections[this.owner].socket.emit('addPeer', {peer_id: peerId, 'should_create_offer': true, 'constrains': null})
-            socket.emit('addPeer', {peer_id: this.owner, 'should_create_offer': false, 'constrains': this.connections[this.owner].constrains})
+            this.connections[this.owner].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
+            socket.emit('addPeer', {'socket_id': this.connections[this.owner].socket.id, 'should_create_offer': false, 'constrains': this.connections[this.owner].constrains})
         }
         this.connections[peerId] = {}
         this.connections[peerId].socket = socket;

@@ -18,8 +18,8 @@ export default class Connection {
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
             console.log(config)
-            var peer_id = config.peer_id;
-            if (peer_id in this.peers) {
+            var socket_id = config.socket_id;
+            if (socket_id in this.peers) {
                 return;
             }
             var peer_connection = new RTCPeerConnection(
@@ -27,11 +27,11 @@ export default class Connection {
                 { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
             );
 
-            this.peers[peer_id] = peer_connection;
+            this.peers[socket_id] = peer_connection;
             peer_connection.onicecandidate = (event) => {
                 if (event.candidate) {
                     this.signaling_socket.emit('relayICECandidate', {
-                        'peer_id': peer_id,
+                        'socket_id': socket_id,
                         'ice_candidate': {
                             'sdpMLineIndex': event.candidate.sdpMLineIndex,
                             'candidate': event.candidate.candidate
@@ -40,18 +40,18 @@ export default class Connection {
                 }
             }
             peer_connection.ontrack = (event) => {
-                if (this.peer_media_elements[peer_id]) {
-                    this.attachMediaStream(this.peer_media_elements[peer_id], event.streams[0])
+                if (this.peer_media_elements[socket_id]) {
+                    this.attachMediaStream(this.peer_media_elements[socket_id], event.streams[0])
                     return;
                 }
-                this.peer_media_elements[peer_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-                document.getElementsByTagName('body')[0].append(this.peer_media_elements[peer_id])
+                this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
+                document.getElementsByTagName('body')[0].append(this.peer_media_elements[socket_id])
             }
 
             if (this.type != 'viewer') {
-                this.senders[peer_id] = {}
+                this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().forEach((track) =>{
-                    this.senders[peer_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
+                    this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
                 });
             }
             
@@ -62,7 +62,7 @@ export default class Connection {
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
-                                    { 'peer_id': peer_id, 'session_description': local_description});
+                                    { 'socket_id': socket_id, 'session_description': local_description});
                             },
                             () => { Alert("Offer setLocalDescription failed!"); }
                         );
@@ -75,7 +75,7 @@ export default class Connection {
     }
     regiceCandidate() {
         this.regHandler('iceCandidate', (config) => {
-            this.peers[config.peer_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
+            this.peers[config.socket_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
         })
     }
     setProperties(sdp, properties){
@@ -93,9 +93,9 @@ export default class Connection {
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
-            var peer_id = config.peer_id;
+            var socket_id = config.socket_id;
             console.log(config)
-            var peer = this.peers[peer_id];
+            var peer = this.peers[socket_id];
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer.setRemoteDescription(desc,
@@ -110,7 +110,7 @@ export default class Connection {
                                     peer.setLocalDescription(local_description,
                                         () => {
                                             this.signaling_socket.emit('relaySessionDescription',
-                                                { 'peer_id': peer_id, 'session_description': local_description });
+                                                { 'socket_id': socket_id, 'session_description': local_description });
                                         },
                                         (e) => { console.log(e.message) }
                                     );
@@ -139,11 +139,11 @@ export default class Connection {
     }
     regRemovePeer(callback) {
         this.regHandler('removePeer', () => {
-            for (let peer_id in this.peer_media_elements) {
-                this.peer_media_elements[peer_id].remove();
+            for (let socket_id in this.peer_media_elements) {
+                this.peer_media_elements[socket_id].remove();
             }
-            for (let peer_id in this.peers) {
-                this.peers[peer_id].close();
+            for (let socket_id in this.peers) {
+                this.peers[socket_id].close();
             }
             this.peers = {};
             this.peer_media_elements = {};

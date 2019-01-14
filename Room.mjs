@@ -21,8 +21,11 @@ export default class Room{
     }
     handshakeHandlers(peerId,relaySessionDescription){
         this.connections[peerId].socket.on('relayICECandidate', (config) => {
-            if (config.peer_id in this.connections) {
-                this.connections[config.peer_id].socket.emit('iceCandidate', {'peer_id': peerId, 'ice_candidate':  config.ice_candidate});
+            let socket_ids = Object.keys(this.connections).map((k)=>{
+                this.connections[k].socket.id
+            })
+            if(socket_ids.indexOf(config.socket_id) =! -1) {
+                this.connections[].socket.emit('iceCandidate', {'peer_id': peerId, 'ice_candidate':  config.ice_candidate});
             }
         });
         this.connections[peerId].socket.on('relaySessionDescription', (config) => {
