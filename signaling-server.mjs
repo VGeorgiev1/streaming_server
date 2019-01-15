@@ -57,11 +57,12 @@ db.initializeTables(()=>{
     })
 })
 app.get('/', async(req, res)=>{
-    db.getAllRooms().then((rooms,err)=>{
-        if(err)
-            console.log(err)
-        res.render('list', {"rooms": rooms})
-    })
+    res.render('home')
+    // db.getAllRooms().then((rooms,err)=>{
+    //     if(err)
+    //         console.log(err)
+    //     res.render('list', {"rooms": rooms})
+    // })
 });
 app.get('/room/create',(req, res)=>{
     if(!req.authenticated) {res.redirect('/login')}

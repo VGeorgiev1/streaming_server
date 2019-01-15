@@ -1,0 +1,30 @@
+html
+	head
+		script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
+		link(href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous")
+		link(href="./public/css/layout.css" rel="stylesheet")
+		script(src='https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js')
+
+	body
+		nav.navbar.navbar-expand-lg.navbar-dark.bg-dark
+			a.navbar-brand(href="#") StreamRTC
+			button.navbar-toggler(type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation")
+				span.navbar-toggler-icon
+			#navbarSupportedContent.collapse.navbar-collapse
+				ul.navbar-nav.mr-auto
+					li.nav-item
+						a.nav-link(href="/register") Sign in
+					li.nav-item
+						a.nav-link(href="/login") Login
+					li.nav-item
+						a.nav-link(href="/#") Streams
+					li.nav-item
+						a.nav-link(href="#") My rooms
+					li.nav-item
+						a.nav-link(href="/room/create") Create room
+				form.form-inline.my-2.my-lg-0
+					input.form-control.mr-sm-2(type="search" placeholder="Search" aria-label="Search")
+					button.btn.btn-outline-success.my-2.my-sm-0(type="submit") Search
+		block content
+
+
