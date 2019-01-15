@@ -17,7 +17,6 @@ export default class Connection {
     }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
-            console.log(config)
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
                 return;
@@ -58,7 +57,6 @@ export default class Connection {
             if (config.should_create_offer) {
                 peer_connection.createOffer(
                     (local_description) => {
-                       
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
@@ -94,13 +92,13 @@ export default class Connection {
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
             var socket_id = config.socket_id;
-            console.log(config)
             var peer = this.peers[socket_id];
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer.setRemoteDescription(desc,
                 () => {
                     if (remote_description.type == "offer") {
+                        console.log('And offer has come')
                         peer.createAnswer(
                             (local_description) => {
                                 if(config){
@@ -182,7 +180,6 @@ export default class Connection {
             navigator.msGetUserMedia)
     }
     attachMediaStream(element, stream) {
-        console.log(element)
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {
@@ -194,7 +191,6 @@ export default class Connection {
         if (options.returnElm) return media
     }
     setup_local_media(constrains, elem, callback, errorback) {
-        console.log(constrains)
         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {

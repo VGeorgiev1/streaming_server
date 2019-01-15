@@ -30,14 +30,11 @@ export default class StreamingRoom extends Room{
             this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
             socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
         }
-        this.connections[socket.id] = {}
-        this.connections[socket.id].socket = socket;
-        this.connections[socket.id].constrains = constrains
-        this.connections[socket.id].userId = peerId
-        this.broadcaster = this.connections[socket.id]
-        this.handshakeHandlers(socket.id);
-        this.connectDisconnectHandlers(socket.id, dissconnectHandler)
+        this.broadcaster = this.setup_connection(socket,peerId,constrains)
+        this.handshakeHandlers(this.broadcaster);
+        this.connectDisconnectHandlers(this.broadcaster, dissconnectHandler)
     }
+    
     addPeer(socket,constrains,peerId, dissconnectHandler){
         if(this.connections[socket.id]){
             console.log('Peer already exist!');
@@ -48,11 +45,9 @@ export default class StreamingRoom extends Room{
             socket.emit('addPeer', {'socket_id': this.broadcaster.socket.id, 'should_create_offer': false, 'constrains': this.broadcaster.constrains})
 
         }
-        this.connections[socket.id] = {}
-        this.connections[socket.id].socket = socket;
-        this.connections[socket.id].userId = peerId
-        this.handshakeHandlers(socket.id);
-        this.connectDisconnectHandlers(socket.id, dissconnectHandler)
+        let connection = this.setup_connection(socket,peerId,constrains)
+        this.handshakeHandlers(connection);
+        this.connectDisconnectHandlers(connection, dissconnectHandler)
     }
     isActive(){
         return this.active
