@@ -13,6 +13,5 @@ export default class Viewer extends Connection{
             if(callback)
                 callback()
         })
-        this.regDiscconectHandler(()=>{})
     }
 }

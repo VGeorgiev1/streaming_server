@@ -63,7 +63,7 @@ export default class Broadcaster extends Connection{
                     peer_connection.setLocalDescription(local_description,
                         () => { 
                             this.signaling_socket.emit('relaySessionDescription',
-                                { 'peer_id': peerId, 'session_description': local_description , "properties": properties});
+                                { 'socket_id': peerId, 'session_description': local_description , "properties": properties});
                         },
                         (e) => { console.log(e.message) }
                     );

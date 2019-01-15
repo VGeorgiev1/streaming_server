@@ -19,18 +19,15 @@ export default class Room{
                 disconnectHandler(peerId)
         });
     }
-    handshakeHandlers(peerId,relaySessionDescription){
-        this.connections[peerId].socket.on('relayICECandidate', (config) => {
-            let socket_ids = Object.keys(this.connections).map((k)=>{
-                this.connections[k].socket.id
-            })
-            if(socket_ids.indexOf(config.socket_id) =! -1) {
-                this.connections[].socket.emit('iceCandidate', {'peer_id': peerId, 'ice_candidate':  config.ice_candidate});
+    handshakeHandlers(socketId,relaySessionDescription){
+        this.connections[socketId].socket.on('relayICECandidate', (config) => {
+            if(config.socket_id in this.connections) {
+                this.connections[config.socket_id].socket.emit('iceCandidate', {'socket_id': socketId, 'ice_candidate':  config.ice_candidate});
             }
         });
-        this.connections[peerId].socket.on('relaySessionDescription', (config) => {
-            if (config.peer_id in this.connections) {
-                this.connections[config.peer_id].socket.emit('sessionDescription', {'peer_id': peerId, 'session_description': config.session_description, 'properties': config.properties});
+        this.connections[socketId].socket.on('relaySessionDescription', (config) => {
+            if (config.socket_id in this.connections) {
+                this.connections[config.socket_id].socket.emit('sessionDescription', {'socket_id': socketId, 'session_description': config.session_description, 'properties': config.properties});
             }
         });
     }
