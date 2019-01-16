@@ -26,7 +26,7 @@ export default class DbManager {
         
     }
     destroySession(sessionToken){
-        this.Session.destroy({
+        return this.Session.destroy({
             where: {sessionToken: sessionToken}
         })
     }

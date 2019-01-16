@@ -35,6 +35,7 @@ var loginware = function (req, res, next) {
     db.Session.findOne({where:{sessionToken: req.cookies.sessionToken}}).then((ses,err)=>{
         if(err)
             console.log(err)
+        req.authenticated = false    
         if(ses){
             req.authenticated = true
         }
@@ -57,17 +58,26 @@ db.initializeTables(()=>{
     })
 })
 app.get('/', async(req, res)=>{
-    res.render('home')
-    // db.getAllRooms().then((rooms,err)=>{
-    //     if(err)
-    //         console.log(err)
-    //     res.render('list', {"rooms": rooms})
-    // })
+    db.getAllRooms().then((rooms,err)=>{
+        if(err)
+            console.log(err)
+        let dataValues = []
+        for(let r of rooms){
+            dataValues.push(r.dataValues)
+        }
+        let result = []
+        let cont = dataValues.slice(0);
+             while(cont[0]) { 
+                 result.push(cont.splice(0, 3)); 
+             }
+        
+        res.render('list', {"room_rows": result, "auth": req.authenticated})
+    })
 });
 app.get('/room/create',(req, res)=>{
     if(!req.authenticated) {res.redirect('/login')}
     else{
-        res.render('create')
+        res.render('create', {auth: req.authenticated})
     }
 })
 app.post('/room/create', async (req,res)=>{
@@ -88,13 +98,13 @@ app.get('/room/list', async (req,res)=>{
     db.getAllRooms().then((rooms, err)=>{
         if(err)
             console.log(err)
-            res.render('list', {"rooms": rooms})
+            res.render('list', {"rooms": rooms, "auth": req.authenticated})
     })
 })
 app.get('/register', (req,res)=>{
     if(req.authenticated) {res.redirect('/')}
     else{
-        res.render('register')
+        res.render('register', {"auth": req.authenticated})
     }
 })
 app.post('/register', async(req,res)=>{
@@ -104,7 +114,7 @@ app.post('/register', async(req,res)=>{
             console.log(err)
         if(user.dataValues.id){
             res.cookie('id', user.dataValues.id)
-            res.send("You are now registered!")
+            res.redirect("/")
         }else{
             res.send("There is already a user with this username!")
         }
@@ -113,7 +123,7 @@ app.post('/register', async(req,res)=>{
 app.get('/login', (req,res)=>{
     if(req.authenticated) {res.redirect('/')}
     else{
-        res.render('login')
+        res.render('login', {"auth": req.authenticated})
     }
 })
 app.get('/logout', async(req,res)=>{
@@ -121,7 +131,7 @@ app.get('/logout', async(req,res)=>{
     else{
         db.destroySession(req.cookies.sessionToken).then(()=>{
             res.clearCookie("sessionToken");
-            res.send('Logout!')
+            res.redirect('/')
         })
     }
 })
@@ -133,7 +143,7 @@ app.post('/login', async(req,res)=>{
             let authenticated = bcrypt.compareSync(req.body.password, user.dataValues.password)
             if(authenticated){
                 db.checkForSessionOrCreate(user.dataValues.id, crypto.randomBytes(10).toString("hex")).then((ses,err)=>{
-                    res.cookie('sessionToken' , ses[0].dataValues.sessionToken).send("Hello in "+ user.dataValues.username)
+                    res.cookie('sessionToken' , ses[0].dataValues.sessionToken).redirect('/')
                 })
             }else{
                 res.send("The password and username doesn't match!")
@@ -153,11 +163,11 @@ app.get('/room/:id',async (req,res)=>{
                 console.log(err)
             userId = ses.dataValues.user.dataValues.id
             let isBroadcaster = room.isBroadcaster(userId)
-            res.render('room', {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster});
+            res.render('room', {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
         })
     }else{
         userId = crypto.randomBytes(10).toString("hex")
-        res.render('room', {channel: req.params.id, id: userId, isBroadcaster: false});
+        res.render('room', {channel: req.params.id, id: userId, isBroadcaster: false, auth: req.authenticated});
     }
 })
 io.sockets.on('connection', function (socket) {

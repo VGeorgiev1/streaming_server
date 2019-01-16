@@ -1,4 +1,14 @@
-ul
-  each room in rooms
-    a(href="/room/" + room.id)
-        li=room.name
+extends layout.pug
+mixin card(room)
+	.card.border-dark.mb-3(style="max-width: 20rem;")
+					a.card-header(href="/room/" + room.id)=room.name
+					.card-body.text-dark
+						h5.card-title=room.type
+						p.card-text
+
+block content
+	.container
+		each row,idx in room_rows
+			.card-deck
+				each room in row
+					+card(room)
