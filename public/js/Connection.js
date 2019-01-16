@@ -194,13 +194,14 @@ export default class Connection {
         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
+                let mEl = null;
                 if (this.type == 'broadcaster') {
-                    let mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
+                    mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
                     this.media_element = mEl
                     elem.append(mEl)
                 }
                 if(callback)
-                    callback(stream)
+                    callback(mEl,stream)
         }).catch((e) => {
                 console.log(e.message)
                 if (errorback) errorback();

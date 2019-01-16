@@ -1,49 +1,59 @@
-doctype html
-html
-  head
-  body
-    form(method='POST', action='/room/create')
-      label Room name: 
-      input(type='text' name="name")
-      fieldset#streaming
-        input.type(type='radio', name='type', value="streaming")
-        | Streaming
-        br
-      fieldset#conferent
-        input.type(type='radio', name='type', value="conferent")
-        | Conferent Room
-        br
-      fieldset(style='display:none')
-        input.option(type='checkbox', name='option', value="video")
-        | Allow Video
-        br
-      fieldset(style='display:none')
-        input.option(type='checkbox', name='option', value="audio")
-        | Allow Audio
-        br
-      fieldset(style='display:none')
-        input.option(type='checkbox',  name='option', value="screen")
-        | Allow Screen
-        br
-      input(type='submit', value='Submit')
-  script.
-    let options = document.querySelectorAll('.option')
-    let optionsShowed = false;
-    document.querySelector('input[value="conferent"]').addEventListener('click',(e)=>{
-      showOptions()
-    })
-    document.querySelector('input[value="streaming"]').addEventListener('click',(e)=>{
-      hideOptions()
-    })
-    function hideOptions(){
-      for (let option of options) {
-        option.parentElement.style.display = 'none'
-      }
-    }
-    function showOptions(){
-      for (let option of options) {
-        option.parentElement.style.display = 'inline'
-        option.checked = false
-      }
-    }
+extends layout.pug
 
+
+block content
+	.container
+		.row
+			.col
+				.card.border-dark
+					h5.card-header.white-text.text-center.py-4
+						strong Create room
+					.card-body.px-lg-5.pt-0
+						form.md-form(method='POST', action='/room/create')
+							input#name.form-control(type="text" placeholder="Room name")
+							fieldset.form-group
+								.form-check
+									input#streaming.form-check-input(type="radio" name="type" value="streaming")
+									label.form-check-label(for="type")
+										| Streaming
+								.form-check
+									input#conferent.form-check-input(type="radio" name="type" value="conferent")
+									label.form-check-label(for="type")
+										| Conferent
+							fieldset.form-group
+								.form-group.row
+									.form-check
+										.col(style="display:none")
+											input.option.form-check-input(type="checkbox", name='option', value="video")
+											label.form-check-label(for="option")
+												| Video
+										.col(style="display:none")
+											input.option.form-check-input(type="checkbox", name='option', value="audio")
+											label.form-check-label(for="option")
+												| Audio
+										.col(style="display:none")
+											input.option.form-check-input(type="checkbox", name='option', value="screen")
+											label.form-check-label(for="option")
+												| Screen
+							.form-group.row
+								button.btn.btn-outline-success.btn-rounded.btn-block.my-4.waves-effect.z-depth-0(type="submit") Create
+	script.
+		let options = document.querySelectorAll('.option')
+		let optionsShowed = false;
+		document.querySelector('input[value="conferent"]').addEventListener('click',(e)=>{
+			showOptions()
+		})
+		document.querySelector('input[value="streaming"]').addEventListener('click',(e)=>{
+			hideOptions()
+		})
+		function hideOptions(){
+			for (let option of options) {
+				option.parentElement.style.display = 'none'
+			}
+		}
+		function showOptions(){
+			for (let option of options) {
+				option.parentElement.style.display = 'inline'
+				option.checked = false
+			}
+		}

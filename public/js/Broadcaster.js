@@ -114,14 +114,14 @@ export default class Broadcaster extends Connection{
                     this.findConstrains(rules,(constrains)=>{
                         this.setOffersAndConstrains(constrains)
                         this.setup_local_media(constrains, document.getElementsByTagName('body')[0],
-                        (stream) => {
+                        (mEl,stream) => {
                             this.local_media_stream = stream
                             this.join_channel(this.constrains);
                             if(callback)
-                                callback(stream)
+                                callback(mEl)
                         },
-                        () => {
-                            console.log("Couldn't set up media: ")
+                        (e) => {
+                            console.log("Couldn't set up media: " + e)
                         })
                     })
                 })

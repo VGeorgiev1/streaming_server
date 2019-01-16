@@ -3,7 +3,8 @@ let connection = null
 window.onload = ()=>{
     var SIGNALING_SERVER = "http://localhost";
     connection = new Broadcaster("http://localhost", io() ,null,window.id)
-    connection.subscribeTo(window.channel, ()=>{
+    connection.subscribeTo(window.channel, (mEl)=>{
+        console.log(mEl)
         $('body').append($('<input id="slider" type="range" min="8" max="500" value="50">').change(function(){
             connection.setAudioBitrates($(this).val())
         }))

@@ -91,7 +91,6 @@ app.post('/room/create', async (req,res)=>{
                 res.redirect('/room/'+room_id)
             })
         })
-        
     }
 })
 app.get('/room/list', async (req,res)=>{
