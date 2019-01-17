@@ -67,7 +67,7 @@ export default class Connection {
                     },
                     (error) => {
                         console.log("Error sending offer: ", error);
-                    }, { offerToReceiveAudio: true, offerToReceiveVideo: true });
+                    }, { offerToReceiveAudio: this.offers.audio, offerToReceiveVideo: this.offers.video });
             }
         })
     }
@@ -86,9 +86,6 @@ export default class Connection {
         
         return sdp
     }
-    removeTrack(){
-        
-    }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
             var socket_id = config.socket_id;
@@ -98,7 +95,6 @@ export default class Connection {
             var stuff = peer.setRemoteDescription(desc,
                 () => {
                     if (remote_description.type == "offer") {
-                        console.log('And offer has come')
                         peer.createAnswer(
                             (local_description) => {
                                 if(config){
@@ -190,7 +186,7 @@ export default class Connection {
         this.attachMediaStream(media, stream);
         if (options.returnElm) return media
     }
-    setup_local_media(constrains, elem, callback, errorback) {
+    setup_local_media(constrains, callback, errorback) {
         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
@@ -198,7 +194,6 @@ export default class Connection {
                 if (this.type == 'broadcaster') {
                     mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
                     this.media_element = mEl
-                    elem.append(mEl)
                 }
                 if(callback)
                     callback(mEl,stream)

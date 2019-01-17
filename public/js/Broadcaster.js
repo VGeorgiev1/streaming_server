@@ -113,7 +113,7 @@ export default class Broadcaster extends Connection{
                 this.getRoomRules((rules)=>{
                     this.findConstrains(rules,(constrains)=>{
                         this.setOffersAndConstrains(constrains)
-                        this.setup_local_media(constrains, document.getElementsByTagName('body')[0],
+                        this.setup_local_media(constrains,
                         (mEl,stream) => {
                             this.local_media_stream = stream
                             this.join_channel(this.constrains);
