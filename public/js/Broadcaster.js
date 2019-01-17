@@ -10,6 +10,7 @@ export default class Broadcaster extends Connection{
         this.senders = {}
         this.audioDevices = []
         this.videoDevices = []
+        this.offers = {}
         if(CONSTRAINTS != 'screen-share'){
             CONSTRAINTS ? (
                       this.constrains.video = CONSTRAINTS.video,
@@ -79,7 +80,6 @@ export default class Broadcaster extends Connection{
         this.regHandler('rules', callback)
     }
     setOffersAndConstrains(constrains){
-        this.offers = {}
         this.offers.audio = constrains.audio
         this.offers.video = constrains.video
         this.constrains = constrains

@@ -31,4 +31,7 @@ window.onload = ()=>{
         $('body').append(select_mics)
         $('body').append(select_cams)
     })
+    connection.onBroadcaster((mEl)=>{
+        $('.card-body').append(mEl)
+    })
 }

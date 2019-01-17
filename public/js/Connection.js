@@ -10,10 +10,15 @@ export default class Connection {
         this.peers = {};
         this.peer_media_elements = {};
         this.type = type
+        this.onBroadcasterCallback = null
     }
     subscribeTo(CHANNEL, callback){
         this.channel = CHANNEL
+        console.log('what')
         this.createConnectDisconnectHandlers(callback)
+    }
+    onBroadcaster(callback){
+        this.onBroadcasterCallback = callback
     }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
@@ -44,7 +49,8 @@ export default class Connection {
                     return;
                 }
                 this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-                document.getElementsByTagName('body')[0].append(this.peer_media_elements[socket_id])
+                
+                this.onBroadcasterCallback(this.peer_media_elements[socket_id])
             }
 
             if (this.type != 'viewer') {
@@ -67,7 +73,7 @@ export default class Connection {
                     },
                     (error) => {
                         console.log("Error sending offer: ", error);
-                    }, { offerToReceiveAudio: this.offers.audio, offerToReceiveVideo: this.offers.video });
+                    }, { offerToReceiveAudio: true, offerToReceiveVideo: true});
             }
         })
     }

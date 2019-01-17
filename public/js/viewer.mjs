@@ -3,7 +3,11 @@ let connection = null;
 
 window.onload = ()=>{
     connection = new Viewer("http://localhost",io(),id)
+    
     connection.subscribeTo(window.channel, ()=>{
-            console.log('Connected')
+        console.log('Connected')
+    })
+    connection.onBroadcaster((mEl)=>{
+       $('.card-body').append(mEl)
     })
 }
