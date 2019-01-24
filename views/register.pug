@@ -8,11 +8,11 @@ block content
 					h5.card-header.white-text.text-center.py-4
 						strong Sign in
 					.card-body.px-lg-5.pt-0
-						form.md-form(style="color: #757575;",method="POST", action"="/register")
-							input#email.form-control(type="text", name="email")
-							label(for="email") Email
+						form.md-form(style="color: #757575;",method="POST", action="/register")
+							//- input#email.form-control(type="text", name="email")
+							//- label(for="email") Email
 							input#username.form-control(type="text", name="name")
 							label(for="username") Username
 							input#password.form-control(type="password")
 							label(for="password") Password
-							button.btn.btn-outline-success.btn-rounded.btn-block.my-4.waves-effect.z-depth-0(type="submit") Sign in
+							button.btn.btn-outline-success.btn-rounded.btn-block.waves-effect.z-depth-0(type="submit") Sign in

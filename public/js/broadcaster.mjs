@@ -1,10 +1,17 @@
 import Broadcaster from './Broadcaster.js'
-let connection = null
+let connection = null 
+window.Broadcaster = Broadcaster;
 window.onload = ()=>{
     var SIGNALING_SERVER = "http://localhost";
     connection = new Broadcaster("http://localhost", io() ,null,window.id)
     connection.subscribeTo(window.channel, (mEl)=>{
-        $('.card-body').append(mEl)
+        if($(mEl).is('video')){
+            let div = $('<div class="embed-responsive embed-responsive-21by9">')
+            div.append($(mEl))
+            $('.card-body').prepend(div)
+        }else{
+            $('.card-body').append(mEl)
+        }
         $('body').append($('<input id="slider" type="range" min="8" max="500" value="50">').change(function(){
             connection.setAudioBitrates($(this).val())
         }))
@@ -32,6 +39,15 @@ window.onload = ()=>{
         $('body').append(select_cams)
     })
     connection.onBroadcaster((mEl)=>{
-        $('.card-body').append(mEl)
+
+        if($(mEl).is('video')){
+            let card_border = $(`<div class="card border-dark">`)
+            let card_header = $('<h5 class="card-header white-text text-center py-4">').html("Streaming")
+            let card_body = $('<div class="card-body text-center px-lg-10 pt-0">')
+            let div = $('<div class="embed-responsive embed-responsive-21by9">')
+            card_border.append(card_header.append(card_body.append(div.append($(mEl)))))
+        }else{
+            $('.card-body').append(mEl)
+        }
     })
 }

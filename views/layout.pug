@@ -15,13 +15,13 @@ html
 				ul.navbar-nav.mr-auto
 					if !auth
 						li.nav-item
-							a.nav-link(href="/register") Sign in
+							a.nav-link(href="/register") Sign up
 						li.nav-item
-							a.nav-link(href="/login") Login
+							a.nav-link(href="/login") Sign in
+						li.nav-item
+							a.nav-link(href="#") My rooms
 					li.nav-item
-						a.nav-link(href="/#") Streams
-					li.nav-item
-						a.nav-link(href="#") My rooms
+						a.nav-link(href="#") Streams
 					li.nav-item
 						a.nav-link(href="/room/create") Create room
 				if auth

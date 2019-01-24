@@ -8,6 +8,12 @@ window.onload = ()=>{
         console.log('Connected')
     })
     connection.onBroadcaster((mEl)=>{
-       $('.card-body').append(mEl)
+        if($(mEl).is('video')){
+            let div = $('<div class="embed-responsive embed-responsive-21by9">')
+            div.append($(mEl))
+            $('.card-body').prepend(div)
+        }else{
+            $('.card-body').append(mEl)
+        }
     })
 }

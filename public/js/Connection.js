@@ -63,12 +63,13 @@ export default class Connection {
             if (config.should_create_offer) {
                 peer_connection.createOffer(
                     (local_description) => {
+                        console.log(local_description.sdp)
                         peer_connection.setLocalDescription(local_description,
                             () => {
                                 this.signaling_socket.emit('relaySessionDescription',
                                     { 'socket_id': socket_id, 'session_description': local_description});
                             },
-                            () => { Alert("Offer setLocalDescription failed!"); }
+                            () => { console.log("Offer setLocalDescription failed!"); }
                         );
                     },
                     (error) => {
@@ -107,6 +108,7 @@ export default class Connection {
                                     if(config.properties){
                                         local_description.sdp = this.setProperties(local_description.sdp, config.properties)
                                     }
+                                    console.log(local_description)
                                     peer.setLocalDescription(local_description,
                                         () => {
                                             this.signaling_socket.emit('relaySessionDescription',

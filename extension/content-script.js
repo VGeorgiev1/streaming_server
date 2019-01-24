@@ -11,13 +11,14 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
                 }
             }
         }).then((stream)=>{
-        
+            //console.log(stream)
             let body = document.getElementsByTagName('body')[0]
             let video = document.createElement('video')
+            video.style.display = 'none'
             video.srcObject = stream
             video.autoplay = 'autoplay'
-            body.appendChild(video)
-            video.id = 'mine'
+            video.id = 'screen'
+            body.append(video)
             var s = document.createElement('script');
             s.src = chrome.extension.getURL('script.js');
             (document.head || document.documentElement).appendChild(s);

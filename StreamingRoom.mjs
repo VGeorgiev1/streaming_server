@@ -4,7 +4,7 @@ export default class StreamingRoom extends Room{
     constructor(name, rules,ownerId){
         super(name, 'streaming')
         this.viewers = []
-        this.broadcaster = {}
+        this.broadcasterStreams = [] 
         this.rules = rules
         this.owner = ownerId
         this.active = false;
@@ -27,12 +27,16 @@ export default class StreamingRoom extends Room{
     }
     addBroadcaster(socket, constrains, peerId, dissconnectHandler){
         for(let id in this.connections){
-            this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
-            socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
+            if(peerId != this.connections[id].userId){
+                this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
+                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
+            }
         }
-        this.broadcaster = this.setup_connection(socket,peerId,constrains)
-        this.handshakeHandlers(this.broadcaster);
-        this.connectDisconnectHandlers(this.broadcaster, dissconnectHandler)
+        let broadcaster = this.setup_connection(socket,peerId,constrains)
+        this.handshakeHandlers(broadcaster);
+        this.obHandler(broadcaster);
+        this.connectDisconnectHandlers(broadcaster, dissconnectHandler)
+        this.broadcasterStreams.push(broadcaster)
     }
     
     addPeer(socket,constrains,peerId, dissconnectHandler){
@@ -41,9 +45,11 @@ export default class StreamingRoom extends Room{
         }
         this.connections[socket.id] = {}
         if(this.active){
-            this.broadcaster.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
-            socket.emit('addPeer', {'socket_id': this.broadcaster.socket.id, 'should_create_offer': false, 'constrains': this.broadcaster.constrains})
-
+            for(let broadcaster of this.broadcasterStreams){
+                broadcaster.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
+                socket.emit('addPeer', {'socket_id': broadcaster.socket.id, 'should_create_offer': false, 'constrains': broadcaster.constrains})
+            }
+            
         }
         let connection = this.setup_connection(socket,peerId,constrains)
         this.handshakeHandlers(connection);

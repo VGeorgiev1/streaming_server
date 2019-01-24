@@ -21,7 +21,7 @@ export default class Broadcaster extends Connection{
             this.is_screen_share = true
             this.constrains.video = true
             this.constrains.audio = false
-            this.local_media_stream = document.getElementById('mine').srcObject
+            this.local_media_stream = document.getElementById('screen').srcObject
         }
     
     }
@@ -55,12 +55,21 @@ export default class Broadcaster extends Connection{
         }
         tracks[0].enabled = true;
     }
+    mute_video(){
+        let tracks = this.local_media_stream.getVideoTracks()
+        if(tracks[0].enabled == true){
+            tracks[0].enabled = false;
+            return;
+        }
+        tracks[0].enabled = true;
+    }
     changeSdpSettings(properties){
         for(let peerId in this.peers){
             let peer_connection = this.peers[peerId]
             peer_connection.createOffer(
                 (local_description) => {
-                    local_description.sdp = this.setProperties(local_description.sdp,properties)
+                    console.log(local_description.sdp)
+                    //local_description.sdp = this.setProperties(local_description.sdp,properties)
                     peer_connection.setLocalDescription(local_description,
                         () => { 
                             this.signaling_socket.emit('relaySessionDescription',
@@ -83,6 +92,12 @@ export default class Broadcaster extends Connection{
         this.offers.audio = constrains.audio
         this.offers.video = constrains.video
         this.constrains = constrains
+    }
+    setCocoInterval(interval,callback){
+       setInterval(()=>{
+            let frame = this.captureFrame();
+            this.signaling_socket.emit('tensor', {'data': frame, 'width': this.media_element.width, 'height': this.media_element.height})
+        },interval)
     }
     changeTracks(constrains){
         this.local_media_stream.getTracks().forEach(track=> track.stop())
@@ -128,9 +143,13 @@ export default class Broadcaster extends Connection{
             })
         }else{
             this.regConnectHandler(()=>{
-               
+                document.getElementById('screen').remove();
+                this.media_element = document.createElement('video')
+                this.media_element.srcObject = this.local_media_stream
+                this.media_element.autoplay = 'autoplay'
                 this.setOffersAndConstrains(this.constrains)
                 this.join_channel(this.constrains)
+                callback(this.media_element)
             })
         }
     }
