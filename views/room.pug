@@ -6,6 +6,7 @@ block scripts
 		
 	script(src='https://cdn.socket.io/socket.io-1.4.5.js')
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
+	link(rel="stylesheet", href="/public/css/menu.css")
 	if !isBroadcaster
 		script(type='module', src='/public/js/viewer.mjs')
 	else
@@ -13,7 +14,7 @@ block scripts
 block content
 	.container
 		.row
-			.col-12
+			.col-6
 				.card.border-dark
 					h5.card-header.white-text.text-center.py-4
 						strong Streaming
