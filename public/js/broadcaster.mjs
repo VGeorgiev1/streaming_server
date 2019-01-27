@@ -11,48 +11,72 @@ window.onload = ()=>{
         col.append($('<h5 class="card-header white-text text-center py-4">').html("Streaming"))
         let card_body = $('<div class="card-body">')
         if($(mEl).is('video')){
-            let div = $('<div class="embed-responsive embed-responsive-21by9">')
-            div.append($(mEl))
-            $('.card-body').prepend(div)
-            
-            $('.container').append(row)
+            let div_cont = $('<div class="embed-responsive embed-responsive-1by1">')
+            col.prepend(card_body.append(div_cont.append($(mEl))))
+           
+            let div_video = $('<div class="border border-dark py-4">')
+            let slider_video = $('<input type="range" min="50" max="500" name="videoBit" class="border border-dark">')
+            slider_video.change(function(){
+                connection.setVideoBitrates($(this).val())
+            })
+            let label_video = $('<label for="videoBit">').html("Video bitrate:")
+
+            let div_audio = $('<div class="border border-dark py-4">')
+            let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
+            slider_audio.change(function(){
+                connection.setAudioBitrates($(this).val())
+            })
+            let label_audio = $('<label for="audioBit">').html("Audio bitrate:")
+
+            card_body.append(div_audio.append(label_audio).append(slider_audio))
+            card_body.append(div_video.append(label_video).append(slider_video))
+            //$('.row:nth-child(1)').append(col)
         }else{
-            $('.card-body').append(mEl)
-            let row = $('<div class="row">')
-            let col = $('<div class="col-6">')
+            let div_cont = $('<div class="text-center embed-responsive-item" mb-2">')
+            div_cont.append($(mEl).attr("style", "width:60%"))
+            col.append(card_body.prepend(div_cont))
             let div = $('<div class="border border-dark py-4">')
             let slider = $('<input type="range" name="audioBit" class="border border-dark">')
             slider.change(function(){
                 connection.setAudioBitrates($(this).val())
             })
             let label = $('<label for="audioBit">').html("Audio bitrate:")
-            col.append(div.append(label).append(slider))
-            row.append(col)
-            $('.container').append(row)
+            card_body.append(div.append(label).append(slider))
+           
+            //$('.row:nth-child(1)').append(col)
             $('body').append(($('<button>').html('Mute').click(function(){
                 connection.mute_audio()
             })))
         }
-        let col = $('<div class="col-6">')
-        let label = $('<label for="mics">').html("Select microfone:")
+        
         let div = $('<div class="border border-dark">')
-        let select_mics = $('<select name="mics" id="mic" class="form-control">').on('change', function(){
-           connection.changeAudioTrack($(this).children(":selected").attr("id"))
-        })
-        let select_cams = $('<select id="cam" class="form-control">').on('change', function(){
-            connection.changeVideoTrack($(this).children(":selected").attr("id"))
-         })
+        
+
         let mics = connection.getAudioDevices()
         let cameras = connection.getVideoDevices();
-        for(let i=0;i < mics.length;i++){
-            select_mics.append($(`<option id='${mics[i].deviceId}'>`).html(mics[i].label))
+        if(mics.length != 0){
+            let label_mic = $('<label for="mics">').html("Select microfone:")
+            let select_mics = $('<select name="mics" id="mic" class="form-control">').on('change', function(){
+                connection.changeAudioTrack($(this).children(":selected").attr("id"))
+            })
+            for(let i=0;i < mics.length;i++){
+                select_mics.append($(`<option id='${mics[i].deviceId}'>`).html(mics[i].label))
+            }
+            div.append(label_mic).append(select_mics)
         }
-        for(let i=0;i < cameras.length;i++){
-            select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
+        if(cameras.length != 0){
+            let label_cam = $('<label for="cams">').html("Select camera:")
+            let select_cams = $('<select id="cams" class="form-control">').on('change', function(){
+                connection.changeVideoTrack($(this).children(":selected").attr("id"))
+            })
+            for(let i=0;i < cameras.length;i++){
+                select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
+            }
+            div.append(label_cam).append(select_cams)
         }
-        let row_2 = $('<div class="row">')
-        row_2.append(col.append(div.append(label).append(select_mics)))
-        $('.container').append(row_2)
+
+        card_body.append(div)
+        $('.row:nth-child(1)').append(col.append(card_body))
     })
     connection.onBroadcaster((mEl, socket_id)=>{
 
@@ -61,8 +85,8 @@ window.onload = ()=>{
         let card_body = $('<div class="card-body">')
         let div_cont
         if($(mEl).is('video')){
-            let div = $('<div class="embed-responsive embed-responsive-21by9">')
-            card_body.append(div)
+            div_cont = $('<div class="embed-responsive embed-responsive-1by1">')
+            card_body.append(div_cont.append($(mEl)))
         }else{
             div_cont = $('<div class="text-center embed-responsive-item mb-2">')
         
