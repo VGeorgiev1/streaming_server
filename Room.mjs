@@ -63,7 +63,7 @@ export default class Room{
     kickUser(id){
        
         for(let c_id in this.connections){
-            this.connections[c_id].socket.emit('removePeer', {'peer_id': id})
+            this.connections[c_id].socket.emit('removePeer', {'socket_id': id})
         }
     }
     closeRoom(){

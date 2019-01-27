@@ -166,7 +166,7 @@ app.get('/room/:id',async (req,res)=>{
         })
     }else{
         userId = crypto.randomBytes(10).toString("hex")
-        res.render('room', {channel: req.params.id, id: userId, isBroadcaster: false, auth: req.authenticated});
+        res.render('room', {channel: req.params.id, id: userId, isBroadcaster: true, auth: req.authenticated});
     }
 })
 io.sockets.on('connection', function (socket) {

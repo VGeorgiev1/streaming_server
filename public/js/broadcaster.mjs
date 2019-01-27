@@ -105,7 +105,9 @@ window.onload = ()=>{
         $(`#${socket_id}`).remove()
         connections--
         if(connections / 3 == 1){
-            $(".w-100:last-child").remove();
+            console.log('should remove')
+            console.log($(".w-100:last-child"))
+            $(".w-100").last().remove();
         }
     })
 }

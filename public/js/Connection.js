@@ -11,14 +11,17 @@ export default class Connection {
         this.peer_media_elements = {};
         this.type = type
         this.onBroadcasterCallback = null
+        this.onPeerDiscconectCallback = null
     }
     subscribeTo(CHANNEL, callback){
         this.channel = CHANNEL
-        console.log('what')
         this.createConnectDisconnectHandlers(callback)
     }
     onBroadcaster(callback){
         this.onBroadcasterCallback = callback
+    }
+    onPeerDiscconect(callback){
+        this.onPeerDiscconectCallback = callback
     }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
@@ -50,7 +53,7 @@ export default class Connection {
                 }
                 this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
                 
-                this.onBroadcasterCallback(this.peer_media_elements[socket_id])
+                this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id)
             }
 
             if (this.type != 'viewer') {
@@ -140,15 +143,13 @@ export default class Connection {
         })
     }
     regRemovePeer(callback) {
-        this.regHandler('removePeer', () => {
-            for (let socket_id in this.peer_media_elements) {
-                this.peer_media_elements[socket_id].remove();
+        this.regHandler('removePeer', (config) => {
+            if(config.socket_id in this.peers){
+                this.peers[config.socket_id].close();
             }
-            for (let socket_id in this.peers) {
-                this.peers[socket_id].close();
-            }
-            this.peers = {};
-            this.peer_media_elements = {};
+            if(this.onPeerDiscconectCallback)
+                this.onPeerDiscconectCallback(config.socket_id)
+
         })
     }
     regHandler(event, callback) {
