@@ -4,7 +4,12 @@ window.Broadcaster = Broadcaster;
 window.onload = ()=>{
     var SIGNALING_SERVER = "http://localhost";
     connection = new Broadcaster("http://localhost", io() ,null,window.id)
+    let connections = 1;
+    let columnsOnMedia = 3;
     connection.subscribeTo(window.channel, (mEl)=>{
+        let col = $(`<div class="card border-dark col-${columnsOnMedia} pr-0 pl-0 mr-5 mb-5">`)
+        col.append($('<h5 class="card-header white-text text-center py-4">').html("Streaming"))
+        let card_body = $('<div class="card-body">')
         if($(mEl).is('video')){
             let div = $('<div class="embed-responsive embed-responsive-21by9">')
             div.append($(mEl))
@@ -49,20 +54,34 @@ window.onload = ()=>{
         row_2.append(col.append(div.append(label).append(select_mics)))
         $('.container').append(row_2)
     })
-    connection.onBroadcaster((mEl)=>{
-        let card_border = $(`<div class="card border-dark">`)
-        let card_header = $('<h5 class="card-header white-text text-center py-4">').html("Streaming")
-        let card_body = $('<div class="card-body text-center px-lg-10 pt-0">')
-        let col = $('<div class="col-6 pr-0">')
+    connection.onBroadcaster((mEl, socket_id)=>{
+
+        let col = $(`<div id=${socket_id} class="card border-dark col-${columnsOnMedia} pr-0 pl-0 mr-5 mb-5">`)
+        col.append($('<h5 class="card-header white-text text-center py-4">').html("Streaming"))
+        let card_body = $('<div class="card-body">')
+        let div_cont
         if($(mEl).is('video')){
             let div = $('<div class="embed-responsive embed-responsive-21by9">')
             card_body.append(div)
         }else{
-            card_body.append($(mEl))
+            div_cont = $('<div class="text-center embed-responsive-item mb-2">')
+        
+            card_body.append(div_cont.append($(mEl).attr("style", "width:60%")))
         }
-        card_border.append(card_header)
-        card_border.append(card_body)
-        col.append(card_border)
+        col.append(card_body)
+        
+        if(connections / 3 == 1){
+            let breaker = $('<div class="w-100">');
+            $('.row:nth-child(1)').append(breaker)
+        }
+        connections++
         $('.row:nth-child(1)').append(col)
+    })
+    connection.onPeerDiscconect((socket_id)=>{
+        $(`#${socket_id}`).remove()
+        connections--
+        if(connections / 3 == 1){
+            $(".w-100:last-child").remove();
+        }
     })
 }
