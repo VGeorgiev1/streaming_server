@@ -19,7 +19,7 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
             video.autoplay = 'autoplay'
             video.id = 'screen'
             body.append(video)
-            var selectionFired = new CustomEvent("stream_ready");
+            var selectionFired = new CustomEvent("screen_ready");
             document.dispatchEvent(selectionFired)
         }).catch((err)=>{
             console.log(err)

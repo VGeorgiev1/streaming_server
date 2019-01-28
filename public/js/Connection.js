@@ -23,6 +23,12 @@ export default class Connection {
     onPeerDiscconect(callback){
         this.onPeerDiscconectCallback = callback
     }
+    getConstrains(){
+        return this.constrains
+    }
+    getMediaElement(){
+        return this.media_element
+    }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
             var socket_id = config.socket_id;
@@ -52,8 +58,8 @@ export default class Connection {
                     return;
                 }
                 this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-                
-                this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id)
+                console.log(config.constrains)
+                this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
 
             if (this.type != 'viewer') {
