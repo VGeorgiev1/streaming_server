@@ -19,6 +19,7 @@ export default class StreamingRoom extends Room{
                this.active = false
             })
         }else{
+            console.log(peerId)
             this.viewers.push(peerId)
             constrains = null
             this.addPeer(socket,constrains, peerId)
@@ -26,6 +27,7 @@ export default class StreamingRoom extends Room{
         
     }
     addBroadcaster(socket, constrains, peerId, dissconnectHandler){
+        
         for(let id in this.connections){
             if(peerId != this.connections[id].userId){
                 this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
@@ -40,6 +42,7 @@ export default class StreamingRoom extends Room{
     }
     
     addPeer(socket,constrains,peerId, dissconnectHandler){
+       
         if(this.connections[socket.id]){
             console.log('Peer already exist!');
         }
@@ -48,8 +51,7 @@ export default class StreamingRoom extends Room{
             for(let broadcaster of this.broadcasterStreams){
                 broadcaster.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
                 socket.emit('addPeer', {'socket_id': broadcaster.socket.id, 'should_create_offer': false, 'constrains': broadcaster.constrains})
-            }
-            
+            }    
         }
         let connection = this.setup_connection(socket,peerId,constrains)
         this.handshakeHandlers(connection);
@@ -59,6 +61,7 @@ export default class StreamingRoom extends Room{
         return this.active
     }
     isBroadcaster(id){
+        
         return id == this.owner
     }
     

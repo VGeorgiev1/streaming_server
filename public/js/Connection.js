@@ -142,14 +142,13 @@ export default class Connection {
                 callback()
         })
     }
-    regRemovePeer(callback) {
+    regRemovePeer() {
         this.regHandler('removePeer', (config) => {
             if(config.socket_id in this.peers){
                 this.peers[config.socket_id].close();
             }
             if(this.onPeerDiscconectCallback)
                 this.onPeerDiscconectCallback(config.socket_id)
-
         })
     }
     regHandler(event, callback) {

@@ -8,9 +8,9 @@ block scripts
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
 	link(rel="stylesheet", href="/public/css/menu.css")
 	if !isBroadcaster
-		script(type='module', src='/public/js/viewer.mjs')
+		script(type='module', src='/public/js/conferent_viewer.mjs')
 	else
-		script(type='module', src='/public/js/broadcaster.mjs')
+		script(type='module', src='/public/js/ConferentBroadcaster.mjs')
 block content
 	.container
 		.row

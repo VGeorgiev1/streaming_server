@@ -22,6 +22,8 @@ export default class Broadcaster extends Connection{
             this.constrains.video = true
             this.constrains.audio = false
             this.local_media_stream = document.getElementById('screen').srcObject
+            console.log(this.local_media_stream)
+            //document.getElementById('screen').remove();
         }
     
     }

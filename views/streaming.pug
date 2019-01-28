@@ -1,0 +1,15 @@
+extends layout.pug
+block scripts
+	script.
+		window.channel = "#{channel}"
+		window.id = "#{id}"
+		
+	script(src='https://cdn.socket.io/socket.io-1.4.5.js')
+	script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
+	link(rel="stylesheet", href="/public/css/menu.css")
+	if !isBroadcaster
+		script(type='module', src='/public/js/StreamingViewer.mjs')
+	else
+		script(type='module', src='/public/js/StreamingBroadcaster.mjs')
+block content
+	.container

@@ -30,7 +30,6 @@ window.onload = ()=>{
 
             card_body.append(div_audio.append(label_audio).append(slider_audio))
             card_body.append(div_video.append(label_video).append(slider_video))
-            //$('.row:nth-child(1)').append(col)
         }else{
             let div_cont = $('<div class="text-center embed-responsive-item" mb-2">')
             div_cont.append($(mEl).attr("style", "width:60%"))
@@ -43,7 +42,6 @@ window.onload = ()=>{
             let label = $('<label for="audioBit">').html("Audio bitrate:")
             card_body.append(div.append(label).append(slider))
            
-            //$('.row:nth-child(1)').append(col)
             $('body').append(($('<button>').html('Mute').click(function(){
                 connection.mute_audio()
             })))
@@ -105,8 +103,6 @@ window.onload = ()=>{
         $(`#${socket_id}`).remove()
         connections--
         if(connections / 3 == 1){
-            console.log('should remove')
-            console.log($(".w-100:last-child"))
             $(".w-100").last().remove();
         }
     })

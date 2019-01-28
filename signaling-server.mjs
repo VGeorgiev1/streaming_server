@@ -156,18 +156,22 @@ app.get('/room/:id',async (req,res)=>{
     let room = room_container.getRoom(req.params.id.toString())
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
+    let isBroadcaster;
     if(req.authenticated){
         db.getLoggedUser(req.cookies.sessionToken).then((ses,err)=>{
             if(err)
                 console.log(err)
             userId = ses.dataValues.user.dataValues.id
-            let isBroadcaster = room.isBroadcaster(userId)
-            res.render('room', {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
+            console.log(userId)
+            isBroadcaster = room.isBroadcaster(userId)
+            res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
         })
     }else{
         userId = crypto.randomBytes(10).toString("hex")
-        res.render('room', {channel: req.params.id, id: userId, isBroadcaster: true, auth: req.authenticated});
+        isBroadcaster = false
+        res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
     }
+    
 })
 io.sockets.on('connection', function (socket) {
     room_container.subscribeSocket(socket);
