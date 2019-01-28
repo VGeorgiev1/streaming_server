@@ -9,6 +9,7 @@ document.addEventListener('screen_ready', function() {
         console.log(screen.getConstrains())
         let player = new Player({'media': screen, 'constrains': screen.getConstrains(), reso: '16by9'},12)
         $('.row').append(player.getPlayer())
-
     })
 });
+
+

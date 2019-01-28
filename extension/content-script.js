@@ -4,16 +4,22 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
     port.onMessage.addListener(function (obj) {
        
         navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
+            audio:{ 
                 mandatory: {
+                    chromeMediaSource: 'desktop',
+                    chromeMediaSourceId: obj.sourceId
+                },
+            },
+            video:{ 
+                mandatory: { 
                     chromeMediaSource: "desktop",
                     chromeMediaSourceId: obj.sourceId
                 }
             }
         }).then((stream)=>{
+            console.log(stream)
             let body = document.getElementsByTagName('body')[0]
-            let video = document.createElement('video')
+            let video = document.createElement('audio')
             video.style.display = 'none'
             video.srcObject = stream
             video.autoplay = 'autoplay'
