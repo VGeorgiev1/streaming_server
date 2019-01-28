@@ -43,7 +43,7 @@ export default class Broadcaster extends Connection{
         }
     }
     setVideoBitrates(videoBitrate){
-        if(this.constrains.video && videoBitrate >=8 && videoBitrate<=500){
+        if(this.constrains.video && videoBitrate >=8 && videoBitrate<=2000){
             
             this.videoBitrate = videoBitrate
             this.changeSdpSettings({video_bitrate: this.videoBitrate})
@@ -68,22 +68,19 @@ export default class Broadcaster extends Connection{
     changeSdpSettings(properties){
         for(let peerId in this.peers){
             let peer_connection = this.peers[peerId]
-            peer_connection.createOffer(
-                (local_description) => {
-                    console.log(local_description.sdp)
-                    //local_description.sdp = this.setProperties(local_description.sdp,properties)
-                    peer_connection.setLocalDescription(local_description,
-                        () => { 
-                            this.signaling_socket.emit('relaySessionDescription',
-                                { 'socket_id': peerId, 'session_description': local_description , "properties": properties});
-                        },
-                        (e) => { console.log(e.message) }
-                    );
-                }, 
-                (error) => {
-                    console.log("Error sending offer: ", error);
-                }, { offerToReceiveAudio: this.offers.audio, offerToReceiveVideo: this.offers.video }
-            );
+            let disc
+            peer_connection.createOffer({ offerToReceiveAudio: this.offers.audio, offerToReceiveVideo: this.offers.video })
+                .then((local_description)=>{
+                    local_description.sdp = this.setProperties(local_description.sdp,properties)
+                    return peer_connection.setLocalDescription(local_description)
+                })
+                .then(()=>{
+                    this.signaling_socket.emit('relaySessionDescription',
+                        { 'socket_id': peerId, 'session_description': peer_connection.localDescription , "properties": properties})
+                })
+                .catch((e)=>{
+                    console.log(e.message)
+                })
         }
     }
     getRoomRules(callback){
@@ -149,6 +146,7 @@ export default class Broadcaster extends Connection{
                 this.media_element = document.createElement('video')
                 this.media_element.srcObject = this.local_media_stream
                 this.media_element.autoplay = 'autoplay'
+                this.media_element.muted = 'true'
                 this.setOffersAndConstrains(this.constrains)
                 this.join_channel(this.constrains)
                 callback(this.media_element)

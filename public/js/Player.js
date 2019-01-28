@@ -55,15 +55,15 @@ export default class Player{
         return div_cont
     }
     getAudioMuteControl(){
-        $('<button>').html('Mute').click(function(){
+        $('<button>').html('Mute').click(()=>{
             this.media.mute_audio()
         })
     }
     getAudioBitrateControl(){
         let div_audio = $('<div class="border border-dark py-4">')
         let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
-        slider_audio.change(function(){
-            this.media.setAudioBitrates($(this).val())
+        slider_audio.change(()=>{
+            this.media.setAudioBitrates(slider_audio.val())
         })
         let label_audio = $('<label for="audioBit">').html("Audio bitrate:")
         div_audio.append(label_audio).append(slider_audio)
@@ -71,9 +71,10 @@ export default class Player{
     }
     getVideoBitrateControl(){
         let div_video = $('<div class="border border-dark py-4">')
-        let slider_video = $('<input type="range" min="50" max="500" name="videoBit" class="border border-dark">')
-        slider_video.change(function(){
-            this.media.setVideoBitrates($(this).val())
+        let slider_video = $('<input type="range" min="50" max="2000" name="videoBit" class="border border-dark">')
+        slider_video.change(()=>{
+            console.log(slider_video.val())
+            this.media.setVideoBitrates(slider_video.val())
         })
         let label_video = $('<label for="videoBit">').html("Video bitrate:")
         return div_video.append(label_video).append(slider_video);
@@ -84,8 +85,8 @@ export default class Player{
 
         if(mics.length != 0){
             let label_mic = $('<label for="mics">').html("Select microfone:")
-            let select_mics = $('<select name="mics" id="mic" class="form-control">').on('change', function(){
-                this.media.changeAudioTrack($(this).children(":selected").attr("id"))
+            let select_mics = $('<select name="mics" id="mic" class="form-control">').on('change', ()=>{
+                this.media.changeAudioTrack($(select_mics).children(":selected").attr("id"))
             })
             for(let i=0;i < mics.length;i++){
                 select_mics.append($(`<option id='${mics[i].deviceId}'>`).html(mics[i].label))
@@ -99,7 +100,7 @@ export default class Player{
         let div = $('<div class="border border-dark">')
         if(cameras.length != 0){
             let label_cam = $('<label for="cams">').html("Select camera:")
-            let select_cams = $('<select id="cams" class="form-control">').on('change', function(){
+            let select_cams = $('<select id="cams" class="form-control">').on('change', ()=>{
                 this.media.changeVideoTrack($(this).children(":selected").attr("id"))
             })
             for(let i=0;i < cameras.length;i++){

@@ -14,12 +14,13 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
                 mandatory: { 
                     chromeMediaSource: "desktop",
                     chromeMediaSourceId: obj.sourceId
-                }
+                } 
             }
         }).then((stream)=>{
-            console.log(stream)
+
             let body = document.getElementsByTagName('body')[0]
-            let video = document.createElement('audio')
+            let video = document.createElement('video')
+            
             video.style.display = 'none'
             video.srcObject = stream
             video.autoplay = 'autoplay'

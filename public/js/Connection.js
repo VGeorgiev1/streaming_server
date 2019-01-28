@@ -31,6 +31,7 @@ export default class Connection {
     }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
+            console.log(config)
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
                 return;
@@ -68,22 +69,18 @@ export default class Connection {
                     this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
                 });
             }
-            
             if (config.should_create_offer) {
-                peer_connection.createOffer(
-                    (local_description) => {
-                        console.log(local_description.sdp)
-                        peer_connection.setLocalDescription(local_description,
-                            () => {
-                                this.signaling_socket.emit('relaySessionDescription',
-                                    { 'socket_id': socket_id, 'session_description': local_description});
-                            },
-                            () => { console.log("Offer setLocalDescription failed!"); }
-                        );
-                    },
-                    (error) => {
-                        console.log("Error sending offer: ", error);
-                    }, { offerToReceiveAudio: true, offerToReceiveVideo: true});
+                peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
+                    .then((local_description)=>{
+                       return peer_connection.setLocalDescription(local_description)
+                    })
+                    .then(()=>{
+                        this.signaling_socket.emit('relaySessionDescription',
+                        { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
+                    })
+                    .catch((e)=>{
+                        console.log(e.message)
+                    })
             }
         })
     }
@@ -106,30 +103,26 @@ export default class Connection {
         this.regHandler('sessionDescription', (config) => {
             var socket_id = config.socket_id;
             var peer = this.peers[socket_id];
+            console.log(config)
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer.setRemoteDescription(desc,
                 () => {
                     if (remote_description.type == "offer") {
-                        peer.createAnswer(
-                            (local_description) => {
+                        peer.createAnswer()
+                            .then((local_description)=>{
                                 if(config){
                                     if(config.properties){
                                         local_description.sdp = this.setProperties(local_description.sdp, config.properties)
                                     }
-                                    console.log(local_description)
-                                    peer.setLocalDescription(local_description,
-                                        () => {
-                                            this.signaling_socket.emit('relaySessionDescription',
-                                                { 'socket_id': socket_id, 'session_description': local_description });
-                                        },
-                                        (e) => { console.log(e.message) }
-                                    );
+                                   return  peer.setLocalDescription(local_description)
                                 }
-                            },
-                            (error) => {
-                                console.log("Error creating answer: ", error);
-                            });
+                            }).then(()=>{
+                                this.signaling_socket.emit('relaySessionDescription',
+                                            { 'socket_id': socket_id, 'session_description': peer.localDescription });
+                            }).catch((e)=>{
+                                console.log(e.message)
+                            })
                     }
                 },
                 (error) => {
@@ -190,6 +183,9 @@ export default class Connection {
             navigator.msGetUserMedia)
     }
     attachMediaStream(element, stream) {
+        stream.getAudioTracks().forEach(t=>{
+            console.log(t)
+        })
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {
