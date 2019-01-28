@@ -2,7 +2,6 @@ let screen_stream;
 chrome.extension.onMessage.addListener((reqeust,sender, response) => {
     let port = chrome.runtime.connect();
     port.onMessage.addListener(function (obj) {
-       
         navigator.mediaDevices.getUserMedia({
             audio:{ 
                 mandatory: {
@@ -13,11 +12,11 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
             video:{ 
                 mandatory: { 
                     chromeMediaSource: "desktop",
-                    chromeMediaSourceId: obj.sourceId
+                    chromeMediaSourceId: obj.sourceId,
+                    maxFrameRate:30
                 } 
             }
         }).then((stream)=>{
-
             let body = document.getElementsByTagName('body')[0]
             let video = document.createElement('video')
             
@@ -28,8 +27,6 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
             body.append(video)
             var selectionFired = new CustomEvent("screen_ready");
             document.dispatchEvent(selectionFired)
-        }).catch((err)=>{
-            console.log(err)
         })
     })
     response('reponded!')

@@ -29,6 +29,12 @@ export default class Connection {
     getMediaElement(){
         return this.media_element
     }
+    addTrack(ele, stream){
+        ele.srcObject
+        stream.getTracks().forEach(t=>{
+            ele.srcObject.addTrack(t)
+        })
+    }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
             console.log(config)
@@ -55,11 +61,11 @@ export default class Connection {
             }
             peer_connection.ontrack = (event) => {
                 if (this.peer_media_elements[socket_id]) {
-                    this.attachMediaStream(this.peer_media_elements[socket_id], event.streams[0])
+                    this.addTrack(this.peer_media_elements[socket_id], event.streams[0])
                     return;
                 }
                 this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-                console.log(config.constrains)
+               
                 this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
 
@@ -183,9 +189,6 @@ export default class Connection {
             navigator.msGetUserMedia)
     }
     attachMediaStream(element, stream) {
-        stream.getAudioTracks().forEach(t=>{
-            console.log(t)
-        })
         element.srcObject = stream;
     }
     setup_media(constrains, stream, options, callback) {

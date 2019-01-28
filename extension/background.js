@@ -1,7 +1,7 @@
 var front_port;
 chrome.runtime.onConnect.addListener(function(port) {
     front_port = port
-    chrome.desktopCapture.chooseDesktopMedia(['screen','audio'],front_port.sender.tab, accessToRecord);
+    chrome.desktopCapture.chooseDesktopMedia(['screen', 'window','audio'],front_port.sender.tab, accessToRecord);
 });
 
 
