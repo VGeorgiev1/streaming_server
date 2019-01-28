@@ -20,7 +20,7 @@ export default class Broadcaster extends Connection{
         }else{
             this.is_screen_share = true
             this.constrains.video = true
-            this.constrains.audio = false
+            this.constrains.audio = true
             this.local_media_stream = document.getElementById('screen').srcObject
             console.log(this.local_media_stream)
             //document.getElementById('screen').remove();
