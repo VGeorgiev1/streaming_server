@@ -30,14 +30,16 @@ export default class Connection {
         return this.media_element
     }
     addTrack(ele, stream){
-        ele.srcObject
         stream.getTracks().forEach(t=>{
+            console.log(t)
             ele.srcObject.addTrack(t)
         })
     }
+    negotiation(event){
+        
+    }
     regAddPeer() {
         this.regHandler('addPeer', (config) => {
-            console.log(config)
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
                 return;
@@ -59,23 +61,38 @@ export default class Connection {
                     });
                 }
             }
+            peer_connection.onnegotiationneeded = (event)=>{
+                console.log(event)
+                peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
+                .then((local_description)=>{
+                   return peer_connection.setLocalDescription(local_description)
+                })
+                .then(()=>{
+                    this.signaling_socket.emit('relaySessionDescription',
+                    { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
+                })
+                .catch((e)=>{
+                    console.log(e.message)
+                })
+            }
             peer_connection.ontrack = (event) => {
                 if (this.peer_media_elements[socket_id]) {
                     this.addTrack(this.peer_media_elements[socket_id], event.streams[0])
                     return;
                 }
                 this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-               
+
                 this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
-
             if (this.type != 'viewer') {
                 this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().forEach((track) =>{
+                    console.log(track)
                     this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
                 });
             }
             if (config.should_create_offer) {
+                console.log('create')
                 peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
                     .then((local_description)=>{
                        return peer_connection.setLocalDescription(local_description)
@@ -199,20 +216,25 @@ export default class Connection {
         this.attachMediaStream(media, stream);
         if (options.returnElm) return media
     }
-    setup_local_media(constrains, callback, errorback) {
-        navigator.mediaDevices.getUserMedia(constrains)
+    getUserMedia(constrains,callback){
+        return navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
-                let mEl = null;
-                if (this.type == 'broadcaster') {
-                    mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
-                    this.media_element = mEl
-                }
-                if(callback)
-                    callback(mEl,stream)
+               if(callback)
+                    callback(stream)
         }).catch((e) => {
                 console.log(e.message)
-                if (errorback) errorback();
+        })    
+    }
+    setup_local_media(constrains, callback, errorback) {
+        this.getUserMedia(constrains, (stream)=>{
+            let mEl = null;
+            if (this.type == 'broadcaster') {
+                mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
+                this.media_element = mEl
+            }
+            if(callback)
+                callback(mEl,stream)
         })
     }
 }

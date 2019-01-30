@@ -42,6 +42,19 @@ export default class Broadcaster extends Connection{
             this.changeSdpSettings({audio_bitrate: this.audioBitrate})
         }
     }
+    requestAudio(){
+        this.getUserMedia({audio: true, video:false}, (stream)=>{
+            stream.getAudioTracks().forEach(t=>{
+                this.local_media_stream.addTrack(t);
+                for(let peer in this.peers){
+                    this.senders[peer][t.kind] = this.peers[peer].addTrack(t,stream)
+                }
+                // console.log('after addTrack')
+                // let mEl = this.setup_media({video:false}, stream, {muted: true, returnElm: true})
+                // console.log(mEl)
+            })
+        })
+    }
     setVideoBitrates(videoBitrate){
         if(this.constrains.video && videoBitrate >=8 && videoBitrate<=2000){
             
@@ -100,7 +113,7 @@ export default class Broadcaster extends Connection{
     }
     changeTracks(constrains){
         this.local_media_stream.getTracks().forEach(track=> track.stop())
-        navigator.mediaDevices.getUserMedia(constrains).then((stream)=>{
+        this.getUserMedia(constrains, (stream)=>{
             this.local_media_stream = stream
             for(let peer in this.peers){
                 this.local_media_stream.getTracks().forEach(track =>{
@@ -108,8 +121,6 @@ export default class Broadcaster extends Connection{
                 })
             }
             this.attachMediaStream(this.media_element, stream)
-        }).catch(e=>{
-            console.log(e.message)
         })
     }
     changeVideoTrack(id, callback){
@@ -146,7 +157,7 @@ export default class Broadcaster extends Connection{
                 this.media_element = document.createElement('video')
                 this.media_element.srcObject = this.local_media_stream
                 this.media_element.autoplay = 'autoplay'
-                this.media_element.muted = 'true'
+                this.media_element.muted = true
                 this.setOffersAndConstrains(this.constrains)
                 this.join_channel(this.constrains)
                 callback(this.media_element)

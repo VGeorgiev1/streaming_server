@@ -7,7 +7,6 @@ window.onload = ()=>{
     var SIGNALING_SERVER = "http://localhost";
     connection = new Broadcaster("http://localhost", io() ,null,window.id)
     let connections = 1;
-    console.log('what')
     let columnsOnMedia = 3;
     connection.subscribeTo(window.channel, (mEl)=>{
         let player = new Player({'media': connection, 'constrains': connection.getConstrains(), 'reso': '1by1'},3)
