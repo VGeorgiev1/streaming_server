@@ -4,6 +4,19 @@ export default class Room{
         this.type = type
         this.connections = {};
         this.alive = true;
+        this.connectTriggers = []
+    }
+    getConnections(){
+        return this.connections
+    }
+    triggerConnect(socket){
+        console.log('triiger')
+        for(let trigger of this.connectTriggers){
+            trigger(socket)
+        }
+    }
+    onConnect(callback){
+        this.connectTriggers.push(callback)
     }
     obHandler(connection){
         connection.socket.on('tensor', (obj)=>{
@@ -21,6 +34,12 @@ export default class Room{
 
             })
         })
+    }
+    getPeers(){
+        return this.connections;
+    }
+    regHandler(socket,handler, callback){
+        socket.on(handler, callback)
     }
     rulesHandler(socket){
         socket.on('getRules', ()=>{

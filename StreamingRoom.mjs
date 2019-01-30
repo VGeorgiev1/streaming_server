@@ -8,8 +8,11 @@ export default class StreamingRoom extends Room{
         this.rules = rules
         this.owner = ownerId
         this.active = false;
+        this.connectTriggers = []
     }
+
     addSocket(socket,constrains,peerId){
+        this.triggerConnect(socket)
         if(this.viewers.indexOf(peerId) != -1){
             console.log("Viewer already exists!")
         }

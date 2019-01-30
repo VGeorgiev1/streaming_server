@@ -25,6 +25,7 @@ export default class RoomContainer{
                             this.rooms[roomObj.id] = new StreamingRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner)
                             break;
         }
+        return this.rooms[roomObj.id]
     }
     getRoom(id){
         return this.rooms[id]

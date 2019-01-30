@@ -61,20 +61,20 @@ export default class Connection {
                     });
                 }
             }
-            peer_connection.onnegotiationneeded = (event)=>{
-                console.log(event)
-                peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
-                .then((local_description)=>{
-                   return peer_connection.setLocalDescription(local_description)
-                })
-                .then(()=>{
-                    this.signaling_socket.emit('relaySessionDescription',
-                    { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
-                })
-                .catch((e)=>{
-                    console.log(e.message)
-                })
-            }
+            // peer_connection.onnegotiationneeded = (event)=>{
+            //     console.log(event)
+            //     peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
+            //     .then((local_description)=>{
+            //        return peer_connection.setLocalDescription(local_description)
+            //     })
+            //     .then(()=>{
+            //         this.signaling_socket.emit('relaySessionDescription',
+            //         { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
+            //     })
+            //     .catch((e)=>{
+            //         console.log(e.message)
+            //     })
+            // }
             peer_connection.ontrack = (event) => {
                 if (this.peer_media_elements[socket_id]) {
                     this.addTrack(this.peer_media_elements[socket_id], event.streams[0])
@@ -172,6 +172,9 @@ export default class Connection {
             if(this.onPeerDiscconectCallback)
                 this.onPeerDiscconectCallback(config.socket_id)
         })
+    }
+    getSocket(){
+        return this.signaling_socket;
     }
     regHandler(event, callback) {
         this.signaling_socket.on(event, callback);

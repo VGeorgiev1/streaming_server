@@ -18,7 +18,7 @@ import cookieParser from 'cookie-parser'
 import RoomContainer from './RoomContainer.mjs'
 import Room from './Room.mjs';
 import crypto from 'crypto'
-
+import Chat from './Chat.mjs'
 const connectionString =  process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
@@ -44,13 +44,14 @@ var loginware = function (req, res, next) {
 }
 app.use(loginware)
 let room_container = new RoomContainer()
+let chat_container = []
 let db = new DbManager()
 db.initializeTables(()=>{
     db.getAllRoomsAndRules().then((rooms,err)=>{
         if(err)
             console.log(err)
         for(let room of rooms){
-            room_container.addRoom(room.dataValues)
+            chat_container.push(new Chat(room_container.addRoom(room.dataValues)))
         }
         server.listen(PORT, null, () => {
             console.log("Listening on port " + PORT);
@@ -134,8 +135,6 @@ app.get('/logout', async(req,res)=>{
         })
     }
 })
-app.get('/try', async(req,res)=>{
-})
 app.post('/login', async(req,res)=>{
     db.logUser(req.body).then((user,err)=>{
         if(user){
@@ -156,6 +155,7 @@ app.get('/room/:id',async (req,res)=>{
     let room = room_container.getRoom(req.params.id.toString())
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
+    
     let isBroadcaster;
     if(req.authenticated){
         db.getLoggedUser(req.cookies.sessionToken).then((ses,err)=>{

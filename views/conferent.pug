@@ -6,6 +6,7 @@ block scripts
 	script(src='https://cdn.socket.io/socket.io-1.4.5.js')
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
 	link(rel="stylesheet", href="/public/css/menu.css")
+	link(href='/public/chat.css', rel='stylesheet')
 	if !isBroadcaster
 		script(type='module', src='/public/js/ConferentViewer.mjs')
 	else
@@ -14,3 +15,4 @@ block scripts
 block content
 	.container
 		.row
+			.big-container.border.border-primary.rounded.h-100.w-25.position-absolute.pr-4.pl-4.pb-4(style='right: 30px;')
