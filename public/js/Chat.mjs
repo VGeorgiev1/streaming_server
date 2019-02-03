@@ -18,11 +18,12 @@ export default class Chat{
         msgContainer
             .append(msg)
             .append(span)
-        $('.big-container').append(msgContainer)
+        $('.scroll').append(msgContainer)
+        $('.scroll').scrollTop($('.scroll').height())  
     }
     sendMessage(event){
        if(this.input.val() != ""){
-            let msgContainer = $('<div class="chat darker">')
+            let msgContainer = $('<div class="chat darker" style="word-break:break-all;">')
             let msg = $('<p>').html(this.input.val())
             let d = new Date();
             let time = d.getHours() + ':' + d.getMinutes()
@@ -30,7 +31,8 @@ export default class Chat{
             msgContainer
                .append(msg)
                .append(span)
-            $('.big-container').append(msgContainer)
+            $('.scroll').append(msgContainer)
+            $('.scroll').scrollTop($('.scroll').height())  
            this.socket.emit("sendMessage", {msg: this.input.val(), time: time})
         }
     }

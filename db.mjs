@@ -1,10 +1,11 @@
 import crypto from 'crypto'
 import Sequelize from 'sequelize'
+const Op = Sequelize.Op
 import User from './models/User.mjs'
 import Rule from './models/Rule.mjs'
 import Room from './models/Room.mjs'
 import Session from './models/Session.mjs'
-
+import Friends from './models/Friend.mjs'
 export default class DbManager {
     constructor() {
         this.roomOptions = ['audio','video','screen']
@@ -23,12 +24,15 @@ export default class DbManager {
                 dialect:'postgres'
             });
         }
-        
+        this.Op = Op
     }
     destroySession(sessionToken){
         return this.Session.destroy({
             where: {sessionToken: sessionToken}
         })
+    }
+    getAllUsers(){
+        return this.User.findAll({})
     }
     getAllRooms(){
         return this.Room.findAll({})
@@ -41,7 +45,6 @@ export default class DbManager {
         }
         if(req.option){
             for (let i = 0; i < this.roomOptions.length; i++) {
-                console.log(req.options)
                 if (req.option.indexOf(this.roomOptions[i]) != -1) {
                     options[this.roomOptions[i]] = true;
                 }
@@ -62,6 +65,7 @@ export default class DbManager {
         return this.Session.findOne({where:{sessionToken: token}, include:[this.User]})
     }
     checkForSessionOrCreate(id, crypto){
+        console.log(crypto)
         return this.Session.findOrCreate({where: {userId: id}, defaults:{sessionToken: crypto}})
     }
     logUser(req){
@@ -78,9 +82,12 @@ export default class DbManager {
             this.Rule = Rule(this.seq, Sequelize)
             this.Room = Room(this.seq, Sequelize)
             this.Session = Session(this.seq, Sequelize)
+            this.Friends = Friends(this.seq, Sequelize)
             this.Room.belongsTo(this.Rule, {foreignKey: 'rulesId'})
             this.Room.belongsTo(this.User, {foreignKey: 'owner'})            
             this.Session.belongsTo(this.User, {foreignKey: 'userId'})
+            this.Friends.belongsTo(this.User, {as: 'user'});
+            this.Friends.belongsTo(this.User, {as: 'friend'})
             this.seq.sync()
             .then(() => {
                 callback()

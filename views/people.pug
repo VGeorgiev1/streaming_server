@@ -1,0 +1,27 @@
+extends layout.pug
+mixin card(person)
+	.card.border-dark.mb-3(style="max-width: 20rem;")
+					p.card-header=person.username
+					.card-body.text-dark
+						div(id=person.id)
+							if person.status == 'friends'
+								button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Remove friend
+							else
+								if person.status == 'request'
+									button.btn.btn-outline-success.mb-2(onclick=`acceptRequest(${person.id})`) Accept Request
+									button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Decline Request							
+								else
+									button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Cancel Request
+							
+block scripts
+	script(src="/public/js/addFriend.js")
+block content
+	.container
+		form.md-form(style="color: #757575;",method="POST", action="/register")
+		input#searchbox.form-control(type="text", name="name", placeholder="Enter a username") 
+		button.btn.btn-outline-success.mb-2(onclick="search()") Search
+		.cards
+			each row,idx in people_list
+				.card-deck
+					each person in row
+						+card(person)

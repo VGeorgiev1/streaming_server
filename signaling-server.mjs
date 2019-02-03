@@ -27,6 +27,8 @@ let io = new SocketIO(server);
 var SALT_ROUNDS = 10
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json());
+
 app.use("/public",express.static(path.join(path.resolve() + '/public')));
 
 app.set('view engine', 'pug');
@@ -35,9 +37,11 @@ var loginware = function (req, res, next) {
     db.Session.findOne({where:{sessionToken: req.cookies.sessionToken}}).then((ses,err)=>{
         if(err)
             console.log(err)
-        req.authenticated = false    
+        req.authenticated = false
+        
         if(ses){
             req.authenticated = true
+            req.userId = ses.userId
         }
         next()
     })
@@ -58,21 +62,21 @@ db.initializeTables(()=>{
         });
     })
 })
+function OneDToTwoD(array,lenght){
+    let result = []
+    let cont = array.slice(0);
+    while(cont[0]) { 
+             result.push(cont.splice(0, lenght)); 
+    }
+    return result
+};
 app.get('/', async(req, res)=>{
     db.getAllRooms().then((rooms,err)=>{
         if(err)
             console.log(err)
-        let dataValues = []
-        for(let r of rooms){
-            dataValues.push(r.dataValues)
-        }
-        let result = []
-        let cont = dataValues.slice(0);
-             while(cont[0]) { 
-                 result.push(cont.splice(0, 3)); 
-             }
+        let dataValues = rooms.map((r)=>r.dataValues)
         
-        res.render('list', {"room_rows": result, "auth": req.authenticated})
+        res.render('list', {"room_rows": OneDToTwoD(rooms.map((r)=>r.dataValues),3), "auth": req.authenticated})
     })
 });
 app.get('/room/create',(req, res)=>{
@@ -80,6 +84,96 @@ app.get('/room/create',(req, res)=>{
     else{
         res.render('create', {auth: req.authenticated})
     }
+})
+app.post('/accept', (req, res)=>{
+    if(req.userId != req.body.id){
+        db.Friends.findOne({where:{userId: Math.min(req.userId, req.body.id), friendId: Math.max(req.userId, req.body.id)}})
+            .then((row)=>{
+                row.update({status: 'friends'}, {fields: ['status']})   
+                res.send('ok')           
+            })
+    }
+})
+app.post('/remove', (req,res)=>{
+    db.Friends.destroy({where:{
+            userId: Math.min(req.userId,req.body.id), friendId: Math.max(req.userId,req.body.id)}
+        }).then((result)=>{
+            res.send("removed")
+        })
+})
+app.post('/search', (req,res)=>{
+    db.User.findAll({
+        where:{
+            username: {
+                [db.Op.like]: `%${req.body.username}%`
+            }
+        }}).then(async (users,err)=>{
+            let dataValues = []
+            for(let user of users){
+                if(user.dataValues.id != req.userId){
+                    let row = await db.Friends.findOne({where:{
+                        userId: Math.min(user.dataValues.id, req.userId),  
+                        friendId: Math.max(user.dataValues.id, req.userId)},
+                        include: [
+                            {model: db.User,as: 'friend'},
+                            {model: db.User,as: 'user'}]
+                    })
+                    
+                    if(row != null){
+                            if(req.userId == row.userId){
+                                dataValues.push({id: row.friend.dataValues.id, username: row.friend.dataValues.username, status:row.status})
+                            }else{
+                                dataValues.push({id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
+                            }
+                    }else{
+                        dataValues.push({id: user.dataValues.id, username: user.dataValues.username, status:'not_affiliated'})
+                    }
+                }
+            }
+        res.send(OneDToTwoD(dataValues, 3))
+    })
+})
+app.get('/people', (req, res)=>{
+    console.log(req.userId)
+    if(!req.authenticated) {res.redirect('/login')}
+    else{
+    db.Friends.findAll({where:{
+        [db.Op.or]:[
+            {userId: req.userId},
+            {friendId: req.userId}]},
+        include: [
+            {model: db.User,as: 'friend'},
+            {model: db.User,as: 'user'}
+        ]}).then((users, err)=>{
+            let dataValues = []
+            for(let row of users){
+                if(req.userId == row.userId){
+                    dataValues.push({id: row.friend.dataValues.id, username: row.friend.dataValues.username, status:row.status})
+                }else{
+                    dataValues.push({id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
+                }
+            }
+            res.render('people',{people_list:OneDToTwoD(dataValues, 3), auth: req.authenticated})
+        })
+    }
+})
+app.get('/profile',(req, res)=>{
+    if(!req.authenticated) {res.redirect('/login')}
+    else{
+        db.User.findOne({where:{id: req.userId}}).then((usr,err)=>{
+           
+            //console.log(OneDToTwoD(dataValues, 3))
+        })
+    }
+})
+function prepareReqeustQuery(id1,id2){
+    return id1 < id2 ? {userId: id1, friendId: id2, status:'invite'} : {userId: id2, friendId: id1, status:'request'}
+}
+app.post('/sendrequest', (req,res)=>{
+    let otherId = Number(req.body.id)
+    db.Friends.create(prepareReqeustQuery(req.userId, otherId)).then(err=>{
+        res.send('ok')
+    })
 })
 app.post('/room/create', async (req,res)=>{
     if(!req.authenticated){res.redirect('/login')}
@@ -113,7 +207,6 @@ app.post('/register', async(req,res)=>{
         if(err)
             console.log(err)
         if(user.dataValues.id){
-            res.cookie('id', user.dataValues.id)
             res.redirect("/")
         }else{
             res.send("There is already a user with this username!")
@@ -141,6 +234,7 @@ app.post('/login', async(req,res)=>{
             let authenticated = bcrypt.compareSync(req.body.password, user.dataValues.password)
             if(authenticated){
                 db.checkForSessionOrCreate(user.dataValues.id, crypto.randomBytes(10).toString("hex")).then((ses,err)=>{
+                    console.log(ses[0].dataValues.sessionToken)
                     res.cookie('sessionToken' , ses[0].dataValues.sessionToken).redirect('/')
                 })
             }else{
@@ -162,7 +256,6 @@ app.get('/room/:id',async (req,res)=>{
             if(err)
                 console.log(err)
             userId = ses.dataValues.user.dataValues.id
-            console.log(userId)
             isBroadcaster = room.isBroadcaster(userId)
             res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
         })

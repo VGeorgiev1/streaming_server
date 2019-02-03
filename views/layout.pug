@@ -8,7 +8,7 @@ html
 
 	body
 		nav.navbar.navbar-expand-lg.navbar-dark.bg-dark
-			a.navbar-brand(href="#") StreamRTC
+			a.navbar-brand(href="/") StreamRTC
 			button.navbar-toggler(type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation")
 				span.navbar-toggler-icon
 			#navbarSupportedContent.collapse.navbar-collapse
@@ -21,11 +21,13 @@ html
 						li.nav-item
 							a.nav-link(href="#") My rooms
 					li.nav-item
-						a.nav-link(href="#") Streams
+						a.nav-link(href="/streams") Streams
 					li.nav-item
 						a.nav-link(href="/room/create") Create room
 				if auth
 					ul.nav.navbar-nav.navbar-right
+						li.nav-item
+							a.nav-link(href="/profile") Profile
 						li.nav-item
 							a.nav-link(href="/logout") Logout
 				form.form-inline.my-2.my-lg-0
