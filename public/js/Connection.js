@@ -3,13 +3,12 @@ var ICE_SERVERS = [
 ];
 
 export default class Connection {
-    constructor(SIGNALING_SERVER,socket, type, id) {
+    constructor(SIGNALING_SERVER,socket, id) {
         this.signaling_server = SIGNALING_SERVER;
         this.signaling_socket = socket
         this.id = id
         this.peers = {};
         this.peer_media_elements = {};
-        this.type = type
         this.onBroadcasterCallback = null
         this.onPeerDiscconectCallback = null
     }
@@ -23,22 +22,26 @@ export default class Connection {
     onPeerDiscconect(callback){
         this.onPeerDiscconectCallback = callback
     }
-    getConstrains(){
-        return this.constrains
-    }
-    getMediaElement(){
-        return this.media_element
-    }
-    addTrack(ele, stream){
-        stream.getTracks().forEach(t=>{
-            console.log(t)
-            ele.srcObject.addTrack(t)
+    addTrack(id, stream){
+        let element = this.peer_media_elements[id]
+        let tracks = stream.getTracks
+        if(stream.getVideoTracks().length != 0 && element.nodeName == 'audio' ){
+            let old_tracks = element.srcObject.getTracks()
+            element = document.createElement('video')
+            tracks.concat(old_tracks)
+        }
+        tracks.forEach(t=>{
+            element.srcObject.addTrack(t)
         })
+    }
+    getConnection(id){
+        
     }
     negotiation(event){
         
     }
     regAddPeer() {
+        
         this.regHandler('addPeer', (config) => {
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
@@ -76,23 +79,23 @@ export default class Connection {
             //     })
             // }
             peer_connection.ontrack = (event) => {
+                console.log(event)
                 if (this.peer_media_elements[socket_id]) {
-                    this.addTrack(this.peer_media_elements[socket_id], event.streams[0])
+                    this.addTrack(socket_id, event.streams[0])
                     return;
                 }
-                this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0], { muted: false, returnElm: true });
-
+                this.peer_media_elements[socket_id] = this.setup_media(config.constrains, event.streams[0],
+                    { muted: false, returnElm: true });
                 this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
-            if (this.type != 'viewer') {
+
+            if (this instanceof Broadcaster) {
                 this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().forEach((track) =>{
-                    console.log(track)
                     this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
                 });
             }
             if (config.should_create_offer) {
-                console.log('create')
                 peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
                     .then((local_description)=>{
                        return peer_connection.setLocalDescription(local_description)
@@ -211,33 +214,16 @@ export default class Connection {
     attachMediaStream(element, stream) {
         element.srcObject = stream;
     }
-    setup_media(constrains, stream, options, callback) {
-        let media = constrains.video ? document.createElement('video') : document.createElement('audio');
+
+    setup_media(constrains, stream, options) {
+        let media = constrains.video ?
+          document.createElement('video') :
+          document.createElement('audio');
         media.autoplay = "autoplay"
         media.muted = options.muted 
         media.controls = "controls";
         this.attachMediaStream(media, stream);
         if (options.returnElm) return media
     }
-    getUserMedia(constrains,callback){
-        return navigator.mediaDevices.getUserMedia(constrains)
-        .then(
-            (stream) => {
-               if(callback)
-                    callback(stream)
-        }).catch((e) => {
-                console.log(e.message)
-        })    
-    }
-    setup_local_media(constrains, callback, errorback) {
-        this.getUserMedia(constrains, (stream)=>{
-            let mEl = null;
-            if (this.type == 'broadcaster') {
-                mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
-                this.media_element = mEl
-            }
-            if(callback)
-                callback(mEl,stream)
-        })
-    }
+
 }

@@ -20,16 +20,31 @@ html
 							a.nav-link(href="/login") Sign in
 						li.nav-item
 							a.nav-link(href="#") My rooms
+						li.nav-item
+							a.nav-link(href="/people") Friends
 					li.nav-item
 						a.nav-link(href="/streams") Streams
 					li.nav-item
 						a.nav-link(href="/room/create") Create room
+					li.nav-item
+						button.btn.btn-primary(type='button', data-toggle='modal', data-target='#exampleModal') Launch demo modal
 				if auth
 					ul.nav.navbar-nav.navbar-right
 						li.nav-item
 							a.nav-link(href="/profile") Profile
 						li.nav-item
 							a.nav-link(href="/logout") Logout
+						#exampleModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='exampleModalLabel', aria-hidden='true')
+							.modal-dialog(role='document')
+								.modal-content
+									.modal-header
+										h5#exampleModalLabel.modal-title Modal title
+										button.close(type='button', data-dismiss='modal', aria-label='Close')
+											span(aria-hidden='true') ×
+									.modal-body ...
+									.modal-footer
+										button.btn.btn-secondary(type='button', data-dismiss='modal') Close
+										button.btn.btn-primary(type='button') Save changes
 				form.form-inline.my-2.my-lg-0
 					input.form-control.mr-sm-2(type="search" placeholder="Search" aria-label="Search")
 					button.btn.btn-outline-success.my-2.my-sm-0(type="submit") Search

@@ -6,6 +6,7 @@ mixin card(person)
 						div(id=person.id)
 							if person.status == 'friends'
 								button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Remove friend
+								button.btn.btn-outline-success.mb-2(onclick=`call(${person.id})`) Call
 							else
 								if person.status == 'request'
 									button.btn.btn-outline-success.mb-2(onclick=`acceptRequest(${person.id})`) Accept Request

@@ -7,6 +7,9 @@ function sendRequest(id){
             console.log(e)
         })
 }
+function call(id){
+    
+}
 function makeRequest(url, method, data, contentTyppe){
     return $.ajax({
         url:url,
@@ -18,7 +21,6 @@ function makeRequest(url, method, data, contentTyppe){
 function acceptRequest(id){
     makeRequest("/accept", "POST", JSON.stringify({id:id}), "application/json; charset=utf-8")
         .then((res)=>{
-            console.log($('#'+id))
             $('#'+id).html(`<button class="btn btn-danger mb-2" onclick="removeFriend(${id})">Remove Friend</button>`)         
         }).catch((e)=>{
             console.log(e)

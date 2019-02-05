@@ -64,7 +64,6 @@ export default class Room{
     handshakeHandlers(connection,relaySessionDescription){
         connection.socket.on('relayICECandidate', (config) => {
             if(config.socket_id in this.connections) {
-                //connection.socket.emit('iceCandidate', {'socket_id': config.socket_id, 'ice_candidate':  config.ice_candidate})
                 this.connections[config.socket_id].socket.emit('iceCandidate', {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate});
             }
         });

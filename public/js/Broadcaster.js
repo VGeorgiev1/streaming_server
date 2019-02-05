@@ -1,7 +1,7 @@
 import Connection from "./Connection.js"
 export default class Broadcaster extends Connection{
     constructor(SIGNALING_SERVER,socket,CONSTRAINTS,id){
-        super(SIGNALING_SERVER,socket, 'broadcaster',id)
+        super(SIGNALING_SERVER,socket,id)
         this.constrains = {};
         this.audioBitrate = 50
         this.videoBitrate = 256
@@ -49,9 +49,6 @@ export default class Broadcaster extends Connection{
                 for(let peer in this.peers){
                     this.senders[peer][t.kind] = this.peers[peer].addTrack(t,stream)
                 }
-                // console.log('after addTrack')
-                // let mEl = this.setup_media({video:false}, stream, {muted: true, returnElm: true})
-                // console.log(mEl)
             })
         })
     }
@@ -64,7 +61,7 @@ export default class Broadcaster extends Connection{
     }
     mute_audio(){
         let tracks = this.local_media_stream.getAudioTracks()
-        if(tracks[0].enabled == true){
+        if(tracks[0].enabled){
             tracks[0].enabled = false;
             return;
         }
@@ -72,7 +69,7 @@ export default class Broadcaster extends Connection{
     }
     mute_video(){
         let tracks = this.local_media_stream.getVideoTracks()
-        if(tracks[0].enabled == true){
+        if(tracks[0].enabled){
             tracks[0].enabled = false;
             return;
         }
@@ -95,6 +92,12 @@ export default class Broadcaster extends Connection{
                     console.log(e.message)
                 })
         }
+    }
+    getMediaElement(){
+        return this.media_element
+    }
+    getConstrains(){
+        return this.constrains
     }
     getRoomRules(callback){
         this.signaling_socket.emit('getRules', this.channel)
@@ -128,6 +131,27 @@ export default class Broadcaster extends Connection{
     }
     changeAudioTrack(id, callback){
         this.changeTracks({audio: {deviceId: { exact: id}, video: this.constrains.video}})
+    }
+    getUserMedia(constrains,callback,errorback){
+        return navigator.mediaDevices.getUserMedia(constrains)
+        .then(
+            (stream) => {
+               if(callback)
+                    callback(stream)
+        }).catch((e) => {
+            errorback(e.message)
+        })    
+    }
+    setup_local_media(constrains, callback, errorback) {
+        this.getUserMedia(constrains, (stream)=>{
+            let mEl = null;
+            if (this.type == 'broadcaster') {
+                mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
+                this.media_element = mEl
+            }
+            if(callback)
+                callback(mEl,stream)
+        }, (msg)=>{console.log(msg)})
     }
     createConnectDisconnectHandlers(callback){
         if(!this.is_screen_share){

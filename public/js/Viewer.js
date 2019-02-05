@@ -4,7 +4,7 @@ var ICE_SERVERS = [
 ];
 export default class Viewer extends Connection{ 
     constructor(SIGNALING_SERVER,socket,id){
-        super(SIGNALING_SERVER, socket, 'viewer',id)
+        super(SIGNALING_SERVER, socket,id)
         //this.createConnectDisconnectHandlers()
     }
     createConnectDisconnectHandlers(callback){

@@ -10,7 +10,7 @@ function sendMessage(){
 window.onload = ()=>{
 
     var SIGNALING_SERVER = "http://localhost";
-    connection = new Broadcaster("http://localhost", io() ,null,window.id)
+    connection = new Broadcaster("http://localhost", io() ,{audio: true, video: false},window.id)
     let connections = 1;
     let columnsOnMedia = 3;
     connection.subscribeTo(window.channel, (mEl)=>{

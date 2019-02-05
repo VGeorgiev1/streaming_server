@@ -1,11 +1,7 @@
-/**************/
-/*** CONFIG ***/
-/**************/
+
 var PORT = process.env.PORT || 3000;
 
-/*************/
-/*** SETUP ***/
-/*************/
+
 import express from 'express' 
 import * as http from 'http';
 import SocketIO from 'socket.io';
@@ -70,6 +66,7 @@ function OneDToTwoD(array,lenght){
     }
     return result
 };
+
 app.get('/', async(req, res)=>{
     db.getAllRooms().then((rooms,err)=>{
         if(err)
