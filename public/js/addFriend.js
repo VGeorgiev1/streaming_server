@@ -7,9 +7,7 @@ function sendRequest(id){
             console.log(e)
         })
 }
-function call(id){
-    
-}
+
 function makeRequest(url, method, data, contentTyppe){
     return $.ajax({
         url:url,

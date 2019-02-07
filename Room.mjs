@@ -10,7 +10,6 @@ export default class Room{
         return this.connections
     }
     triggerConnect(socket){
-        console.log('triiger')
         for(let trigger of this.connectTriggers){
             trigger(socket)
         }
@@ -46,12 +45,15 @@ export default class Room{
             socket.emit('rules', this.rules)
         })
     }
-    setup_connection(socket, peerId, constrains){
+
+    setup_connection(socket, peerId, constrains, dissconnectHandler){
         this.connections[socket.id] = {}
         this.connections[socket.id].socket = socket;
         this.connections[socket.id].constrains = constrains
         this.connections[socket.id].userId = peerId
-        return this.connections[socket.id]
+        this.handshakeHandlers(this.connections[socket.id]);
+        this.connectDisconnectHandlers(this.connections[socket.id], dissconnectHandler)
+        this.muteUnmuteHandler(this.connections[socket.id]);
     }
     connectDisconnectHandlers(connection, disconnectHandler){
         connection.socket.on('disconnect', () =>{
@@ -60,6 +62,17 @@ export default class Room{
             if(disconnectHandler)
                 disconnectHandler(connection.socket.id)
         });
+    }
+    muteUnmuteHandler(connection){
+        connection.socket.on('new_constrains', (options)=>{
+            console.log(options)
+            connection.constrains = options.constrains
+            for(let id in this.connections){
+                if(id != connection.socket.id){
+                    this.connections[id].socket.emit('new_constrains', options)
+                }
+            }
+        })
     }
     handshakeHandlers(connection,relaySessionDescription){
         connection.socket.on('relayICECandidate', (config) => {

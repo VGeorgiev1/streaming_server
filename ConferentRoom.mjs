@@ -17,9 +17,6 @@ export default class ConferentRoom extends Room{
             socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
         }
         this.broadcasters[socket.id] = this.setup_connection(socket,peerId,constrains)
-        this.handshakeHandlers(this.broadcasters[socket.id])
-        this.connectDisconnectHandlers(this.broadcasters[socket.id])
-
     }
     addPeer(socket, peerId, constrains){
         for(let id in this.broadcasters){
@@ -27,8 +24,6 @@ export default class ConferentRoom extends Room{
             socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains': this.broadcaster[id].constrains})
         }
         this.viewers[socket.id] = this.setup_connection(socket,peerId,null);
-        this.handshakeHandlers(this.broadcasters[socket.id])
-        this.connectDisconnectHandlers(this.broadcasters[socket.id])
     }
     isBroadcaster(id){
         return true//return this.broadcasters.indexOf(id) != -1

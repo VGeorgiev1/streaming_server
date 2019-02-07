@@ -14,13 +14,16 @@ window.onload = ()=>{
     let connections = 1;
     let columnsOnMedia = 3;
     connection.subscribeTo(window.channel, (mEl)=>{
-        let player = new Player({'media': connection, 'constrains': connection.getConstrains(), 'reso': '1by1'},3)
+        let broadcaster = new Player({'media': connection,'constrains': connection.getConstrains(), 'reso': '1by1'},3)
         let chat = new Chat(connection.getSocket())
-        $('.row:nth-child(1)').append(player.getPlayer())
+        $('.row:nth-child(1)').append(broadcaster.getPlayer())
         $('.big-container').append(chat.getChatInstance())
     })
     connection.onBroadcaster((mEl, socket_id, constrains)=>{
-        let player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains},3);
+        let player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, 'reso': '1by1'},3);
+        connection.onBroadcastNegotiation((constrains,mEl)=>{
+            player.negotiatePlayer(constrains, mEl)
+        })
         if(connections / 3 == 1){
             let breaker = $('<div class="w-100">');
             $('.row:nth-child(1)').append(breaker)
@@ -28,6 +31,7 @@ window.onload = ()=>{
         connections++
         $('.row:nth-child(1)').append(player.getPlayer())
     })
+
     connection.onPeerDiscconect((socket_id)=>{
         $(`#${socket_id}`).remove()
         connections--

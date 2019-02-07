@@ -22,15 +22,12 @@ export default class Broadcaster extends Connection{
             this.constrains.video = true
             this.constrains.audio = true
             this.local_media_stream = document.getElementById('screen').srcObject
-            console.log(this.local_media_stream)
             //document.getElementById('screen').remove();
         }
     
     }
     
     getAudioDevices(){
-        while(this.audioDevices.length == 0)
-            ;
         return this.audioDevices;
     }
     getVideoDevices(){
@@ -53,35 +50,45 @@ export default class Broadcaster extends Connection{
         })
     }
     setVideoBitrates(videoBitrate){
+        console.log(this.constrains.video)
         if(this.constrains.video && videoBitrate >=8 && videoBitrate<=2000){
-            
             this.videoBitrate = videoBitrate
             this.changeSdpSettings({video_bitrate: this.videoBitrate})
         }
     }
+    hasVideo(){
+        return this.videoDevices.length != 0;
+    }
     mute_audio(){
         let tracks = this.local_media_stream.getAudioTracks()
-        if(tracks[0].enabled){
-            tracks[0].enabled = false;
-            return;
-        }
-        tracks[0].enabled = true;
+        tracks[0].enabled = !tracks[0].enabled;
+        this.constrains = {audio:tracks[0].enabled, video: this.constrains.video}
+
+        this.sendConstrains()
+    }
+    sendConstrains(){
+        let payload = {constrains: this.constrains, socket_id: this.signaling_socket.id}
+        this.signaling_socket.emit('new_constrains', payload)
     }
     mute_video(){
         let tracks = this.local_media_stream.getVideoTracks()
-        if(tracks[0].enabled){
-            tracks[0].enabled = false;
-            return;
-        }
-        tracks[0].enabled = true;
+        tracks[0].enabled = !tracks[0].enabled;
+        this.constrains = {audio:this.constrains.audio, video: tracks[0].enabled}
+        
+        this.attachMediaStream(this.media_element, this.local_media_stream, {returnElm: true}, (new_element, new_constrains)=>{
+            this.media_element = new_element;
+            if(this.onMediaNegotiationCallback){
+                this.onMediaNegotiationCallback()
+            }
+        })
+        this.sendConstrains()
     }
     changeSdpSettings(properties){
         for(let peerId in this.peers){
             let peer_connection = this.peers[peerId]
             let disc
-            peer_connection.createOffer({ offerToReceiveAudio: this.offers.audio, offerToReceiveVideo: this.offers.video })
+            peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
                 .then((local_description)=>{
-                    local_description.sdp = this.setProperties(local_description.sdp,properties)
                     return peer_connection.setLocalDescription(local_description)
                 })
                 .then(()=>{
@@ -90,7 +97,7 @@ export default class Broadcaster extends Connection{
                 })
                 .catch((e)=>{
                     console.log(e.message)
-                })
+            })
         }
     }
     getMediaElement(){
@@ -104,9 +111,8 @@ export default class Broadcaster extends Connection{
         this.regHandler('rules', callback)
     }
     setOffersAndConstrains(constrains){
-        this.offers.audio = constrains.audio
-        this.offers.video = constrains.video
-        this.constrains = constrains
+        this.offers.audio = this.constrains.audio
+        this.offers.video = this.constrains.video
     }
     setCocoInterval(interval,callback){
        setInterval(()=>{
@@ -117,13 +123,26 @@ export default class Broadcaster extends Connection{
     changeTracks(constrains){
         this.local_media_stream.getTracks().forEach(track=> track.stop())
         this.getUserMedia(constrains, (stream)=>{
+            this.constrains = constrains
+            this.sendConstrains()
             this.local_media_stream = stream
             for(let peer in this.peers){
                 this.local_media_stream.getTracks().forEach(track =>{
-                    this.senders[peer][track.kind].replaceTrack(track)
+                    if(this.senders[peer][track.kind]){
+                        this.senders[peer][track.kind].replaceTrack(track)
+                    }else{
+                        this.senders[peer][track.kind] = this.peers[peer].addTrack(track,stream)
+                    }
                 })
             }
-            this.attachMediaStream(this.media_element, stream)
+            this.attachMediaStream(this.media_element, stream,{muted:false, returnElm: true}, (new_element,new_constrains)=>{
+                this.constrains = new_constrains;
+                
+                this.media_element = new_element;
+                if(this.onMediaNegotiationCallback){
+                    this.onMediaNegotiationCallback(new_constrains,this)
+                }
+            })
         })
     }
     changeVideoTrack(id, callback){
@@ -133,19 +152,19 @@ export default class Broadcaster extends Connection{
         this.changeTracks({audio: {deviceId: { exact: id}, video: this.constrains.video}})
     }
     getUserMedia(constrains,callback,errorback){
-        return navigator.mediaDevices.getUserMedia(constrains)
+         navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
                if(callback)
                     callback(stream)
         }).catch((e) => {
-            errorback(e.message)
+            console.log(e.message)//errorback(e.message)
         })    
     }
     setup_local_media(constrains, callback, errorback) {
         this.getUserMedia(constrains, (stream)=>{
             let mEl = null;
-            if (this.type == 'broadcaster') {
+            if (this instanceof Broadcaster) {
                 mEl = this.setup_media(constrains, stream, { muted: true, returnElm: true })
                 this.media_element = mEl
             }
@@ -160,9 +179,9 @@ export default class Broadcaster extends Connection{
                     return; 
                 }
                 this.getRoomRules((rules)=>{
-                    this.findConstrains(rules,(constrains)=>{
-                        this.setOffersAndConstrains(constrains)
-                        this.setup_local_media(constrains,
+                    this.findConstrains(rules,()=>{
+                        this.setOffersAndConstrains()
+                        this.setup_local_media(this.constrains,
                         (mEl,stream) => {
                             this.local_media_stream = stream
                             this.join_channel(this.constrains);
