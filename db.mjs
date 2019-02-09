@@ -34,8 +34,8 @@ export default class DbManager {
     getAllUsers(){
         return this.User.findAll({})
     }
-    getAllRooms(){
-        return this.Room.findAll({})
+    getAllRooms(options){
+        return this.Room.findAll(options)
     }
     createRoom(user_id, req){
         let options = {
@@ -50,7 +50,6 @@ export default class DbManager {
                 }
             }
         }
-        
         if(req.type == 'conferent'){
             this.Rule.create(options).then((rules, err)=>{
                 if(err)
@@ -72,7 +71,7 @@ export default class DbManager {
         return this.User.findOne({where: {username: req.name}})
     }
     getAllRoomsAndRules(){
-        return this.Room.findAll({include: [this.Rule]})
+        return this.Room.findAll({include: [this.Rule,{model:this.User, as:'owned_by'}]})
     }
     initializeTables(callback){
         this.seq.authenticate()
@@ -84,7 +83,7 @@ export default class DbManager {
             this.Session = Session(this.seq, Sequelize)
             this.Friends = Friends(this.seq, Sequelize)
             this.Room.belongsTo(this.Rule, {foreignKey: 'rulesId'})
-            this.Room.belongsTo(this.User, {foreignKey: 'owner'})            
+            this.Room.belongsTo(this.User, {as:'owned_by', foreignKey: 'owner'})            
             this.Session.belongsTo(this.User, {foreignKey: 'userId'})
             this.Friends.belongsTo(this.User, {as: 'user'});
             this.Friends.belongsTo(this.User, {as: 'friend'})

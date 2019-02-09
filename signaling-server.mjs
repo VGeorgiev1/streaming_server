@@ -30,14 +30,16 @@ app.use("/public",express.static(path.join(path.resolve() + '/public')));
 app.set('view engine', 'pug');
 
 var loginware = function (req, res, next) {
-    db.Session.findOne({where:{sessionToken: req.cookies.sessionToken}}).then((ses,err)=>{
+    
+    db.Session.findOne({where:{sessionToken: req.cookies.sessionToken},
+         include: [db.User]}).then((ses,err)=>{
         if(err)
             console.log(err)
         req.authenticated = false
-        
         if(ses){
             req.authenticated = true
             req.userId = ses.userId
+            req.username = ses.dataValues.user.dataValues.username
         }
         next()
     })
@@ -68,18 +70,21 @@ function OneDToTwoD(array,lenght){
 };
 
 app.get('/', async(req, res)=>{
-    db.getAllRooms().then((rooms,err)=>{
-        if(err)
-            console.log(err)
-        let dataValues = rooms.map((r)=>r.dataValues)
-        
-        res.render('list', {"room_rows": OneDToTwoD(rooms.map((r)=>r.dataValues),3), "auth": req.authenticated})
+    let payload = []
+    db.getAllRooms({include: [{model:db.User, as:'owned_by'}]}).then(rooms=>{
+        for(let room of rooms){
+            room.dataValues.active = room_container.getRoom(room.dataValues.id).active
+            room.dataValues.owned_by = room.dataValues.owned_by.dataValues
+            payload.push(room.dataValues)
+        }  
+        res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     })
+    
 });
 app.get('/room/create',(req, res)=>{
     if(!req.authenticated) {res.redirect('/login')}
     else{
-        res.render('create', {auth: req.authenticated})
+        res.render('create', {auth: req.authenticated, user: req.username})
     }
 })
 app.post('/accept', (req, res)=>{
@@ -150,7 +155,7 @@ app.get('/people', (req, res)=>{
                     dataValues.push({id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
                 }
             }
-            res.render('people',{people_list:OneDToTwoD(dataValues, 3), auth: req.authenticated})
+            res.render('people',{people_list:OneDToTwoD(dataValues, 3), auth: req.authenticated, user: req.username})
         })
     }
 })
@@ -189,13 +194,13 @@ app.get('/room/list', async (req,res)=>{
     db.getAllRooms().then((rooms, err)=>{
         if(err)
             console.log(err)
-            res.render('list', {"rooms": rooms, "auth": req.authenticated})
+            res.render('list', {"rooms": rooms, "auth": req.authenticated, user: req.username})
     })
 })
 app.get('/register', (req,res)=>{
     if(req.authenticated) {res.redirect('/')}
     else{
-        res.render('register', {"auth": req.authenticated})
+        res.render('register', {"auth": req.authenticated, user: req.username})
     }
 })
 app.post('/register', async(req,res)=>{
@@ -213,7 +218,7 @@ app.post('/register', async(req,res)=>{
 app.get('/login', (req,res)=>{
     if(req.authenticated) {res.redirect('/')}
     else{
-        res.render('login', {"auth": req.authenticated})
+        res.render('login', {"auth": req.authenticated, user: req.username})
     }
 })
 app.get('/logout', async(req,res)=>{
@@ -222,6 +227,20 @@ app.get('/logout', async(req,res)=>{
         db.destroySession(req.cookies.sessionToken).then(()=>{
             res.clearCookie("sessionToken");
             res.redirect('/')
+        })
+    }
+})
+app.get('/streams', async(req,res)=>{
+    if(!req.authenticated){res.redirect('/')}
+    else{
+        db.getAllRooms({where:{type:"streaming"}, include:[{model:db.User, as:'owned_by'}]}).then(rooms=>{
+            let payload = []
+            for(let room of rooms){
+                room.dataValues.active = room_container.getRoom(room.dataValues.id).active
+                room.dataValues.owned_by = room.dataValues.owned_by.dataValues
+                payload.push(room.dataValues)
+            }  
+            res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
         })
     }
 })
@@ -254,12 +273,12 @@ app.get('/room/:id',async (req,res)=>{
                 console.log(err)
             userId = ses.dataValues.user.dataValues.id
             isBroadcaster = room.isBroadcaster(userId)
-            res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
+            res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
         })
     }else{
         userId = crypto.randomBytes(10).toString("hex")
         isBroadcaster = false
-        res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated});
+        res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
     }
     
 })

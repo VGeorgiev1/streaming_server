@@ -48,17 +48,19 @@ function search(){
                         let cont = $(`<div id=${user.id}>`)
                         switch(user.status){
                             case 'invite':
-                                cont.append($(`<button class="btn btn-danger mb-2"  onclick="removeFriend(${user.id})">`).html("Cancel Request"))
+                                cont.append($(`<button class="btn btn-danger btn-block mb-2"  onclick="removeFriend(${user.id})">`).html("Cancel Request"))
                                 break;
                             case 'request':
-                                cont.append($(`<button class="btn btn-outline-success mb-2"  onclick="acceptRequest(${user.id})">`).html("Accept Request"))
-                                cont.append($(`<button class="btn btn-danger mb-2"  onclick="removeFriend(${user.id})">`).html("Decline Request"))                      
+                                cont.append($(`<button class="btn btn-outline-success btn-block mb-2"  onclick="acceptRequest(${user.id})">`).html("Accept Request"))
+                                cont.append($(`<button class="btn btn-danger btn-block mb-2"  onclick="removeFriend(${user.id})">`).html("Decline Request"))                      
                                 break;
                             case 'not_affiliated':
-                                cont.append($(`<button class="btn btn-outline-success mb-2"  onclick="sendRequest(${user.id})">`).html("Send Request"))
+                                cont.append($(`<button class="btn btn-outline-success btn-block mb-2"  onclick="sendRequest(${user.id})">`).html("Send Request"))
                                 break;
                             case 'friends':
-                                cont.append($(`<button class="btn btn-danger mb-2"  onclick="removeFriend(${user.id})">`).html("Remove Friend"))                           
+                                cont.append($(`<button class="btn btn-danger btn-block mb-2"  onclick="removeFriend(${user.id})">`).html("Remove Friend"))                           
+                                cont.append($(`<button class="btn btn-outline-success btn-block mb-2"  onclick="call(${user.id})">`).html("Call"))                           
+
                                 break;
                         }
                         card.append(header)

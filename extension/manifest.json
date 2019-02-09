@@ -3,7 +3,12 @@
     "version": "1.0",
     "description": "Screen Record  Extension for webrtc!",
     "manifest_version": 2,
-    "permissions": ["storage", "desktopCapture", "tabs"],
+    "permissions": [
+      "desktopCapture",
+      "storage",
+      "tabs",
+      "tabCapture",
+      "activeTab"],
     "background": {
         "scripts": ["background.js"],
         "persistent": false

@@ -3,6 +3,7 @@ block scripts
 	script.
 		window.channel = "#{channel}"
 		window.id = "#{id}"
+		window.username = "#{user}"
 	script(src='https://cdn.socket.io/socket.io-1.4.5.js')
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
 	link(rel="stylesheet", href="/public/css/menu.css")
@@ -15,5 +16,5 @@ block scripts
 block content
 	.container
 		.row
-			.big-container.border.border-primary.rounded.h-100.w-25.position-absolute.pr-4.pl-4.pb-4(style='right: 30px;')
-				.scroll(style="overflow-y: scroll; height: 90%")
+			.big-container.border.border-primary.rounded.h-75.w-25.position-absolute.pr-4.pl-4.pb-1(style='right: 30px;')
+				.scroll(style="overflow-y: scroll; height: 80%")

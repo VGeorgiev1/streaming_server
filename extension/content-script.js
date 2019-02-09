@@ -3,12 +3,17 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
     let port = chrome.runtime.connect();
     port.onMessage.addListener(function (obj) {
         navigator.mediaDevices.getUserMedia({
-            audio:false,
+            audio:{
+                mandatory: {
+                    chromeMediaSource: 'desktop',
+                    chromeMediaSourceId: obj.sourceId
+                }
+            },
             video:{ 
                 mandatory: {
                     chromeMediaSource: 'desktop',
                     chromeMediaSourceId: obj.sourceId
-                },
+                }
             }
         }).then((stream)=>{
             let body = document.getElementsByTagName('body')[0]

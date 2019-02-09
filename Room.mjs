@@ -54,10 +54,13 @@ export default class Room{
         this.handshakeHandlers(this.connections[socket.id]);
         this.connectDisconnectHandlers(this.connections[socket.id], dissconnectHandler)
         this.muteUnmuteHandler(this.connections[socket.id]);
+        return this.connections[socket.id]
+
     }
     connectDisconnectHandlers(connection, disconnectHandler){
         connection.socket.on('disconnect', () =>{
             this.kickUser(connection.socket.id)
+            
             delete this.connections[connection.socket.id];
             if(disconnectHandler)
                 disconnectHandler(connection.socket.id)
@@ -65,11 +68,10 @@ export default class Room{
     }
     muteUnmuteHandler(connection){
         connection.socket.on('new_constrains', (options)=>{
-            console.log(options)
-            connection.constrains = options.constrains
+            this.connections[options.socket_id].constrains = options.constrains
             for(let id in this.connections){
                 if(id != connection.socket.id){
-                    this.connections[id].socket.emit('new_constrains', options)
+                    this.connections[id].socket.emit('relayNewConstrains', options)
                 }
             }
         })

@@ -17,6 +17,14 @@ export default class Player{
         this.body =  $('<div class="card-body">')
         
     }
+    addStream(mEl){
+        if($(mEl).is('video')){
+            this.body.prepend(this.getVideoContext(mEl))
+
+        }else{
+            this.body.append(this.getAudioContext(mEl))
+        }
+    }
     negotiatePlayer(constrains,mEl){
         this.constrains = constrains
         this.media = mEl;
@@ -73,7 +81,8 @@ export default class Player{
                 .append(this.getAudioBitrateControl())
                 .append(this.getAudioInputsControl()))
                 .append(this.getAudioMuteControl())
-            if(this.media.hasVideo()){
+            
+                if(this.media.hasVideo()){
                 this.col.append(this.getVideoMuteControl());
             }
             return this.col
@@ -81,35 +90,47 @@ export default class Player{
         return this.col.append(this.body.append(this.getAudioContext()))
     }
 
-    getAudioContext(){
+    getAudioContext(media){
         let div_cont = $(`<div id=${this.id} class="text-center embed-responsive embed-responsive-item" mb-2">`)
-        div_cont.append(this.iselement ? $(this.media).attr("style", "width:80%"):  $(this.media.getMediaElement()).attr("style", "width:80%"));
+        if(media){
+            div_cont.append(this.iselement ? $(media).attr("style", "width:80%"):  $(media.getMediaElement()).attr("style", "width:80%"));
+
+        }else{
+            div_cont.append(this.iselement ? $(this.media).attr("style", "width:80%"):  $(this.media.getMediaElement()).attr("style", "width:80%"));
+        }
         return div_cont
     }
     getVideoContext(media){
-        let div_cont = $(`<div id=${this.id} class="embed-responsive embed-responsive-${this.reso}">`)
-        div_cont.append(this.iselement ? $(this.media): $(this.media.getMediaElement()))
+        
+        let div_cont = $(`<div id=${this.id} class="embed-responsive embed-responsive-${this.reso}", style="position: relative;">`)
+        if(media){
+            div_cont.append(this.iselement ? $(media): $(media.getMediaElement()))
+
+        }else{
+            div_cont.append(this.iselement ? $(this.media): $(this.media.getMediaElement()))
+
+        }
         return div_cont
     }
     getAudioMuteControl(){
         return $('<button id="audio_mute" class="btn btn-danger">').html('Mute').click(()=>{
             $('#audio_mute').html() == 'Mute'?
-                $('#audio_mute').html('Umute').removeClass('btn-outline-danger').addClass('btn-outline-success')
+                $('#audio_mute').html('Umute').removeClass('btn-danger').addClass('btn-success')
             :
-                $('#audio_mute').html('Mute').removeClass('btn-outline-success').addClass('btn btn-outline-danger')
+                $('#audio_mute').html('Mute').removeClass('btn-success').addClass('btn-danger')
             this.media.mute_audio()
         })
     }
     getVideoMuteControl(){
-        return $('<button class="btn btn-outline-success" id="video_mute">').html('Start Video').click(()=>{
+        return $('<button class="btn btn-success" id="video_mute">').html('Start Video').click(()=>{
             $('#video_mute').html() == 'Start Video' ?
                 ($('#video_mute').html('Stop Video'),
-                 $('#video_mute').removeClass('btn-outline-success').addClass('btn btn-outline-danger'),
+                 $('#video_mute').removeClass('btn-success').addClass('btn-danger'),
                 this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl()),
-                this.media.changeTracks({audio: true, video: true}))
+                this.media.hasActiveVideo()?this.media.mute_video():this.media.requestVideo())
             :
                 ($('#video_mute').html('Start Video'),
-                 $('#video_mute').removeClass('btn-outline-danger').addClass('btn-outline-success'),
+                 $('#video_mute').removeClass('btn-danger').addClass('btn-success'),
                  $('#video_input').remove(),
                  $('#video_bitrate').remove(),
                  this.media.mute_video())

@@ -18,22 +18,21 @@ html
 							a.nav-link(href="/register") Sign up
 						li.nav-item
 							a.nav-link(href="/login") Sign in
+						//- li.nav-item
+						//- 	button.btn.btn-primary(type='button', data-toggle='modal', data-target='#exampleModal') Launch demo modal
+					else
 						li.nav-item
-							a.nav-link(href="#") My rooms
+							a.nav-link(href="/streams") Streams
 						li.nav-item
-							a.nav-link(href="/people") Friends
-					li.nav-item
-						a.nav-link(href="/streams") Streams
-					li.nav-item
-						a.nav-link(href="/room/create") Create room
-					li.nav-item
-						button.btn.btn-primary(type='button', data-toggle='modal', data-target='#exampleModal') Launch demo modal
+							a.nav-link(href="/room/create") Create room
 				if auth
 					ul.nav.navbar-nav.navbar-right
+						span.navbar-text="Hello, " + user + "!"
 						li.nav-item
-							a.nav-link(href="/profile") Profile
+							a.nav-link(href="/people") Friends
 						li.nav-item
 							a.nav-link(href="/logout") Logout
+						
 						#exampleModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='exampleModalLabel', aria-hidden='true')
 							.modal-dialog(role='document')
 								.modal-content

@@ -33,17 +33,21 @@ export default class Connection {
     }
 
     attachMediaStream(element, stream,options, callback) {
-        
-        let new_constrains = {audio:stream.getAudioTracks().filter(t => t.enabled).length != 0, video: stream.getVideoTracks().filter(t => t.enabled).length != 0 }
+
+        let should_constrain_audio = stream.getAudioTracks().filter(t => t.enabled).length != 0 
+        let should_constrain_video = stream.getVideoTracks().filter(t => t.enabled).length != 0
+        let new_constrains = {audio:should_constrain_audio, video: should_constrain_video}
         let new_element;
         if(element != null){
-            
+
             if((new_constrains.video && element.nodeName == 'AUDIO') ||
             (!new_constrains.video && element.nodeName == 'VIDEO')){
                 new_element = this.setup_media(new_constrains,stream,options)
-            
+                
             }else{
-                element.srcObject = stream;
+                stream.getTracks().forEach(t=>{
+                    element.srcObject.addTrack(t)
+                })
                 new_element = element
             }
         }else{
@@ -53,42 +57,68 @@ export default class Connection {
             callback(new_element,new_constrains)
     }
     addTrack(id, stream){
+
         let element = this.peer_media_elements[id]
         let old_tracks = element.srcObject.getTracks()
         old_tracks.forEach((t)=>{
-            stream.addTrack(t)
+            stream.addTrack(t)    
         })
 
         this.attachMediaStream(element, stream,{muted:false, returnElm: true}, (new_element,new_constrains)=>{
             this.peer_media_elements[id] = new_element
-            this.setOffersAnd
+            
             if(this.onBroadcastNegotitaioncallback){
                 this.onBroadcastNegotitaioncallback(new_constrains,new_element)
             }
         })
     }
-    negotiate(peer_connection, socket_id){
+    async negotiate(peer_connection, socket_id){
         
-        peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
-        .then((local_description)=>{
-            return peer_connection.setLocalDescription(local_description)
-        })
-        .then(()=>{
+        if (peer_connection._negotiating == true) return;
+        
+        peer_connection._negotiating = true;
+        try {
+            
+            const offer = await peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+            await peer_connection.setLocalDescription(offer);
+    
+            
             this.signaling_socket.emit('relaySessionDescription',
             { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
-        })
-        .catch((e)=>{
-            console.log(e.message)
-        })
+        } catch (e) {
+            reportError(e)
+        } finally {
+            peer_connection._negotiating = false;
+        }
+        
+    }
+    mixVideoTracks(toMix, current){
+        let tag = current
+        var canvas = document.createElement("canvas");
+        let view_wview = 1280;
+        let view_hview = 720;
+        canvas.tabIndex = 0;
+        var ctx = canvas.getContext("2d");
+        canvas.height = view_hview;
+        canvas.width = view_wview
+        $('body').append(canvas)
+        function draw()
+        {
+            ctx.drawImage(tag, 0, 0, view_wview, view_hview);
+            ctx.drawImage(toMix, 0, 0, 300, 300);
+
+            window.requestAnimationFrame(draw);
+        }
+        window.requestAnimationFrame(draw);
+        return canvas.captureStream(30);
     }
     regAddPeer() {
         
-        this.regHandler('addPeer', (config) => {
+        this.regHandler('addPeer', async(config) => {
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
                 return;
             }
-            console.log(config)
             var peer_connection = new RTCPeerConnection(
                 { "iceServers": ICE_SERVERS },
                 { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
@@ -108,44 +138,32 @@ export default class Connection {
             }
 
             peer_connection.ontrack = (event) => {
-                if (this.peer_media_elements[socket_id]) {
+                if (this.peer_media_elements[socket_id] != undefined) {
                     this.addTrack(socket_id, event.streams[0])
                     return;
                 }
-                this.setupStream(event.streams[0],config.constrains)
-                event.streams[0].getTracks().forEach(t=>{
-                    console.log(t)
-                })
-                this.attachMediaStream(null,event.streams[0],{returnElm: true, muted: false}, (new_element, new_constrains)=>{
+                this.setupStream(event.streams[0], config.constrains)
+                this.attachMediaStream(null,event.streams[0],{returnElm: true, muted: false, constrains: config.constrains}, (new_element, new_constrains)=>{
                     this.peer_media_elements[socket_id] = new_element
                 })
-                peer_connection.onnegotiationneeded = (event) =>{
-                    
-                    peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true})
-                    .then((local_description)=>{
-                        console.log(local_description.sdp)
-                        return peer_connection.setLocalDescription(local_description)
-                    })
-                    .then(()=>{
-                        this.signaling_socket.emit('relaySessionDescription',
-                        { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
-                    })
-                    .catch((e)=>{
-                        console.log(e.message)
-                    })
 
-                }
                 this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
-
-            if (this instanceof Broadcaster) {
+            if (this.constrains != null) {
                 this.senders[socket_id] = {}
+
                 this.local_media_stream.getTracks().forEach((track) =>{
-                    this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream)
+                    console.log(track)
+                    if(!this.senders[socket_id][track.kind]){
+                        this.senders[socket_id][track.kind] = {}
+                    }
+                    this.senders[socket_id][track.kind][track.label] = peer_connection.addTrack(track, this.local_media_stream)
                 });
             }
             if (config.should_create_offer) {
-                this.negotiate(peer_connection, socket_id)
+               peer_connection.onnegotiationneeded = async(event) =>{
+                    this.negotiate(peer_connection, socket_id)
+               }
             }
         })
     }
@@ -154,12 +172,28 @@ export default class Connection {
             this.peers[config.socket_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
         })
     }
+    sdp(sdp, media, bitrate){
+        var lines = sdp.split("\n");
+        let matchMedia = new RegExp("m="+media)
+        let matches = matchMedia.exec(sdp)
+        if(matches == null) return sdp;
+        let mline = 0;
+        for (var i = 0; i < lines.length; i++) {
+            if (matchMedia.exec(lines[i]) != null) {
+                mline = i
+                break;
+            }
+        }
+        mline++;
+        lines.splice(mline,0,"b=AS:"+bitrate)
+        return lines.join("\n")
+    }
     setProperties(sdp, properties){
         if(properties.audio_bitrate){
-            sdp = sdp.replace(/a=mid:audio\r\n/g, 'a=mid:audio\r\nb=AS:' + properties.audio_bitrate + '\r\n');
+            return this.sdp(sdp, 'audio', properties.audio_bitrate)
         }
         if(properties.video_bitrate){
-            sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + properties.video_bitrate + '\r\n');
+            return this.sdp(sdp, 'video', properties.video_bitrate)
         }
         
         return sdp
@@ -173,10 +207,15 @@ export default class Connection {
             var stuff = peer.setRemoteDescription(desc,
                 () => {
                     if (remote_description.type == "offer") {
+                        console.log('answer')
                         peer.createAnswer()
                             .then((local_description)=>{
+                                peer.onnegotiationneeded = async(event) =>{
+                                    this.negotiate(peer, socket_id)
+                                }
                                 if(config){
                                     if(config.properties){
+                                        console.log('wut')
                                         let before = local_description.sdp
                                         local_description.sdp = this.setProperties(local_description.sdp, config.properties)
                                     }
@@ -203,7 +242,7 @@ export default class Connection {
         })
     }
     regChangeConstrainsHandler(){
-        this.signaling_socket.on('new_constrains', (options)=>{
+        this.signaling_socket.on('relayNewConstrains', (options)=>{
             let element = this.peer_media_elements[options.socket_id];
             this.setupStream(element.srcObject, options.constrains)
             this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
@@ -215,11 +254,12 @@ export default class Connection {
         })
     }
     regConnectHandler(callback) {
-        this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
         this.regRemovePeer();
         this.regChangeConstrainsHandler();
+        this.regAddPeer();
+
         this.regHandler('connect', () => {
             if (callback)
                 callback()
@@ -230,7 +270,7 @@ export default class Connection {
             if(config.socket_id in this.peers){
                 this.peers[config.socket_id].close();
                 delete this.peers[config.socket_id];
-                delete this.senders[config.socket_id]
+                //delete this.senders[config.socket_id]
             }
             
             if(this.onPeerDiscconectCallback)

@@ -10,7 +10,7 @@ block content
 						strong Create room
 					.card-body.px-lg-5.pt-0
 						form.md-form(method='POST', action='/room/create')
-							input#name.form-control(type="text" placeholder="Room name")
+							input#name.form-control(type="text" placeholder="Room name" name="name")
 							fieldset.form-group
 								.form-check
 									input#streaming.form-check-input(type="radio" name="type" value="streaming")

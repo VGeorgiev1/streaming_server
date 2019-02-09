@@ -5,14 +5,14 @@ mixin card(person)
 					.card-body.text-dark
 						div(id=person.id)
 							if person.status == 'friends'
-								button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Remove friend
-								button.btn.btn-outline-success.mb-2(onclick=`call(${person.id})`) Call
+								button.btn.btn-danger.mb-2.btn-block(onclick=`removeFriend(${person.id})`) Remove friend
+								button.btn.btn-outline-success.mb-2.btn-block(onclick=`call(${person.id})`) Call
 							else
 								if person.status == 'request'
-									button.btn.btn-outline-success.mb-2(onclick=`acceptRequest(${person.id})`) Accept Request
-									button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Decline Request							
+									button.btn.btn-outline-success.btn-block.mb-2(onclick=`acceptRequest(${person.id})`) Accept Request
+									button.btn.btn-danger.btn-block.mb-2(onclick=`removeFriend(${person.id})`) Decline Request							
 								else
-									button.btn.btn-danger.mb-2(onclick=`removeFriend(${person.id})`) Cancel Request
+									button.btn.btn-danger.btn-block.mb-2(onclick=`removeFriend(${person.id})`) Cancel Request
 							
 block scripts
 	script(src="/public/js/addFriend.js")
