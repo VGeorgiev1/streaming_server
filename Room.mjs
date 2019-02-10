@@ -18,20 +18,8 @@ export default class Room{
         this.connectTriggers.push(callback)
     }
     obHandler(connection){
-        connection.socket.on('tensor', (obj)=>{
-            const numChannels = 4;
-            const pixels = new Int32Array(Object.values(obj.data))
-            let pixel_tf = tf.default.tensor(pixels);
-           
-            const outShape = [obj.height, obj.width, numChannels];
-            const input = tf.default.tensor(pixels, outShape, 'int32');
-            const sliced = tf.default.slice(input,[0,0], [obj.height, obj.width, 3])
-            
-            model.detect(sliced).then((predictions)=>{
-                
-                connection.socket.emit("predictions", predictions);
-
-            })
+        connection.socket.on('topics', (topics)=>{
+            this.topics = topics
         })
     }
     getPeers(){

@@ -18,11 +18,6 @@ export default class DbManager {
                 operatorsAliases: false
             })
             
-        } else {
-            this.seq = new Sequelize('stream_app', 'postgres', 'kon4etobon4eto', {
-                host:'localhost',
-                dialect:'postgres'
-            });
         }
         this.Op = Op
     }

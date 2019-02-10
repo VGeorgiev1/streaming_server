@@ -7,7 +7,15 @@ function sendRequest(id){
             console.log(e)
         })
 }
-
+function call(id){
+    makeRequest("/call", "POST", JSON.stringify({'id': id}), "application/json; charset=utf-8")
+        .then((res)=>{
+           
+        })
+        .catch(e=>{
+            console.log(e)
+        })
+}
 function makeRequest(url, method, data, contentTyppe){
     return $.ajax({
         url:url,

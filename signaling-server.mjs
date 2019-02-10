@@ -70,15 +70,12 @@ function OneDToTwoD(array,lenght){
 };
 
 app.get('/', async(req, res)=>{
-    let payload = []
-    db.getAllRooms({include: [{model:db.User, as:'owned_by'}]}).then(rooms=>{
-        for(let room of rooms){
-            room.dataValues.active = room_container.getRoom(room.dataValues.id).active
-            room.dataValues.owned_by = room.dataValues.owned_by.dataValues
-            payload.push(room.dataValues)
-        }  
-        res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
-    })
+    let payload = room_container.where({})
+    for(let room of payload){
+        let user = await db.User.findOne({where:{id: room.owner}})
+        room.username = user.dataValues.username
+    }
+    res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     
 });
 app.get('/room/create',(req, res)=>{
@@ -102,6 +99,15 @@ app.post('/remove', (req,res)=>{
         }).then((result)=>{
             res.send("removed")
         })
+})
+app.get('/search', async(req,res)=>{
+    let topic= req.query.topic
+    let payload = room_container.whereTopic(topic)
+    for(let room of payload){
+        let user = await db.User.findOne({where:{id: room.owner}})
+        room.username = user.dataValues.username
+    }
+    res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
 })
 app.post('/search', (req,res)=>{
     db.User.findAll({
@@ -202,6 +208,10 @@ app.get('/register', (req,res)=>{
     else{
         res.render('register', {"auth": req.authenticated, user: req.username})
     }
+})
+app.post('/call', (req,res)=>{
+    console.log(req.body)
+    res.send('okey')
 })
 app.post('/register', async(req,res)=>{
     let hash = await bcrypt.hash(req.body.password, SALT_ROUNDS)

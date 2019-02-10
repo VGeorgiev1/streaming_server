@@ -12,9 +12,8 @@ document.addEventListener('screen_ready', function() {
         $('.row').prepend(player.getPlayer())
         $('.big-container').append(chat.getChatInstance())
         screen.requestAudio()
-
         $('body').append($('<button>Click</button>').click(()=>{
-            screen.requestVideo(screen.getVideoTrack())
+            screen.mixVideoSources(screen.getVideoTrack())
         }))
         
     })

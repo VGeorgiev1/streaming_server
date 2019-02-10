@@ -8,6 +8,7 @@ export default class StreamingRoom extends Room{
         this.owner = ownerId
         this.active = false;
         this.connectTriggers = []
+        this.topics = ["apple"]
     }
 
     addSocket(socket,constrains,peerId){

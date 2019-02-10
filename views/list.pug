@@ -6,14 +6,14 @@ mixin card(room)
 			.card-body.text-dark
 				h5.card-title=room.type
 			.card-footer
-				p.card-text="Owner: " + room.owned_by.username
+				p.card-text="Owner: " + room.username
 	else
 		.card.border-dark.mb-3(style="max-width: 20rem;")
 			a.card-header.bg-danger.text-white(href="/room/" + room.id)=room.name
 			.card-body.text-dark
 				h5.card-title=room.type
 			.card-footer
-				p.card-text="Owner: " +room.owned_by.username
+				p.card-text="Owner: " +room.username
 
 block content
 	.container

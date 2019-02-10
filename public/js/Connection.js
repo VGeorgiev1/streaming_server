@@ -92,26 +92,7 @@ export default class Connection {
         }
         
     }
-    mixVideoTracks(toMix, current){
-        let tag = current
-        var canvas = document.createElement("canvas");
-        let view_wview = 1280;
-        let view_hview = 720;
-        canvas.tabIndex = 0;
-        var ctx = canvas.getContext("2d");
-        canvas.height = view_hview;
-        canvas.width = view_wview
-        $('body').append(canvas)
-        function draw()
-        {
-            ctx.drawImage(tag, 0, 0, view_wview, view_hview);
-            ctx.drawImage(toMix, 0, 0, 300, 300);
-
-            window.requestAnimationFrame(draw);
-        }
-        window.requestAnimationFrame(draw);
-        return canvas.captureStream(30);
-    }
+    
     regAddPeer() {
         
         this.regHandler('addPeer', async(config) => {
@@ -150,10 +131,7 @@ export default class Connection {
                 this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
             if (this.constrains != null) {
-                this.senders[socket_id] = {}
-
                 this.local_media_stream.getTracks().forEach((track) =>{
-                    console.log(track)
                     if(!this.senders[socket_id][track.kind]){
                         this.senders[socket_id][track.kind] = {}
                     }

@@ -44,8 +44,8 @@ html
 									.modal-footer
 										button.btn.btn-secondary(type='button', data-dismiss='modal') Close
 										button.btn.btn-primary(type='button') Save changes
-				form.form-inline.my-2.my-lg-0
-					input.form-control.mr-sm-2(type="search" placeholder="Search" aria-label="Search")
+				form.form-inline.my-2.my-lg-0(method="GET", action="/search")
+					input.form-control.mr-sm-2(type="search" placeholder="Search" aria-label="Search" name="topic")
 					button.btn.btn-outline-success.my-2.my-sm-0(type="submit") Search
 		block content
 

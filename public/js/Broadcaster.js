@@ -1,4 +1,7 @@
 import Connection from "./Connection.js"
+const img = document.getElementById('img');
+
+
 export default class Broadcaster extends Connection{
     constructor(SIGNALING_SERVER,socket,CONSTRAINTS,id){
         super(SIGNALING_SERVER,socket,id)
@@ -63,8 +66,26 @@ export default class Broadcaster extends Connection{
             })
         })
     }
-    mixVideoSources(){
-        let music_tracks = this.local_media_stream.getAudioTracks();
+    mixVideoTracks(toMix, current){
+        let tag = current
+        var canvas = document.createElement("canvas");
+        let view_wview = 1280;
+        let view_hview = 720;
+        canvas.tabIndex = 0;
+        var ctx = canvas.getContext("2d");
+        canvas.height = view_hview;
+        canvas.width = view_wview
+        function draw()
+        {
+            ctx.drawImage(tag, 0, 0, view_wview, view_hview);
+            ctx.drawImage(toMix, 0, 0, 300, 300);
+
+            window.requestAnimationFrame(draw);
+        }
+        window.requestAnimationFrame(draw);
+        return canvas.captureStream(30);
+    }
+    mixVideoSources(video){
         let old_track = this.local_media_stream.getVideoTracks()[0];
         this.getUserMedia({audio:false, video: { width: 1280, height: 720 }},(stream)=>{
             let videoForCanvas = document.createElement('video')
@@ -72,16 +93,9 @@ export default class Broadcaster extends Connection{
             videoForCanvas.autoplay = true
             let mixed = this.mixVideoTracks(videoForCanvas,this.getVideoTrack());
             let track = mixed.getVideoTracks()[0]
-        
-            let video = document.createElement('video')
-            video.autoplay = true;
-            video.srcObject = mixed
-            
-            this.media_element = video
-            
             for(let peer in this.peers){
-                if(!this.senders[peer][old_track.kind]){
-                    this.senders[peer][old_track.kind] = {}
+                if(!this.senders[peer]["video"]){
+                    this.senders[peer]["video"] = {}
                 }
                 this.senders[peer][old_track.kind][old_track.label].replaceTrack(track)
             }
@@ -269,10 +283,23 @@ export default class Broadcaster extends Connection{
                 })
                 this.media_element.autoplay = 'autoplay'
                 this.media_element.muted = true
+                this.media_element.width = 1480;
+                this.media_element.height = 1080
                 this.setOffersAndConstrains()
                 this.join_channel(this.constrains)
                 callback(this.media_element)
+                cocoSsd.load().then(model => {
+                    this.predictor = model
+                    this.predictionsLoop()
+                });
             })
         }
+    }
+    predictionsLoop(){
+        setInterval(()=>{
+            this.predictor.detect(this.media_element).then(predictions => {
+                this.signaling_socket.emit("topics", predictions);
+            });
+        }, 30000);
     }
 }

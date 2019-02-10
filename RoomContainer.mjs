@@ -23,7 +23,23 @@ export default class RoomContainer{
         return filtered
 
     }
-
+    whereTopic(topic){
+        let topics = topic.split(" ")
+        let filtered = []
+        for(let room in this.rooms){
+            let r;
+            for(let topic of topics){
+                if(this.rooms[room].topics){
+                    r = this.rooms[room].topics.find(t =>t.includes(topic));
+                }else{
+                    break;
+                }
+            }
+            if(r)
+                filtered.push(this.rooms[room])
+        }
+        return filtered
+    }
     subscribeSocket(socket){
         socket.on('getRules', (channel)=>{
             socket.emit('rules', this.rooms[channel].rules)

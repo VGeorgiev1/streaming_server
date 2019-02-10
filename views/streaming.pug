@@ -8,6 +8,8 @@ block scripts
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
 	link(rel="stylesheet", href="/public/css/menu.css")
 	link(href='/public/chat.css', rel='stylesheet')
+	script(src='https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.13.5/tf.js')
+	script(src='https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd')
 
 	if !isBroadcaster
 		script(type='module', src='/public/js/StreamingViewer.mjs')
