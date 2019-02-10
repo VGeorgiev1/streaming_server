@@ -243,15 +243,12 @@ app.get('/logout', async(req,res)=>{
 app.get('/streams', async(req,res)=>{
     if(!req.authenticated){res.redirect('/')}
     else{
-        db.getAllRooms({where:{type:"streaming"}, include:[{model:db.User, as:'owned_by'}]}).then(rooms=>{
-            let payload = []
-            for(let room of rooms){
-                room.dataValues.active = room_container.getRoom(room.dataValues.id).active
-                room.dataValues.owned_by = room.dataValues.owned_by.dataValues
-                payload.push(room.dataValues)
-            }  
-            res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
-        })
+        let payload = room_container.where({type:"streaming"})
+        for(let room of payload){
+            let user = await db.User.findOne({where:{id: room.owner}})
+            room.username = user.dataValues.username
+        }
+        res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     }
 })
 app.post('/login', async(req,res)=>{

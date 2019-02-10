@@ -131,11 +131,17 @@ export default class Connection {
                 this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
             }
             if (this.constrains != null) {
+                this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().forEach((track) =>{
+                    console.log(track)
                     if(!this.senders[socket_id][track.kind]){
                         this.senders[socket_id][track.kind] = {}
                     }
-                    this.senders[socket_id][track.kind][track.label] = peer_connection.addTrack(track, this.local_media_stream)
+                    if(track.kind.includes('System') || track.kind.includes('screen')){
+                        this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
+                    }else{
+                        this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
+                    }
                 });
             }
             if (config.should_create_offer) {

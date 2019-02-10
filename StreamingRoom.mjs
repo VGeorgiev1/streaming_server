@@ -8,7 +8,7 @@ export default class StreamingRoom extends Room{
         this.owner = ownerId
         this.active = false;
         this.connectTriggers = []
-        this.topics = ["apple"]
+        this.topics = []
     }
 
     addSocket(socket,constrains,peerId){
@@ -33,7 +33,6 @@ export default class StreamingRoom extends Room{
     addBroadcaster(socket, constrains, peerId, dissconnectHandler){
 
         for(let id in this.connections){
-
             if(peerId != this.connections[id].userId){
                 this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
                 

@@ -122,7 +122,6 @@ export default class Broadcaster extends Connection{
         }
     }
     hasVideo(){
-        console.log(this.videoDevices)
         return this.videoDevices.length != 0;
     }
     hasActiveVideo(){
@@ -195,8 +194,6 @@ export default class Broadcaster extends Connection{
         },interval)
     }
     changeTracks(constrains){
-    
-        // this.local_media_stream.getTracks().forEach(track=> track.stop())
         this.getUserMedia(constrains, (stream)=>{
             for(let peer in this.peers){
                 stream.getTracks().forEach(track =>{
@@ -204,11 +201,20 @@ export default class Broadcaster extends Connection{
                     if(!this.senders[peer][track.kind]){
                         this.senders[peer][track.kind] = {}
                     }
-                    if(this.senders[peer][track.kind]){
-                        this.senders[peer][track.kind][track.label].replaceTrack(track)
+                    if(track.kind.includes('System') || track.kind.includes('screen')){
+                        if(this.senders[peer][track.kind]["system"]){
+                            this.senders[peer][track.kind]["system"].replaceTrack(track)
+                        }else{
+                            this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
+                        }
                     }else{
-                        this.senders[peer][track.kind][track.label] = this.peers[peer].addTrack(track,stream)
+                        if(this.senders[peer][track.kind]["user"]){
+                            this.senders[peer][track.kind]["user"].replaceTrack(track)
+                        }else{
+                            this.senders[peer][track.kind]["user"] = this.peers[peer].addTrack(track,stream)
+                        }
                     }
+
                 })
             }
             

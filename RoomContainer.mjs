@@ -9,13 +9,13 @@ export default class RoomContainer{
         let filtered = []
         if(Object.keys(options).length == 0){
             for(let room in this.rooms){
-                filtered.push(this.rooms[room])
+                filtered.push(this.getRoom(room))
             }
         }else{
             for(let option in options){
                 for(let room in this.rooms){
                     if(this.rooms[room][option] == options[option]){
-                        filtered.push(this.rooms[room])
+                        filtered.push(this.getRoom(room))
                     }
                 }
             }
@@ -63,6 +63,9 @@ export default class RoomContainer{
         return this.rooms[roomObj.id]
     }
     getRoom(id){
-        return this.rooms[id]
+        if(this.rooms[id]){
+          this.rooms[id].id = id
+          return this.rooms[id]
+        };
     }
 }
