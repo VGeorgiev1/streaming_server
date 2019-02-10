@@ -7,7 +7,7 @@ export default (sequelizeInstance, Sequelize)  => {
             autoIncrement: true
         },
         owner: Sequelize.INTEGER,
-        type: Sequelize.STRING(10),
+        type: Sequelize.STRING(15),
         name: Sequelize.STRING(40),
         rulesId: Sequelize.INTEGER
     })

@@ -28,11 +28,7 @@ export default class Room{
     regHandler(socket,handler, callback){
         socket.on(handler, callback)
     }
-    rulesHandler(socket){
-        socket.on('getRules', ()=>{
-            socket.emit('rules', this.rules)
-        })
-    }
+
 
     setup_connection(socket, peerId, constrains, dissconnectHandler){
         this.connections[socket.id] = {}
@@ -42,8 +38,18 @@ export default class Room{
         this.handshakeHandlers(this.connections[socket.id]);
         this.connectDisconnectHandlers(this.connections[socket.id], dissconnectHandler)
         this.muteUnmuteHandler(this.connections[socket.id]);
+        this.partHandler(this.connections[socket.id], dissconnectHandler)
         return this.connections[socket.id]
 
+    }
+    partHandler(connection, disconnectHandler){
+        connection.socket.on('part', (details)=>{
+            this.kickUser(connection.socket.id)
+                        
+            delete this.connections[connection.socket.id];
+            if(disconnectHandler)
+                disconnectHandler(connection.socket.id)
+        })
     }
     connectDisconnectHandlers(connection, disconnectHandler){
         connection.socket.on('disconnect', () =>{

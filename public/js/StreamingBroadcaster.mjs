@@ -15,9 +15,7 @@ document.addEventListener('screen_ready', function() {
         $('body').append($('<button>Click</button>').click(()=>{
             screen.mixVideoSources(screen.getVideoTrack())
         }))
-        
     })
-
 });
 
 // let user_media = new Broadcaster(SIGNALING_SERVER, io(), {audio: true, video: false}, window.id)

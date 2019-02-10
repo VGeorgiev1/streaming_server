@@ -1,6 +1,7 @@
 import Room from './Room.mjs'
 import StreamingRoom from './StreamingRoom.mjs'
 import ConferentRoom from './ConferentRoom.mjs'
+import SurvillianceRoom from './SurvillianceRoom.mjs'
 export default class RoomContainer{
     constructor(server) {
         this.rooms = {}
@@ -30,7 +31,8 @@ export default class RoomContainer{
             let r;
             for(let topic of topics){
                 if(this.rooms[room].topics){
-                    r = this.rooms[room].topics.find(t =>t.includes(topic));
+
+                    r = this.rooms[room].topics.find(t=>t.class.includes(topic));
                 }else{
                     break;
                 }
@@ -41,8 +43,8 @@ export default class RoomContainer{
         return filtered
     }
     subscribeSocket(socket){
-        socket.on('getRules', (channel)=>{
-            socket.emit('rules', this.rooms[channel].rules)
+        socket.on('get_room_details', (channel)=>{ 
+            socket.emit('room_details', {type:this.rooms[channel].type,rules:this.rooms[channel].type,active:this.rooms[channel].active})
         })
         socket.on('join', (data)=>{
             if(!this.rooms[data.channel]) throw new Error("No such channel!")
@@ -58,6 +60,10 @@ export default class RoomContainer{
                             break;
             case 'streaming':
                             this.rooms[roomObj.id] = new StreamingRoom(roomObj.name,roomObj.owner)
+                            break;
+            case 'surveillance':
+                            console.log(roomObj.owner)
+                            this.rooms[roomObj.id] = new SurvillianceRoom(roomObj.name,roomObj.owner)
                             break;
         }
         return this.rooms[roomObj.id]

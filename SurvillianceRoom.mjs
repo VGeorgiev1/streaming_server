@@ -1,30 +1,38 @@
 import Room from './Room'
 import * as fs from 'fs';
-export default class ConferentRoom extends Room{
-    constructor(name,rules,ownerId){
-        super(name, 'survilience')
-        this.broadcasters = {}
+export default class SurvillianceRoom extends Room{
+    constructor(name,ownerId){
+        super(name, 'surveillance')
+        this.broadcasterStreams = [] 
         this.spectator = {}
         this.broadcasters_list = []
         this.owner = ownerId
     }
     addBroadcaster(socket, peerId, constrains,dissconnectHandler)
     {
-        this.broadcasters_list.push(peerId)
-        this.broadcasters[socket.id] = this.setup_connection(socket,peerId,constrains,dissconnectHandler)
+        this.connections[socket.id] = {}
+        if(this.active){
+            this.spectator.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
+            socket.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null})
+        }
+        let broadcaster=this.setup_connection(socket,peerId,constrains,dissconnectHandler)
+        this.broadcasterStreams.push(broadcaster)
     }
     addSpectator(socket, peerId,dissconnectHandler){
-        for(let id in this.broadcasters){
-            this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
-            socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains': this.broadcaster[id].constrains})
+        this.connections[socket.id] = {}
+        if(this.active){
+            for(let broadcaster of this.broadcasterStreams){
+                broadcaster.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
+                socket.emit('addPeer', {'socket_id': broadcaster.socket.id, 'should_create_offer': false, 'constrains': broadcaster.constrains})
+            }
         }
-        this.viewers[socket.id] = this.setup_connection(socket,peerId,null);
+        this.spectator=this.setup_connection(socket,peerId,null,dissconnectHandler)
     }
     isOwner(id){
         return id == this.owner
     }
     isBroadcaster(id){
-        return true //return this.broadcasters.indexOf(id) != -1
+        return !this.isOwner(id)//return this.broadcasters.indexOf(id) != -1
     }
     addSocket(socket,constrains,peerId){
         this.triggerConnect(socket)
@@ -34,15 +42,14 @@ export default class ConferentRoom extends Room{
                 return;
             }
             this.broadcasters_list.push(peerId)
-            this.addPeer(socket, peerId)
+            this.addBroadcaster(socket,constrains, peerId,()=>{
+                this.broadcasters_list.splice(this.broadcasters_list.indexOf(peerId),1)
+            })
         }
         else{
             this.active = true;
             this.addSpectator(socket, peerId,()=>{
-                this.broadcasters_list.splice(this.broadcasters_list.indexOf(peerId),1)
-                if(this.broadcasters_list.length == 0){
-                    this.active = false
-                }
+                this.active = false
             })
         }
         

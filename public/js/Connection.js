@@ -13,6 +13,7 @@ export default class Connection {
         this.onPeerDiscconectCallback = null
         this.onMediaNegotiationCallback = null;
         this.onBroadcastnegotitaion = null;
+        this.onchannelleft = null;
     }
     
     subscribeTo(CHANNEL, callback){
@@ -27,6 +28,9 @@ export default class Connection {
     }
     onBroadcaster(callback){
         this.onBroadcasterCallback = callback
+    }
+    onChannelLeft(callback){
+        this.onchannelleft = callback
     }
     onPeerDiscconect(callback){
         this.onPeerDiscconectCallback = callback
@@ -127,13 +131,14 @@ export default class Connection {
                 this.attachMediaStream(null,event.streams[0],{returnElm: true, muted: false, constrains: config.constrains}, (new_element, new_constrains)=>{
                     this.peer_media_elements[socket_id] = new_element
                 })
-
-                this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
+                if(this.onBroadcasterCallback){
+                    this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
+                }    
             }
             if (this.constrains != null) {
                 this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().forEach((track) =>{
-                    console.log(track)
+                    
                     if(!this.senders[socket_id][track.kind]){
                         this.senders[socket_id][track.kind] = {}
                     }
@@ -197,14 +202,11 @@ export default class Connection {
                                 peer.onnegotiationneeded = async(event) =>{
                                     this.negotiate(peer, socket_id)
                                 }
-                                if(config){
-                                    if(config.properties){
-                                        console.log('wut')
-                                        let before = local_description.sdp
-                                        local_description.sdp = this.setProperties(local_description.sdp, config.properties)
-                                    }
+                                if(config.properties){  
+                                    local_description.sdp = this.setProperties(local_description.sdp, config.properties)
+                                }   
                                    return  peer.setLocalDescription(local_description)
-                                }
+                                
                             }).then(()=>{
                                 this.signaling_socket.emit('relaySessionDescription',
                                             { 'socket_id': socket_id, 'session_description': peer.localDescription });
@@ -227,14 +229,16 @@ export default class Connection {
     }
     regChangeConstrainsHandler(){
         this.signaling_socket.on('relayNewConstrains', (options)=>{
-            let element = this.peer_media_elements[options.socket_id];
-            this.setupStream(element.srcObject, options.constrains)
-            this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
-                this.peer_media_elements[options.socket_id] = new_element;
-                if(this.onBroadcastNegotitaioncallback){
-                    this.onBroadcastNegotitaioncallback(new_constrains,new_element)
-                }
-            })
+            if(this.peer_media_elements[options.socket_id]){
+                let element = this.peer_media_elements[options.socket_id];
+                this.setupStream(element.srcObject, options.constrains)
+                this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
+                    this.peer_media_elements[options.socket_id] = new_element;
+                    if(this.onBroadcastNegotitaioncallback){
+                        this.onBroadcastNegotitaioncallback(new_constrains,new_element)
+                    }
+                })
+            }
         })
     }
     regConnectHandler(callback) {
@@ -268,7 +272,7 @@ export default class Connection {
         this.signaling_socket.on(event, callback);
     }
     part_channel() {
-        this.signaling_socket.emit('part', 'let me out');
+        this.signaling_socket.emit('part', {socket_id: this.signaling_socket.id});
     }
     join_channel(constrains) {
         this.signaling_socket.emit('join', { "constrains": constrains , "channel": this.channel, "id": this.id});

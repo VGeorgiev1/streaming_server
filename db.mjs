@@ -9,7 +9,7 @@ import Friends from './models/Friend.mjs'
 export default class DbManager {
     constructor() {
         this.roomOptions = ['audio','video','screen']
-        this.roomTypes = ['streaming', 'conferent']
+        this.roomTypes = ['streaming', 'conferent', 'surveillance']
         if (process.env.DATABASE_URL) {
             this.seq = new Sequelize(process.env.DATABASE_URL, {
                 dialect: 'postgres',

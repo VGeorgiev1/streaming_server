@@ -70,10 +70,16 @@ function OneDToTwoD(array,lenght){
 };
 
 app.get('/', async(req, res)=>{
+    console.log(req.userId)
     let payload = room_container.where({})
     for(let room of payload){
+        
         let user = await db.User.findOne({where:{id: room.owner}})
-        room.username = user.dataValues.username
+        if(user)
+            room.username = user.dataValues.username
+        else{
+           
+        }
     }
     res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     
@@ -186,13 +192,11 @@ app.post('/sendrequest', (req,res)=>{
 app.post('/room/create', async (req,res)=>{
     if(!req.authenticated){res.redirect('/login')}
     else{
-        db.getLoggedUser(req.cookies.sessionToken).then((ses,err)=>{
-            let user_id = ses.dataValues.user.dataValues.id
-            db.createRoom(user_id, req.body).then((room,err)=>{
-                let room_id = room.dataValues.id
-                room_container.addRoom({id:room_id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: user_id,type:req.body.type})
-                res.redirect('/room/'+room_id)
-            })
+        let user_id = req.userId
+        db.createRoom(user_id, req.body).then((room,err)=>{
+            let room_id = room.dataValues.id
+            room_container.addRoom({id:room_id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: user_id,type:req.body.type})
+            res.redirect('/room/'+room_id)
         })
     }
 })
@@ -247,6 +251,7 @@ app.get('/streams', async(req,res)=>{
         for(let room of payload){
             let user = await db.User.findOne({where:{id: room.owner}})
             room.username = user.dataValues.username
+
         }
         res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     }
@@ -270,9 +275,9 @@ app.post('/login', async(req,res)=>{
 })
 app.get('/room/:id',async (req,res)=>{
     let room = room_container.getRoom(req.params.id.toString())
+  
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
-    
     let isBroadcaster;
     if(req.authenticated){
         db.getLoggedUser(req.cookies.sessionToken).then((ses,err)=>{
@@ -280,6 +285,7 @@ app.get('/room/:id',async (req,res)=>{
                 console.log(err)
             userId = ses.dataValues.user.dataValues.id
             isBroadcaster = room.isBroadcaster(userId)
+            
             res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
         })
     }else{

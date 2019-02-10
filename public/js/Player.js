@@ -8,8 +8,10 @@ export default class Player{
         this.iselement = this.isElement()
         if(!this.iselement){
             this.media.onMediaNegotion(()=>{
-
                 this.negotiatePlayer(this.media.getConstrains(), this.media);
+            })
+            this.media.onChannelLeft(()=>{
+                this.col.remove();
             })
         }
         this.constrains = options.constrains
@@ -28,7 +30,12 @@ export default class Player{
     negotiatePlayer(constrains,mEl){
         this.constrains = constrains
         this.media = mEl;
-        this.changeContext()
+        this.changeContext() 
+        
+
+    }
+    removePlayer(){
+        this.body.remove();
     }
     changeContext(){
         this.constrains.video ?
@@ -115,10 +122,14 @@ export default class Player{
     getAudioMuteControl(){
         return $('<button id="audio_mute" class="btn btn-danger">').html('Mute').click(()=>{
             $('#audio_mute').html() == 'Mute'?
-                $('#audio_mute').html('Umute').removeClass('btn-danger').addClass('btn-success')
+                ($('#audio_mute').html('Umute').removeClass('btn-danger').addClass('btn-success'),
+                $('#audio_bitrate').remove(),
+                this.media.mute_audio())
             :
-                $('#audio_mute').html('Mute').removeClass('btn-success').addClass('btn-danger')
-            this.media.mute_audio()
+                ($('#audio_mute').html('Mute').removeClass('btn-success').addClass('btn-danger'),
+                $('#audio_bitrate').remove(),
+                this.body.append(this.getAudioBitrateControl()),
+                this.media.mute_audio())
         })
     }
     getVideoMuteControl(){
