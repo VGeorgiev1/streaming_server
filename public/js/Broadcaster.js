@@ -22,8 +22,8 @@ export default class Broadcaster extends Connection{
         }else{
             this.is_screen_share = true
             this.constrains.video = true
-            this.constrains.audio = true
-            this.local_media_stream = document.getElementById('screen').srcObject
+            this.constrains.audio = true;
+            this.local_media_stream = null;
         }
     
     }
@@ -82,7 +82,7 @@ export default class Broadcaster extends Connection{
     }
     requestAudio(){
         this.constrains.audio = true
-        this.changeTracks(this.constrains)
+        this.changeTracks({audio:true})
     }
     requestVideo(){
         this.constrains.video = true
@@ -201,6 +201,7 @@ export default class Broadcaster extends Connection{
             this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
                 this.constrains = new_constrains;
                 this.media_element = new_element;
+                this.media_element.muted = true
                 this.sendConstrains()
                 if(this.onMediaNegotiationCallback){
                     this.onMediaNegotiationCallback(new_constrains,this)
@@ -223,6 +224,7 @@ export default class Broadcaster extends Connection{
         this.changeTracks({audio: {deviceId: { exact: id}, video: false}})
     }
     getUserMedia(constrains,callback){
+        console.log(constrains)
          navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
@@ -269,16 +271,18 @@ export default class Broadcaster extends Connection{
             this.getRoomDetails((details)=>{
                 this.setOffers()
                 if(this.is_screen_share){
-                    document.getElementById('screen').remove();
-                    this.constrains.screen = true;
-                    this.setupScreen(details);
-                    this.joinChannel(this.constrains)
-                    callback(this.media_element)
-                    if(details.type == 'streaming'){
-                        cocoSsd.load().then(model => {
-                            this.predictionsLoop()
-                        });
-                    }
+                    navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
+                        this.local_media_stream = stream
+                        this.constrains.screen = true;
+                        this.setupScreen(details);
+                        this.joinChannel(this.constrains)
+                        callback(this.media_element)
+                        if(details.type == 'streaming'){
+                            cocoSsd.load().then(model => {
+                                this.predictionsLoop()
+                            });
+                        }
+                    })
                 }else{
                     this.findConstrains(details.rules,()=>{
                         this.setupLocalMedia(this.constrains,

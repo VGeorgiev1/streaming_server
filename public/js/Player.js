@@ -6,6 +6,8 @@ export default class Player{
         this.options = options
         this.reso = options.reso
         this.iselement = this.isElement()
+        console.log(options.constrains)
+        this.constrains = options.constrains
         if(!this.iselement){
             this.media.onMediaNegotion(()=>{
                 this.negotiatePlayer(this.media.getConstrains(), this.media);
@@ -14,7 +16,6 @@ export default class Player{
                 this.col.remove();
             })
         }
-        this.constrains = options.constrains
         
         this.body =  $('<div class="card-body">')
         
@@ -46,7 +47,8 @@ export default class Player{
         if(!this.options.socket_id){
             this.id = 'local'
         }else{
-            this.id = this.options.socket_id;
+            this.id = this.options.socket_id.replace('#', '1').replace('/','2');
+
         }
         this.col = $(`<div id = ${this.id} class="card border-dark col-${this.columns} pr-0 pl-0 mr-5 mb-5">`)
         this.col.append($('<h5 class="card-header white-text text-center py-4">').html("steaming"))
@@ -55,6 +57,7 @@ export default class Player{
         
     }
     getPlayer(){
+        console.log(this.constrains.video)
         return this.constrains.video ? this.getVideoPlayer() : this.getAudioPlayer()
     }
     isElement(){

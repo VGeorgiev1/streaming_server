@@ -37,6 +37,7 @@ export default class Connection {
     }
 
     attachMediaStream(element, stream,options, callback) {
+
         let should_constrain_audio = stream.getAudioTracks().filter(t => t.enabled).length != 0 
         let should_constrain_video = stream.getVideoTracks().filter(t => t.enabled).length != 0
         let new_constrains = {audio:should_constrain_audio, video: should_constrain_video}
@@ -62,10 +63,9 @@ export default class Connection {
     }
     async negotiate(peer_connection, socket_id, properties){
         if (peer_connection._negotiating == true) return;
-        
         peer_connection._negotiating = true;
         try {
-            const offer = await peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+            const offer = await peer_connection.createOffer();
         
             await peer_connection.setLocalDescription(offer);
             //offer.sdp = this.setProperties(offer.sdp,properties)
@@ -82,15 +82,37 @@ export default class Connection {
     regAddPeer() {
         
         this.regHandler('addPeer', async(config) => {
+            console.log(';_;')
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
                 return;
             }
-            var peer_connection = new RTCPeerConnection(
-                { "iceServers": ICE_SERVERS },
-                { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
-            );
-
+            var peer_connection = new RTCPeerConnection({
+                sdpSemantics: 'unified-plan'
+            });
+           
+            
+            peer_connection.ontrack = (event) => {
+                let stream = event.streams[0] || new MediaStream(peer_connection.getReceivers().map(receiver => receiver.track));
+                 console.log(event)
+                if (!this.peer_media_elements[socket_id]) {
+                    this.attachMediaStream(null,stream,{muted: false}, (new_element, new_constrains)=>{
+                        this.peer_media_elements[socket_id] = new_element
+                        if(this.onBroadcasterCallback){
+                            this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
+                        }  
+                    })
+                }else{
+                    this.addTrack(this.peer_media_elements[socket_id], stream)
+                    this.attachMediaStream(this.peer_media_elements[socket_id],this.peer_media_elements[socket_id].srcObject,{ muted: false},
+                    (new_element, new_constrains)=>{
+                        this.peer_media_elements[socket_id] = new_element
+                        if(this.onBroadcastNegotitaioncallback){
+                            this.onBroadcastNegotitaioncallback(new_constrains,new_element)
+                        }
+                    })
+                } 
+            }
             this.peers[socket_id] = peer_connection;
             peer_connection.onicecandidate = (event) => {
                 if (event.candidate) {
@@ -103,26 +125,6 @@ export default class Connection {
                     });
                 }
             }
-
-            peer_connection.ontrack = (event) => {
-                if (!this.peer_media_elements[socket_id]) {
-                    this.attachMediaStream(null,event.streams[0],{muted: false}, (new_element, new_constrains)=>{
-                        this.peer_media_elements[socket_id] = new_element
-                        if(this.onBroadcasterCallback){
-                            this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
-                        }  
-                    })
-                }else{
-                    this.addTrack(this.peer_media_elements[socket_id], event.streams[0])
-                    this.attachMediaStream(this.peer_media_elements[socket_id],this.peer_media_elements[socket_id].srcObject,{ muted: false},
-                    (new_element, new_constrains)=>{
-                        this.peer_media_elements[socket_id] = new_element
-                        if(this.onBroadcastNegotitaioncallback){
-                            this.onBroadcastNegotitaioncallback(new_constrains,new_element)
-                        }
-                    })
-                } 
-            }
             if (this.constrains != null) {
                 this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().filter(t=>t.enabled).map((track) =>{
@@ -132,6 +134,7 @@ export default class Connection {
                         if(track.label.includes('System') || track.label.includes('screen')){
                             this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
                         }else{
+                            console.log(track)
                             this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
                         }
 
@@ -140,10 +143,12 @@ export default class Connection {
             if (config.should_create_offer) {
                 this.negotiate(peer_connection, socket_id, this.properties)
             }
+            this.signaling_socket.emit('ready-state', {socket_id: socket_id});
         })
     }
     regiceCandidate() {
         this.regHandler('iceCandidate', (config) => {
+            console.log(config)
             this.peers[config.socket_id].addIceCandidate(new RTCIceCandidate(config.ice_candidate));
         })
     }
@@ -176,9 +181,17 @@ export default class Connection {
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
-            console.log(config)
+            console.log('pepega')
             var socket_id = config.socket_id;
             var peer_connection = this.peers[socket_id];
+            if(!peer_connection){
+                console.log('pepega')
+                peer_connection = new RTCPeerConnection(
+                    { "iceServers": ICE_SERVERS },
+                    { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
+                );
+                this.peers[socket_id] = peer_connection   
+            }
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);
             var stuff = peer_connection.setRemoteDescription(desc)
@@ -190,6 +203,7 @@ export default class Connection {
                 }
                 if (remote_description.type == "offer") {
                     let offer;
+                    
                     peer_connection.createAnswer()
                         .then((local_description)=>{
                             offer = local_description
@@ -204,6 +218,8 @@ export default class Connection {
                        }).catch((e)=>{
                             console.log(e.message)
                         })
+                }else{
+                    console.log(remote_description.type)
                 }
             })
             .catch((error) => {
@@ -233,11 +249,11 @@ export default class Connection {
         })
     }
     regConnectHandlers(callback) {
+        this.regAddPeer();
         this.regiceCandidate();
         this.regSessionDescriptor();
         this.regRemovePeer();
         this.regChangeConstrainsHandler();
-        this.regAddPeer();
 
         this.regHandler('connect', () => {
             if (callback)
