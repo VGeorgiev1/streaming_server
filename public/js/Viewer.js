@@ -3,13 +3,13 @@ var ICE_SERVERS = [
     {url:"stun:stun.l.google.com:19302"}
 ];
 export default class Viewer extends Connection{ 
-    constructor(SIGNALING_SERVER,socket,id){
-        super(SIGNALING_SERVER, socket,id)
+    constructor(io,id){
+        super( io,id)
         //this.createConnectDisconnectHandlers()
     }
     createConnectDisconnectHandlers(callback){
-        this.regConnectHandler(()=>{
-            this.join_channel()
+        this.regConnectHandlers(()=>{
+            this.joinChannel()
             if(callback)
                 callback()
         })

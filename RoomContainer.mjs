@@ -5,18 +5,19 @@ import SurvillianceRoom from './SurvillianceRoom.mjs'
 export default class RoomContainer{
     constructor(server) {
         this.rooms = {}
+
     }
     where(options){
         let filtered = []
         if(Object.keys(options).length == 0){
             for(let room in this.rooms){
-                filtered.push(this.getRoom(room))
+                filtered.push(this.rooms[room])
             }
         }else{
             for(let option in options){
                 for(let room in this.rooms){
                     if(this.rooms[room][option] == options[option]){
-                        filtered.push(this.getRoom(room))
+                        filtered.push(this.rooms[room])
                     }
                 }
             }
@@ -31,7 +32,6 @@ export default class RoomContainer{
             let r;
             for(let topic of topics){
                 if(this.rooms[room].topics){
-
                     r = this.rooms[room].topics.find(t=>t.class.includes(topic));
                 }else{
                     break;
@@ -42,31 +42,20 @@ export default class RoomContainer{
         }
         return filtered
     }
-    subscribeSocket(socket){
-        socket.on('get_room_details', (channel)=>{ 
-            socket.emit('room_details', {type:this.rooms[channel].type,rules:this.rooms[channel].type,active:this.rooms[channel].active})
-        })
-        socket.on('join', (data)=>{
-            if(!this.rooms[data.channel]) throw new Error("No such channel!")
-            else{
-                this.rooms[data.channel].addSocket(socket,data.constrains, data.id)
-            }
-        })
-    }
     addRoom(roomObj){
         switch(roomObj.type){
             case 'conferent':
-                            this.rooms[roomObj.id] = new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner)
+                            this.rooms[roomObj.channel] = 
+                                new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.io)
                             break;
             case 'streaming':
-                            this.rooms[roomObj.id] = new StreamingRoom(roomObj.name,roomObj.owner)
+                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io)
                             break;
             case 'surveillance':
-                            console.log(roomObj.owner)
-                            this.rooms[roomObj.id] = new SurvillianceRoom(roomObj.name,roomObj.owner)
+                            this.rooms[roomObj.channel] = new SurvillianceRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io)
                             break;
         }
-        return this.rooms[roomObj.id]
+        return this.rooms[roomObj.channel]
     }
     getRoom(id){
         if(this.rooms[id]){

@@ -8,7 +8,8 @@ window.Broadcaster = Broadcaster;
 window.onload = ()=>{
 
     var SIGNALING_SERVER = "http://localhost";
-    connection = new Broadcaster("http://localhost", io() ,{audio: true, video: false},window.id)
+    connection = new Broadcaster(io ,{audio: true, video: false},window.id)
+
     let connections = 1;
     let columnsOnMedia = 3;
     connection.subscribeTo(window.channel, (mEl)=>{
@@ -19,11 +20,12 @@ window.onload = ()=>{
     })
     connection.onBroadcaster((mEl, socket_id, constrains)=>{
         let player = null
+        let normalizedId = socket_id.slice(1)
+        normalizedId = normalizedId.replace("#",'')
         if(!constrains.screen){
-            player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, 'reso': '1by1'},3);
-
+            player = new Player({'media': mEl, 'socket_id': normalizedId, 'constrains': constrains, 'reso': '1by1'},3);
         }else{
-            player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, 'reso': '16by9'},6);
+            player = new Player({'media': mEl, 'socket_id': normalizedId, 'constrains': constrains, 'reso': '16by9'},6);
         }
         connection.onBroadcastNegotiation((constrains,mEl)=>{
             player.negotiatePlayer(constrains, mEl)
@@ -37,14 +39,16 @@ window.onload = ()=>{
     })
 
     connection.onPeerDiscconect((socket_id)=>{
-        $(`#${socket_id}`).remove()
+        let normalizedId = socket_id.slice(1)
+        normalizedId = normalizedId.replace("#",'')
+        $('#'+normalizedId).remove()
         connections--
         if(connections / 3 == 1){
             $(".w-100").last().remove();
         }
     })
     document.addEventListener('screen_ready', function() {
-        let screen = new Broadcaster(SIGNALING_SERVER,io(),'screen-share',window.id)
+        let screen = new Broadcaster(SIGNALING_SERVER,io,'screen-share',window.id)
         screen.subscribeTo(window.channel, (mEl)=>{
             let player = new Player({'media': screen, 'constrains': screen.getConstrains(), reso: '16by9'},6)
             $('.row').prepend(player.getPlayer())

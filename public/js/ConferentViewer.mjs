@@ -4,7 +4,7 @@ let connection = null;
 
 window.onload = ()=>{
     let connections = 1;
-    connection = new Viewer("http://localhost",io(),id)
+    connection = new Viewer("http://localhost",io,id)
     let player = null;
     connection.subscribeTo(window.channel, (mEl, socket_id, constrains)=>{
         let player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, 'reso': '1by1'},3);

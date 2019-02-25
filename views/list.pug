@@ -1,20 +1,11 @@
 extends layout.pug
 mixin card(room)
-	if room.active
-		.card.border-dark.mb-3(style="max-width: 20rem;")
-			a.card-header.bg-success.text-white(href="/room/" + room.id)=room.name
-			.card-body.text-dark
-				h5.card-title=room.type
-			.card-footer
-				p.card-text="Owner: " + room.username
-	else
-		.card.border-dark.mb-3(style="max-width: 20rem;")
-			a.card-header.bg-danger.text-white(href="/room/" + room.id)=room.name
-			.card-body.text-dark
-				h5.card-title=room.type
-			.card-footer
-				p.card-text="Owner: " +room.username
-
+	.card.border-dark.mb-3(style="max-width: 20rem;")
+		a(href="/room/" + room.channel,class = room.active? "card-header bg-success text-white": "card-header bg-danger text-white")=room.name
+		.card-body.text-dark
+			h5.card-title=room.type
+		.card-footer
+			p.card-text="Owner: " + room.username
 block content
 	.container
 		each row,idx in room_rows

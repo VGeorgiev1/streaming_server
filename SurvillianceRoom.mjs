@@ -1,32 +1,31 @@
 import Room from './Room'
 import * as fs from 'fs';
 export default class SurvillianceRoom extends Room{
-    constructor(name,ownerId){
-        super(name, 'surveillance')
+    constructor(name,ownerId,channel,io){
+        super(name, 'surveillance',channel,io)
         this.broadcasterStreams = [] 
         this.spectator = {}
         this.broadcasters_list = []
         this.owner = ownerId
+        this.active = false
     }
     addBroadcaster(socket, peerId, constrains,dissconnectHandler)
     {
-        this.connections[socket.id] = {}
+        let broadcaster=this.setupConnection(socket,peerId,constrains,dissconnectHandler)
+        this.broadcasterStreams.push(broadcaster)
         if(this.active){
             this.spectator.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
-            socket.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null})
+            broadcaster.socket.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null})
         }
-        let broadcaster=this.setup_connection(socket,peerId,constrains,dissconnectHandler)
-        this.broadcasterStreams.push(broadcaster)
     }
     addSpectator(socket, peerId,dissconnectHandler){
-        this.connections[socket.id] = {}
+        this.spectator=this.setupConnection(socket,peerId,null,dissconnectHandler)
         if(this.active){
             for(let broadcaster of this.broadcasterStreams){
                 broadcaster.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
-                socket.emit('addPeer', {'socket_id': broadcaster.socket.id, 'should_create_offer': false, 'constrains': broadcaster.constrains})
+                this.spectator.socket.emit('addPeer', {'socket_id': broadcaster.socket.id, 'should_create_offer': false, 'constrains': broadcaster.constrains})
             }
         }
-        this.spectator=this.setup_connection(socket,peerId,null,dissconnectHandler)
     }
     isOwner(id){
         return id == this.owner

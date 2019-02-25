@@ -21,6 +21,16 @@ export default class DbManager {
         }
         this.Op = Op
     }
+    goOffline(id,callback){
+        this.User.findOne({where:{id: id}}).then(async(user)=>{
+            if(user){
+                await user.update({online: false}, {fields: ['online']})   
+            }
+            if(callback){
+                callback()
+            }
+        })
+    }
     destroySession(sessionToken){
         return this.Session.destroy({
             where: {sessionToken: sessionToken}
@@ -32,7 +42,7 @@ export default class DbManager {
     getAllRooms(options){
         return this.Room.findAll(options)
     }
-    createRoom(user_id, req){
+    createRoom(owner_secret, req, callback){
         let options = {
             audio: false,
             video: false,
@@ -49,21 +59,32 @@ export default class DbManager {
             this.Rule.create(options).then((rules, err)=>{
                 if(err)
                     console.log(err)
-                return this.Room.create({owner: user_id, type: req.type, name:req.name, rulesId:rules.dataValues.id})
+                this.Room.create({owner: owner_secret, type: req.type, name:req.name,channel: crypto.randomBytes(10).toString("hex"), rulesId:rules.dataValues.id})
+                    .then(room=>{
+                        callback(room)
+                    })
             })
+        }else{
+            this.Room.create({owner: owner_secret, type: req.type, name:req.name,channel: crypto.randomBytes(10).toString("hex"), rulesId:null})
+                .then(room=>{
+                    callback(room)
+                })
         }
-        return this.Room.create({owner: user_id, type: req.type, name:req.name, rulesId:null})
 
     }
     getLoggedUser(token){
         return this.Session.findOne({where:{sessionToken: token}, include:[this.User]})
     }
     checkForSessionOrCreate(id, crypto){
-        console.log(crypto)
         return this.Session.findOrCreate({where: {userId: id}, defaults:{sessionToken: crypto}})
     }
-    logUser(req){
-        return this.User.findOne({where: {username: req.name}})
+    logUser(req,callback,errorback){
+        this.User.findOne({where: {username: req.name}}).then(async(user)=>{
+            await user.update({online: true}, {fields: ['online']})
+            callback(user)
+        }).catch((e)=>{
+            errorback(e)
+        })
     }
     getAllRoomsAndRules(){
         return this.Room.findAll({include: [this.Rule,{model:this.User, as:'owned_by'}]})

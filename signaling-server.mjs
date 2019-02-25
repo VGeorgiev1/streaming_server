@@ -15,6 +15,10 @@ import RoomContainer from './RoomContainer.mjs'
 import Room from './Room.mjs';
 import crypto from 'crypto'
 import Chat from './Chat.mjs'
+import cookie from 'cookie'
+
+
+
 const connectionString =  process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
@@ -30,30 +34,38 @@ app.use("/public",express.static(path.join(path.resolve() + '/public')));
 app.set('view engine', 'pug');
 
 var loginware = function (req, res, next) {
-    
     db.Session.findOne({where:{sessionToken: req.cookies.sessionToken},
          include: [db.User]}).then((ses,err)=>{
         if(err)
             console.log(err)
         req.authenticated = false
         if(ses){
-            req.authenticated = true
-            req.userId = ses.userId
-            req.username = ses.dataValues.user.dataValues.username
+            db.logUser({name: ses.dataValues.user.dataValues.username}, ()=>{
+                req.authenticated = true
+                req.userId = ses.userId
+                req.secret = ses.dataValues.user.dataValues.secret
+                req.username = ses.dataValues.user.dataValues.username
+                next()
+            })
+        }else{
+            next()
         }
-        next()
     })
 }
 app.use(loginware)
+
 let room_container = new RoomContainer()
+let call_container = new RoomContainer()
+
 let chat_container = []
+let sockets = {}
 let db = new DbManager()
 db.initializeTables(()=>{
     db.getAllRoomsAndRules().then((rooms,err)=>{
         if(err)
             console.log(err)
         for(let room of rooms){
-            chat_container.push(new Chat(room_container.addRoom(room.dataValues)))
+            chat_container.push(new Chat(room_container.addRoom({type: room.dataValues.type, id:room.dataValues.id, name:room.dataValues.name,audio:room.dataValues.audio, video:room.dataValues.video, screen:room.dataValues.screen, owner: room.dataValues.owned_by.secret,channel:room.dataValues.channel, io: io})))
         }
         server.listen(PORT, null, () => {
             console.log("Listening on port " + PORT);
@@ -70,11 +82,9 @@ function OneDToTwoD(array,lenght){
 };
 
 app.get('/', async(req, res)=>{
-    console.log(req.userId)
     let payload = room_container.where({})
     for(let room of payload){
-        
-        let user = await db.User.findOne({where:{id: room.owner}})
+        let user = await db.User.findOne({where:{secret: room.owner}})
         if(user)
             room.username = user.dataValues.username
         else{
@@ -110,7 +120,7 @@ app.get('/search', async(req,res)=>{
     let topic= req.query.topic
     let payload = room_container.whereTopic(topic)
     for(let room of payload){
-        let user = await db.User.findOne({where:{id: room.owner}})
+        let user = await db.User.findOne({where:{secret: room.owner}})
         room.username = user.dataValues.username
     }
     res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
@@ -148,7 +158,6 @@ app.post('/search', (req,res)=>{
     })
 })
 app.get('/people', (req, res)=>{
-    console.log(req.userId)
     if(!req.authenticated) {res.redirect('/login')}
     else{
     db.Friends.findAll({where:{
@@ -162,9 +171,9 @@ app.get('/people', (req, res)=>{
             let dataValues = []
             for(let row of users){
                 if(req.userId == row.userId){
-                    dataValues.push({id: row.friend.dataValues.id, username: row.friend.dataValues.username, status:row.status})
+                    dataValues.push({online:row.friend.dataValues.online, id: row.friend.dataValues.id, username: row.friend.dataValues.username, status:row.status})
                 }else{
-                    dataValues.push({id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
+                    dataValues.push({online:row.user.dataValues.online, id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
                 }
             }
             res.render('people',{people_list:OneDToTwoD(dataValues, 3), auth: req.authenticated, user: req.username})
@@ -193,10 +202,20 @@ app.post('/room/create', async (req,res)=>{
     if(!req.authenticated){res.redirect('/login')}
     else{
         let user_id = req.userId
-        db.createRoom(user_id, req.body).then((room,err)=>{
-            let room_id = room.dataValues.id
-            room_container.addRoom({id:room_id,name:req.body.name,audio:req.body.audio, video:req.body.video, screen:req.body.screen,owner: user_id,type:req.body.type})
-            res.redirect('/room/'+room_id)
+        db.createRoom(user_id, req.body,(room,err)=>{
+            let roomObj = {
+                id:room.dataValues.id,
+                name:room.dataValues.name,
+                audio:req.body.audio,
+                video:req.body.video,
+                screen:req.body.screen,
+                owner: req.secret,
+                type:req.body.type,
+                channel:room.dataValues.channel,
+                io: io
+            }
+            room_container.addRoom(roomObj)
+            res.redirect('/room/'+room.dataValues.channel)
         })
     }
 })
@@ -213,20 +232,46 @@ app.get('/register', (req,res)=>{
         res.render('register', {"auth": req.authenticated, user: req.username})
     }
 })
+app.get('/call/:channel', (req,res)=>{
+    let room = call_container.where({channel: req.params.channel})[0]
+    if(!room){res.send("Rooms does not exists!");return}
+    let userId;
+    let isBroadcaster;
+    if(req.authenticated){
+        isBroadcaster = room.isBroadcaster(req.secret)
+        res.render(room.type, {channel: room.channel, id: req.secret, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
+    }else{
+        res.send('Not authenticated!')
+    }
+})
 app.post('/call', (req,res)=>{
-    console.log(req.body)
-    res.send('okey')
+    let call = {
+        type: 'conferent',
+        id: req.userId,
+        name: 'call' + req.userId,
+        audio:true,
+        video:true,
+        screen:true,
+        owner: req.secret,
+        channel:crypto.randomBytes(10).toString("hex"),
+        io: io
+    }
+    let call_room = call_container.addRoom(call)
+    db.Session.findOne({where:{userId: req.body.id}}).then((ses)=>{
+        res.send(call_room.channel)
+        sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
+    })
+    
 })
 app.post('/register', async(req,res)=>{
     let hash = await bcrypt.hash(req.body.password, SALT_ROUNDS)
-    db.User.create({username: req.body.name, password: hash}).then((user,err)=>{
+    db.User.create({username: req.body.name, password: hash, secret: crypto.randomBytes(15).toString('hex')}).then((user,err)=>{
         if(err)
             console.log(err)
-        if(user.dataValues.id){
-            res.redirect("/")
-        }else{
-            res.send("There is already a user with this username!")
-        }
+        res.redirect("/")
+
+    }).catch(e=>{
+        res.send("There is already a user with this username!")
     })
 })
 app.get('/login', (req,res)=>{
@@ -238,63 +283,73 @@ app.get('/login', (req,res)=>{
 app.get('/logout', async(req,res)=>{
     if(!req.authenticated){res.redirect('/')}
     else{
-        db.destroySession(req.cookies.sessionToken).then(()=>{
-            res.clearCookie("sessionToken");
-            res.redirect('/')
-        })
+        if(req.userId){
+            db.goOffline(req.userId,()=>{
+                db.destroySession(req.cookies.sessionToken).then(()=>{
+                    res.clearCookie("sessionToken");
+                    console.log('redirect')
+                    res.redirect('/')
+                })
+            })
+        }
     }
+})
+app.post('/login', async(req,res)=>{
+    db.logUser(req.body,(user)=>{
+        if(user){
+            let authenticated = bcrypt.compareSync(req.body.password, user.dataValues.password)
+            if(authenticated){
+                db.checkForSessionOrCreate(user.dataValues.id, crypto.randomBytes(10).toString("hex")).then((ses,err)=>{ 
+                    res.cookie('sessionToken' , ses[0].dataValues.sessionToken).redirect('/')
+                }).catch(e=>{
+
+                })
+            }else{
+                res.send("The password and username doesn't match!")
+            }
+        }
+    },(e)=>{
+        res.send("There is no user with this username!")
+    })
 })
 app.get('/streams', async(req,res)=>{
     if(!req.authenticated){res.redirect('/')}
     else{
         let payload = room_container.where({type:"streaming"})
         for(let room of payload){
-            let user = await db.User.findOne({where:{id: room.owner}})
+            let user = await db.User.findOne({where:{secret: room.owner}})
             room.username = user.dataValues.username
 
         }
         res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     }
 })
-app.post('/login', async(req,res)=>{
-    db.logUser(req.body).then((user,err)=>{
-        if(user){
-            let authenticated = bcrypt.compareSync(req.body.password, user.dataValues.password)
-            if(authenticated){
-                db.checkForSessionOrCreate(user.dataValues.id, crypto.randomBytes(10).toString("hex")).then((ses,err)=>{
-                    console.log(ses[0].dataValues.sessionToken)
-                    res.cookie('sessionToken' , ses[0].dataValues.sessionToken).redirect('/')
-                })
-            }else{
-                res.send("The password and username doesn't match!")
-            }
-        }else{
-            res.send("There is no user with this username!")
-        }
-    })
-})
-app.get('/room/:id',async (req,res)=>{
-    let room = room_container.getRoom(req.params.id.toString())
-  
+app.get('/room/:channel',async (req,res)=>{
+    let room = room_container.where({channel: req.params.channel})[0]
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
     let isBroadcaster;
     if(req.authenticated){
-        db.getLoggedUser(req.cookies.sessionToken).then((ses,err)=>{
-            if(err)
-                console.log(err)
-            userId = ses.dataValues.user.dataValues.id
-            isBroadcaster = room.isBroadcaster(userId)
-            
-            res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
-        })
+        isBroadcaster = room.isBroadcaster(req.secret)
+        res.render(room.type, {channel: room.channel, id: req.secret, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
     }else{
         userId = crypto.randomBytes(10).toString("hex")
         isBroadcaster = false
-        res.render(room.type, {channel: req.params.id, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
+        res.render(room.type, {channel: room.channel, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
     }
     
 })
-io.sockets.on('connection', function (socket) {
-    room_container.subscribeSocket(socket);
+io.on('connection', function (socket) {
+    if(socket.request.headers.cookie){
+        let token = cookie.parse(socket.request.headers.cookie)["sessionToken"]
+        if(token){
+            sockets[token] = socket
+            socket.on('page_left', (reason)=>{
+                db.getLoggedUser(token).then(user=>{
+                    let userId = user.dataValues.user.dataValues.id
+                    db.goOffline(userId)
+                })
+            })
+        }
+    }
 })

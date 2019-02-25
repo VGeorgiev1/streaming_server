@@ -3,10 +3,11 @@ html
 		script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
 		link(href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous")
 		link(href="/public/css/layout.css" rel="stylesheet")
+		script(src='https://cdn.socket.io/socket.io-1.4.5.js')
 		script(src='https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js')
 		script(src='https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.13.5/tf.js')
 		script(src='https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd')
-		script(src="https://webrtc.github.io/adapter/adapter-latest.js")
+
 		block scripts
 
 	body
@@ -36,20 +37,38 @@ html
 						li.nav-item
 							a.nav-link(href="/logout") Logout
 						
-						#exampleModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='exampleModalLabel', aria-hidden='true')
+						#call.modal.fade(tabindex='-1', role='dialog', aria-labelledby='callLabel', aria-hidden='true')
 							.modal-dialog(role='document')
 								.modal-content
 									.modal-header
-										h5#exampleModalLabel.modal-title Modal title
-										button.close(type='button', data-dismiss='modal', aria-label='Close')
-											span(aria-hidden='true') ×
-									.modal-body ...
+										h5#callLabel.modal-title Modal title
 									.modal-footer
-										button.btn.btn-secondary(type='button', data-dismiss='modal') Close
-										button.btn.btn-primary(type='button') Save changes
+										a.btn.btn-secondary(type='button', data-dismiss='modal') Close
+										a#channel.btn.btn-primary(type='button') Answer
 				form.form-inline.my-2.my-lg-0(method="GET", action="/search")
 					input.form-control.mr-sm-2(type="search" placeholder="Search" aria-label="Search" name="topic")
 					button.btn.btn-outline-success.my-2.my-sm-0(type="submit") Search
 		block content
+		script.
+			let monitoring_socket = io()
+			window.localLinkClicked = false;
+
+			monitoring_socket.on('call', (data)=>{
+				$('#channel').attr('href', '/call/' + data.channel)
+				$('#callLabel').html(data.caller + ' is calling!')
+				$('#call').modal('show');
+			})
+
+			$("a, button").click(function() {
+				window.localLinkClicked = true;
+			});
+
+			window.onbeforeunload = function() {
+				if (window.localLinkClicked) {
+					window.localLinkClicked = false
+				} else {
+					monitoring_socket.emit('page_left')
+				}
+			}
 
 

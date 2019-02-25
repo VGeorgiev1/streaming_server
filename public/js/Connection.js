@@ -3,9 +3,8 @@ var ICE_SERVERS = [
 ];
 
 export default class Connection {
-    constructor(SIGNALING_SERVER,socket, id) {
-        this.signaling_server = SIGNALING_SERVER;
-        this.signaling_socket = socket
+    constructor(io, id) {
+        this.channel = channel;
         this.id = id
         this.peers = {};
         this.peer_media_elements = {};
@@ -16,8 +15,9 @@ export default class Connection {
         this.onchannelleft = null;
     }
     
-    subscribeTo(CHANNEL, callback){
-        this.channel = CHANNEL
+    subscribeTo(channel, callback){
+        this.channel = channel
+        this.signaling_socket = io('/' + this.channel);
         this.createConnectDisconnectHandlers(callback)
     }
     onBroadcastNegotiation(callback){
@@ -37,58 +37,40 @@ export default class Connection {
     }
 
     attachMediaStream(element, stream,options, callback) {
-
         let should_constrain_audio = stream.getAudioTracks().filter(t => t.enabled).length != 0 
         let should_constrain_video = stream.getVideoTracks().filter(t => t.enabled).length != 0
         let new_constrains = {audio:should_constrain_audio, video: should_constrain_video}
         let new_element;
         if(element != null){
-
             if((new_constrains.video && element.nodeName == 'AUDIO') ||
             (!new_constrains.video && element.nodeName == 'VIDEO')){
-                new_element = this.setup_media(new_constrains,stream,options)
-                
+                new_element = this.setupMedia(new_constrains,stream,options)
             }else{
-                stream.getTracks().forEach(t=>{
-                    element.srcObject.addTrack(t)
-                })
                 new_element = element
+                new_element.srcObject = stream
             }
         }else{
-            new_element = this.setup_media(new_constrains,stream,options)
+            new_element = this.setupMedia(new_constrains,stream,options)
         }
         if(callback)
             callback(new_element,new_constrains)
     }
-    addTrack(id, stream){
-
-        let element = this.peer_media_elements[id]
-        let old_tracks = element.srcObject.getTracks()
-        old_tracks.forEach((t)=>{
-            stream.addTrack(t)    
-        })
-
-        this.attachMediaStream(element, stream,{muted:false, returnElm: true}, (new_element,new_constrains)=>{
-            this.peer_media_elements[id] = new_element
-            
-            if(this.onBroadcastNegotitaioncallback){
-                this.onBroadcastNegotitaioncallback(new_constrains,new_element)
-            }
+    addTrack(element, stream){
+        stream.getTracks().forEach((t)=>{
+            element.srcObject.addTrack(t)
         })
     }
-    async negotiate(peer_connection, socket_id){
-        
+    async negotiate(peer_connection, socket_id, properties){
         if (peer_connection._negotiating == true) return;
         
         peer_connection._negotiating = true;
         try {
-            
             const offer = await peer_connection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+        
             await peer_connection.setLocalDescription(offer);
-    
-            
+            //offer.sdp = this.setProperties(offer.sdp,properties)
             this.signaling_socket.emit('relaySessionDescription',
-            { 'socket_id': socket_id, 'session_description': peer_connection.localDescription});
+            { 'socket_id': socket_id, 'session_description': offer, 'properties': properties});
         } catch (e) {
             reportError(e)
         } finally {
@@ -123,36 +105,40 @@ export default class Connection {
             }
 
             peer_connection.ontrack = (event) => {
-                if (this.peer_media_elements[socket_id] != undefined) {
-                    this.addTrack(socket_id, event.streams[0])
-                    return;
-                }
-                this.setupStream(event.streams[0], config.constrains)
-                this.attachMediaStream(null,event.streams[0],{returnElm: true, muted: false, constrains: config.constrains}, (new_element, new_constrains)=>{
-                    this.peer_media_elements[socket_id] = new_element
-                })
-                if(this.onBroadcasterCallback){
-                    this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
-                }    
+                if (!this.peer_media_elements[socket_id]) {
+                    this.attachMediaStream(null,event.streams[0],{muted: false}, (new_element, new_constrains)=>{
+                        this.peer_media_elements[socket_id] = new_element
+                        if(this.onBroadcasterCallback){
+                            this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, config.constrains)
+                        }  
+                    })
+                }else{
+                    this.addTrack(this.peer_media_elements[socket_id], event.streams[0])
+                    this.attachMediaStream(this.peer_media_elements[socket_id],this.peer_media_elements[socket_id].srcObject,{ muted: false},
+                    (new_element, new_constrains)=>{
+                        this.peer_media_elements[socket_id] = new_element
+                        if(this.onBroadcastNegotitaioncallback){
+                            this.onBroadcastNegotitaioncallback(new_constrains,new_element)
+                        }
+                    })
+                } 
             }
             if (this.constrains != null) {
                 this.senders[socket_id] = {}
-                this.local_media_stream.getTracks().forEach((track) =>{
-                    
-                    if(!this.senders[socket_id][track.kind]){
-                        this.senders[socket_id][track.kind] = {}
-                    }
-                    if(track.kind.includes('System') || track.kind.includes('screen')){
-                        this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
-                    }else{
-                        this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
-                    }
+                this.local_media_stream.getTracks().filter(t=>t.enabled).map((track) =>{
+                        if(!this.senders[socket_id][track.kind]){
+                            this.senders[socket_id][track.kind] = {}
+                        }
+                        if(track.label.includes('System') || track.label.includes('screen')){
+                            this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
+                        }else{
+                            this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
+                        }
+
                 });
             }
             if (config.should_create_offer) {
-               peer_connection.onnegotiationneeded = async(event) =>{
-                    this.negotiate(peer_connection, socket_id)
-               }
+                this.negotiate(peer_connection, socket_id, this.properties)
             }
         })
     }
@@ -162,6 +148,7 @@ export default class Connection {
         })
     }
     sdp(sdp, media, bitrate){
+        console.log(bitrate)
         var lines = sdp.split("\n");
         let matchMedia = new RegExp("m="+media)
         let matches = matchMedia.exec(sdp)
@@ -178,57 +165,61 @@ export default class Connection {
         return lines.join("\n")
     }
     setProperties(sdp, properties){
-        if(properties.audio_bitrate){
-            return this.sdp(sdp, 'audio', properties.audio_bitrate)
+        if(properties.audioBitrate){
+            return this.sdp(sdp, 'audio', properties.audioBitrate)
         }
-        if(properties.video_bitrate){
-            return this.sdp(sdp, 'video', properties.video_bitrate)
+        if(properties.videoBitrate){
+            return this.sdp(sdp, 'video', properties.videoBitrate)
         }
         
         return sdp
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
+            console.log(config)
             var socket_id = config.socket_id;
-            var peer = this.peers[socket_id];
+            var peer_connection = this.peers[socket_id];
             var remote_description = config.session_description;
             var desc = new RTCSessionDescription(remote_description);
-            var stuff = peer.setRemoteDescription(desc,
-                () => {
-                    if (remote_description.type == "offer") {
-                        console.log('answer')
-                        peer.createAnswer()
-                            .then((local_description)=>{
-                                peer.onnegotiationneeded = async(event) =>{
-                                    this.negotiate(peer, socket_id)
-                                }
-                                if(config.properties){  
-                                    local_description.sdp = this.setProperties(local_description.sdp, config.properties)
-                                }   
-                                   return  peer.setLocalDescription(local_description)
-                                
-                            }).then(()=>{
-                                this.signaling_socket.emit('relaySessionDescription',
-                                            { 'socket_id': socket_id, 'session_description': peer.localDescription });
-                            }).catch((e)=>{
-                                console.log(e.message)
-                            })
+            var stuff = peer_connection.setRemoteDescription(desc)
+            .then(() => {
+                if(!peer_connection.onnegotiationneeded){
+                    peer_connection.onnegotiationneeded = async(event) =>{
+                        this.negotiate(peer_connection, socket_id, config.properties)
                     }
-                },
-                (error) => {
-                    console.log("setRemoteDescription error: ", error);
                 }
-            );
+                if (remote_description.type == "offer") {
+                    let offer;
+                    peer_connection.createAnswer()
+                        .then((local_description)=>{
+                            offer = local_description
+                            if(config.properties){ 
+                                local_description.sdp = this.setProperties(local_description.sdp, config.properties)
+                            }
+                            return  peer_connection.setLocalDescription(local_description)
+                        }).then(()=>{
+                            this.signaling_socket.emit('relaySessionDescription',
+                                { 'socket_id': socket_id, 'session_description':offer, 'properties': this.properties});
+                            
+                       }).catch((e)=>{
+                            console.log(e.message)
+                        })
+                }
+            })
+            .catch((error) => {
+                console.log("setRemoteDescription error: ", error);
+            })
         });
     }
     setupStream(stream, constrains){
         stream.getTracks().forEach((t)=>{
-            if(t.kind == 'audio') t.enabled = constrains.audio
-            if(t.kind == 'video') t.enabled = constrains.video
+            if(t.kind == 'audio') t.enabled = constrains.audio;
+            if(t.kind == 'video') t.enabled = constrains.video;
         })
     }
     regChangeConstrainsHandler(){
         this.signaling_socket.on('relayNewConstrains', (options)=>{
+
             if(this.peer_media_elements[options.socket_id]){
                 let element = this.peer_media_elements[options.socket_id];
                 this.setupStream(element.srcObject, options.constrains)
@@ -241,7 +232,7 @@ export default class Connection {
             }
         })
     }
-    regConnectHandler(callback) {
+    regConnectHandlers(callback) {
         this.regiceCandidate();
         this.regSessionDescriptor();
         this.regRemovePeer();
@@ -258,9 +249,7 @@ export default class Connection {
             if(config.socket_id in this.peers){
                 this.peers[config.socket_id].close();
                 delete this.peers[config.socket_id];
-                //delete this.senders[config.socket_id]
             }
-            
             if(this.onPeerDiscconectCallback)
                 this.onPeerDiscconectCallback(config.socket_id)
         })
@@ -271,25 +260,34 @@ export default class Connection {
     regHandler(event, callback) {
         this.signaling_socket.on(event, callback);
     }
-    part_channel() {
+    partChannel() {
         this.signaling_socket.emit('part', {socket_id: this.signaling_socket.id});
     }
-    join_channel(constrains) {
-        this.signaling_socket.emit('join', { "constrains": constrains , "channel": this.channel, "id": this.id});
+    joinChannel(constrains) {
+        this.signaling_socket.emit('join', { "constrains": constrains, "id": this.id});
     }
     async findConstrains(rules,callback) {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             let use_audio, use_video = false
             let searchingFor = ''
             for (let i = 0; i < devices.length; i++) {
-                if (devices[i].kind === 'audioinput') use_audio = true, this.audioDevices.push(devices[i]);
-                if (devices[i].kind === 'videoinput') use_video = true, this.videoDevices.push(devices[i]);
+                if (devices[i].kind === 'audioinput') use_audio = true, this.audio_devices.push(devices[i]);
+                if (devices[i].kind === 'videoinput') use_video = true, this.video_devices.push(devices[i]);
             }
-            if((!rules.audio && rules.audio != null) || !this.constrains.audio) {
-                this.constrains.audio = false
-            }
-            if((!rules.video && rules.video != null) || !this.constrains.video){
-                this.constrains.video = false
+            if(rules){
+                if((!rules.audio && rules.audio != null) || !this.constrains.audio) {
+                    this.constrains.audio = false
+                }
+                if((!rules.video && rules.video != null) || !this.constrains.video){
+                    this.constrains.video = false
+                }
+            }else{
+                if(this.constrains.audio && use_audio){
+                    this.constrains.audio = use_audio;
+                }
+                if(this.constrains.video && use_video){
+                    this.constrains.video = use_video
+                }
             }
             callback()
         })
@@ -302,7 +300,7 @@ export default class Connection {
     }
 
 
-    setup_media(constrains, stream, options) {
+    setupMedia(constrains, stream, options) {
         let media = constrains.video ?
           document.createElement('video') :
           document.createElement('audio');
@@ -310,7 +308,7 @@ export default class Connection {
         media.muted = options.muted 
         media.controls = "controls";
         media.srcObject = stream;
-        if (options.returnElm) return media
+        return media
     }
 
 }

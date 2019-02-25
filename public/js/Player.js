@@ -124,12 +124,12 @@ export default class Player{
             $('#audio_mute').html() == 'Mute'?
                 ($('#audio_mute').html('Umute').removeClass('btn-danger').addClass('btn-success'),
                 $('#audio_bitrate').remove(),
-                this.media.mute_audio())
+                this.media.muteAudio())
             :
                 ($('#audio_mute').html('Mute').removeClass('btn-success').addClass('btn-danger'),
                 $('#audio_bitrate').remove(),
                 this.body.append(this.getAudioBitrateControl()),
-                this.media.mute_audio())
+                this.media.muteAudio())
         })
     }
     getVideoMuteControl(){
@@ -138,13 +138,13 @@ export default class Player{
                 ($('#video_mute').html('Stop Video'),
                  $('#video_mute').removeClass('btn-success').addClass('btn-danger'),
                 this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl()),
-                this.media.hasActiveVideo()?this.media.mute_video():this.media.requestVideo())
+                this.media.hasActiveVideo()?this.media.muteVideo():this.media.requestVideo())
             :
                 ($('#video_mute').html('Start Video'),
                  $('#video_mute').removeClass('btn-danger').addClass('btn-success'),
                  $('#video_input').remove(),
                  $('#video_bitrate').remove(),
-                 this.media.mute_video())
+                 this.media.muteVideo())
         })
     }
     getAudioBitrateControl(){

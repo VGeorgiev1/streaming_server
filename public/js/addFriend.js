@@ -2,15 +2,18 @@ function sendRequest(id){
     makeRequest("/sendrequest", "POST", JSON.stringify({'id': id}), "application/json; charset=utf-8")
         .then((res)=>{
             $('#'+id).html(`<button class="btn btn-danger mb-2" onclick="removeFriend(${id})">Cancel Request</button>`)
+            
         })
         .catch(e=>{
             console.log(e)
         })
 }
 function call(id){
+    console.log(id)
     makeRequest("/call", "POST", JSON.stringify({'id': id}), "application/json; charset=utf-8")
         .then((res)=>{
-           
+           console.log(res)
+           window.location.href = '/call/' + res
         })
         .catch(e=>{
             console.log(e)
@@ -27,7 +30,8 @@ function makeRequest(url, method, data, contentTyppe){
 function acceptRequest(id){
     makeRequest("/accept", "POST", JSON.stringify({id:id}), "application/json; charset=utf-8")
         .then((res)=>{
-            $('#'+id).html(`<button class="btn btn-danger mb-2" onclick="removeFriend(${id})">Remove Friend</button>`)         
+            $('#'+id).html(`<button class="btn btn-danger mb-2" onclick="removeFriend(${id})">Remove Friend</button>`)
+            $('#'+id).append($(`<button class="btn btn-outline-success btn-block mb-2"  onclick="call(${id})">`).html("Call"))                       
         }).catch((e)=>{
             console.log(e)
         })
@@ -52,7 +56,7 @@ function search(){
                         let card = $('<div class="card border-dark mb-3" style="max-width: 20rem;">')
                         let header = $('<p class="card-header">').html(user.username)
                         let card_body = $('<div class="card-body text-dark">')
-
+                        console.log(user.id)
                         let cont = $(`<div id=${user.id}>`)
                         switch(user.status){
                             case 'invite':

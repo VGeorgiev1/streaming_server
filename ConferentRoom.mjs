@@ -1,8 +1,8 @@
 import Room from './Room'
 import * as fs from 'fs';
 export default class ConferentRoom extends Room{
-    constructor(name,rules,ownerId){
-        super(name, 'conferent')
+    constructor(name,rules,ownerId,channel,io){
+        super(name, 'conferent',channel,io)
         this.viewers = {}
         this.broadcasters = {}
         this.broadcasters_list = []
@@ -12,21 +12,22 @@ export default class ConferentRoom extends Room{
     }
     addBroadcaster(socket, peerId, constrains,dissconnectHandler)
     {
+        this.broadcasters_list.push(socket.id)
+        this.broadcasters[socket.id] = this.setupConnection(socket,peerId,constrains,dissconnectHandler)
         for(let id in this.connections){
-            if(peerId != this.connections[id].userId){
+            if(peerId != this.connections[id].peerId){
                 this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
                 socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
             }    
         }
-        this.broadcasters_list.push(peerId)
-        this.broadcasters[socket.id] = this.setup_connection(socket,peerId,constrains,dissconnectHandler)
     }
     addPeer(socket, peerId, constrains){
-        for(let id in this.broadcasters){
+        this.viewers.push(peerId)
+        this.viewers[socket.id] = this.setupConnection(socket,peerId,null);
+        for(let id of this.broadcasters_list){
             this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
             socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains': this.broadcaster[id].constrains})
         }
-        this.viewers[socket.id] = this.setup_connection(socket,peerId,null);
     }
     isBroadcaster(id){
         return true//return this.broadcasters.indexOf(id) != -1
@@ -38,7 +39,6 @@ export default class ConferentRoom extends Room{
                 console.log('Viewer alrady exits')
                 return;
             }
-            this.viewers.push(peerId)
             this.addPeer(socket, peerId)
         }
         else{

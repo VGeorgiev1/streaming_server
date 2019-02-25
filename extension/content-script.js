@@ -3,17 +3,17 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
     let port = chrome.runtime.connect();
     port.onMessage.addListener(function (obj) {
         navigator.mediaDevices.getUserMedia({
-            audio:{
+            audio:{ 
                 mandatory: {
                     chromeMediaSource: 'desktop',
                     chromeMediaSourceId: obj.sourceId
                 }
             },
             video:{ 
-                mandatory: {
-                    chromeMediaSource: 'desktop',
-                    chromeMediaSourceId: obj.sourceId
-                }
+                    mandatory: {
+                        chromeMediaSource: 'desktop',
+                        chromeMediaSourceId: obj.sourceId
+                    }
             }
         }).then((stream)=>{
             let body = document.getElementsByTagName('body')[0]
@@ -26,6 +26,9 @@ chrome.extension.onMessage.addListener((reqeust,sender, response) => {
             body.append(video)
             var selectionFired = new CustomEvent("screen_ready");
             document.dispatchEvent(selectionFired)
+           
+        }).catch((e)=>{
+            console.log(e.message)
         })
     })
     response('reponded!')
