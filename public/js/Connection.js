@@ -82,7 +82,7 @@ export default class Connection {
     regAddPeer() {
         
         this.regHandler('addPeer', async(config) => {
-            console.log(';_;')
+            console.log(config.constrains)
             var socket_id = config.socket_id;
             if (socket_id in this.peers) {
                 return;
@@ -103,11 +103,13 @@ export default class Connection {
                         }  
                     })
                 }else{
+                    console.log(event)
                     this.addTrack(this.peer_media_elements[socket_id], stream)
                     this.attachMediaStream(this.peer_media_elements[socket_id],this.peer_media_elements[socket_id].srcObject,{ muted: false},
                     (new_element, new_constrains)=>{
                         this.peer_media_elements[socket_id] = new_element
                         if(this.onBroadcastNegotitaioncallback){
+                            console.log(new_constrains)
                             this.onBroadcastNegotitaioncallback(new_constrains,new_element)
                         }
                     })

@@ -13,9 +13,9 @@ export default class StreamingRoom extends Room{
         this.topics = [];
         this.broadcaster_constrains = {}
     }
-    remote_relay_handler(peerConnection, socket, disconnecthandler){
-        socket.on('relaySessionDescription', async (data)=>{
-            if (data.socket_id == this.broadcaster_connection.id) {
+    remote_relay_handler(peerConnection, disconnecthandler){
+        peerConnection.on('relaySessionDescription', async (data)=>{
+            if (data.socket_id == this.broadcaster_connection.socket.id) {
 				await this.broadcaster_connection.applyAnswer(data.session_description);
 				this.broadcaster_connection.attachIceCandidateListener();
 			} else {
@@ -23,58 +23,67 @@ export default class StreamingRoom extends Room{
 				this.viewers_connections[data.socket_id].attachIceCandidateListener();
 			}
         })
-        socket.on('relayICECandidate', (data)=>{
-            if(data.socket_id == this.broadcaster_connection.id){
+        peerConnection.on('relayICECandidate', (data)=>{
+            if(data.socket_id == this.broadcaster_connection.socket.id){
                 this.broadcaster_connection.applyCandidate(data.candidate)
             }else{
                 this.viewers_connections[data.socket_id].applyCandidate(data.candidate)
             }
         })
-        socket.on('ready-state', data=>{
+        peerConnection.on('ready-state', data=>{
             if(this.broadcaster_connection){
-                if(data.socket_id == this.broadcaster_connection.id){
-                    socket.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.broadcaster_connection.localDescription})
+                if(data.socket_id == this.broadcaster_connection.socket.id){
+                    peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.broadcaster_connection.localDescription})
                 }else{
-                    socket.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.viewers_connections[data.socket_id].localDescription})
+                    peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.viewers_connections[data.socket_id].localDescription})
                 }
             }
         })
-        socket.on('disconnect', ()=>{
-            for(let viewer in this.viewers_connections){
-                
-            }
-            if(disconnecthandler){  
-                disconnecthandler();
-            }
-        })
+        
 
     }
     async addBroadcaster(socket, constrains, peerId, dissconnectHandler){
         this.broadcaster_constrains = constrains
-        this.broadcaster_connection = new WebRtcConnection(socket.id,
-        async (peerConnection) =>{
-            if(constrains.audio){
-                this.broadcaster_transceivers['audio'] = peerConnection.addTransceiver('audio');
-            }
-            if(constrains.video){
-                this.broadcaster_transceivers['video'] = peerConnection.addTransceiver('video');
-            }
-        },
-        ((event)=>{
-            if (event.candidate) {
-                socket.emit('iceCandidate',
-                {
-                    'socket_id': socket.id,
-                    'ice_candidate': {
-                        'sdpMLineIndex': event.candidate.sdpMLineIndex,
-                        'candidate': event.candidate.candidate
-                    }
-                });
-            }
-        }))
+        this.broadcaster_connection = new WebRtcConnection(socket,peerId,constrains,{
+            beforeOffer: async (peerConnection) =>{
+                if(constrains.audio){
+                    this.broadcaster_transceivers['audio'] = peerConnection.addTransceiver('audio');
+                }
+                if(constrains.video){
+                    this.broadcaster_transceivers['video'] = peerConnection.addTransceiver('video');
+                }
+            },
+            onIceCandidate: ((event)=>{
+                if (event.candidate) {
+                    socket.emit('iceCandidate',
+                    {
+                        'socket_id': socket.id,
+                        'ice_candidate': {
+                            'sdpMLineIndex': event.candidate.sdpMLineIndex,
+                            'candidate': event.candidate.candidate
+                        }
+                    });
+                }
+            })
+        })
+        
+
         await this.broadcaster_connection.doOffer();
-        this.remote_relay_handler(this.broadcaster_connection, socket, dissconnectHandler)
-        socket.emit('addPeer', {socket_id: socket.id, localDescription: this.broadcaster_connection.localDescription})
+
+        this.remote_relay_handler(this.broadcaster_connection, dissconnectHandler)
+        this.broadcaster_connection.emit('addPeer', {socket_id: socket.id, localDescription: this.broadcaster_connection.localDescription})
+        
+        this.broadcaster_connection.on('disconnect', ()=>{
+            for(let viewer in this.viewers_connections){
+                this.viewers_connections[viewer].emit('removePeer', {'socket_id': this.viewers_connections[viewer].socket.id})
+            }
+            if(dissconnectHandler){  
+                dissconnectHandler();
+            }
+        })
+        this.addConnection(socket.id,this.broadcaster_connection)
+        
+
         if(Object.keys(this.viewers_connections).length != 0){
             for(let viewer in this.viewers_connections){
                 let promises = [];
@@ -86,36 +95,45 @@ export default class StreamingRoom extends Room{
     }
     
     async addViewer(socket,constrains,peerId, dissconnectHandler){
-        this.viewers_connections[socket.id] = new WebRtcConnection(peerId,
-        (peerConnection) =>{
-            let promises = [];
-            for(let transceiver in this.broadcaster_transceivers){
-                let new_t = peerConnection.addTransceiver(this.broadcaster_transceivers[transceiver].receiver.track.kind); 
-                promises.push(new_t.sender.replaceTrack(this.broadcaster_transceivers[transceiver].receiver.track))
-            }
-			return Promise.all(promises);
-        },
-        ((event)=>{
-            if (event.candidate) {
-                socket.emit('iceCandidate',
-                {
-                    'socket_id': socket.id,
-                    'ice_candidate': {
-                        'sdpMLineIndex': event.candidate.sdpMLineIndex,
-                        'candidate': event.candidate.candidate
+        let viewer = new WebRtcConnection(socket,peerId, constrains,{
+            beforeOffer: (peerConnection) =>{
+                    let promises = [];
+                    for(let transceiver in this.broadcaster_transceivers){
+                        let new_t = peerConnection.addTransceiver(this.broadcaster_transceivers[transceiver].receiver.track.kind); 
+                        promises.push(new_t.sender.replaceTrack(this.broadcaster_transceivers[transceiver].receiver.track))
                     }
-                });
-            }
-        }))
-        await this.viewers_connections[socket.id].doOffer();
-        let viewer = this.viewers_connections[socket.id]
+                    return Promise.all(promises);
+            },
+            onIceCandidate: ((event)=>{
+                    if (event.candidate) {
+                        socket.emit('iceCandidate',
+                        {
+                            'socket_id': socket.id,
+                            'ice_candidate': {
+                                'sdpMLineIndex': event.candidate.sdpMLineIndex,
+                                'candidate': event.candidate.candidate
+                            }
+                        });
+                    }
+            })
+        })
+        await viewer.doOffer();
+        console.log(viewer.localDescription.sdp)
+        this.viewers_connections[socket.id] = viewer
+
+
         viewer.peerConnection.onnegotiationneeded = async(e)=> {
+            
             await viewer.doOffer()
-            socket.emit('sessionDescription', {socket_id: socket.id, session_description: viewer.localDescription})
+            console.log(viewer.localDescription.sdp)
+
+            viewer.emit('sessionDescription', {socket_id: socket.id, session_description: viewer.localDescription})
         } 
-        this.remote_relay_handler(this.viewers_connections[peerId], socket, dissconnectHandler)
-        socket.emit('addPeer', {socket_id: socket.id, localDescription: this.viewers_connections[socket.id].localDescription, constrains: this.broadcaster_constrains})
+
+        this.remote_relay_handler(viewer, dissconnectHandler)
+        viewer.emit('addPeer', {socket_id: socket.id, localDescription: this.viewers_connections[socket.id].localDescription, constrains: this.broadcaster_constrains})
         
+        this.addConnection(socket.id,viewer)
     }
     addSocket(socket,constrains,peerId){
         this.triggerConnect(socket)

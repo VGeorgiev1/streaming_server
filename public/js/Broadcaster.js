@@ -147,6 +147,7 @@ export default class Broadcaster extends Connection{
                 if(!this.senders[peer][track.kind]){
                     this.senders[peer][track.kind] = {}
                 }
+               
                 if(track.kind.includes('System') || track.kind.includes('screen')){
                     if(this.senders[peer][track.kind]["system"] && replaceIfExist){
                         this.senders[peer][track.kind]["system"].replaceTrack(track)
@@ -154,6 +155,7 @@ export default class Broadcaster extends Connection{
                         this.senders[socket_id][track.kind]["system"] = this.peers[peer].addTrack(track, this.local_media_stream)
                     }
                 }else{
+                    console.log(track)
                     if(this.senders[peer][track.kind]["user"] && replaceIfExist){
                         this.senders[peer][track.kind]["user"].replaceTrack(track)
                     }else{
@@ -272,6 +274,9 @@ export default class Broadcaster extends Connection{
                 this.setOffers()
                 if(this.is_screen_share){
                     navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
+                        // if(stream.getAudioTracks().length==0){
+                        //     this.constrains.audio = false;
+                        // }
                         this.local_media_stream = stream
                         this.constrains.screen = true;
                         this.setupScreen(details);

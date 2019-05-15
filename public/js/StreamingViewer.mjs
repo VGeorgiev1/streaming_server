@@ -9,7 +9,7 @@ window.onload = ()=>{
     connection.subscribeTo(window.channel, ()=>{
         console.log('what')
         connection.onBroadcaster((mEl, socket_id, constrains)=>{
-                console.log('what')
+                console.log(constrains)
                 player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, reso: '16by9'},9);
                 let chat = new Chat(connection.getSocket())
                 $('.big-container').append(chat.getChatInstance())
