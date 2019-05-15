@@ -1,10 +1,11 @@
 
 import SocketIO from 'socket.io';
+
 export default class Room{
     constructor(name,type,channel,io){
         this.name = name
         this.type = type
-        this.connections = {};
+        this.connections = new Map();
         this.alive = true;
         this.connectTriggers = []
         this.channel = channel;
@@ -42,22 +43,11 @@ export default class Room{
     regHandler(socket,handler, callback){
         socket.on(handler, callback)
     }
-
-
-    setupConnection(socket, peerId, constrains, dissconnectHandler){
-        this.connections[socket.id] = {}
-        this.connections[socket.id].socket = socket;
-        this.connections[socket.id].constrains = constrains
-        this.connections[socket.id].peerId = peerId
-        this.handshakeHandlers(this.connections[socket.id]);
-        this.disconnectHandler(this.connections[socket.id], dissconnectHandler)
-        this.muteUnmuteHandler(this.connections[socket.id]);
-        this.partHandler(this.connections[socket.id], dissconnectHandler)
-        return this.connections[socket.id]
+    addConnection(socket_id,connection){
+        this.connections.set(socket_id, connection)
     }
-
     disconnectHandler(connection, disconnectHandler){
-        connection.socket.on('disconnect', () =>{
+        connection.on('disconnect', () =>{
             this.removePeer(connection.socket.id)
             if(disconnectHandler)
                 disconnectHandler(connection.socket.id)
@@ -65,12 +55,12 @@ export default class Room{
     }
     removePeer(id){
         this.kickUser(id)  
-        delete this.connections[id];
+        this.connections.delete(id)
     }
     kickUser(id){
-        for(let c_id in this.connections){
-            this.connections[c_id].socket.emit('removePeer', {'socket_id': id})
-        }
+        this.connections.forEach((connection, key)=>{
+            connection.emit('removePeer', {'socket_id': id})
+        })
     }
     partHandler(connection, disconnectHandler){
         connection.socket.on('part', (details)=>{
@@ -82,35 +72,30 @@ export default class Room{
 
     muteUnmuteHandler(connection){
         connection.socket.on('new_constrains', (options)=>{ 
-            this.connections[connection.socket.id].constrains = options
-            for(let id in this.connections){
-                if(id != connection.socket.id){
-                    this.connections[id].socket.emit('relayNewConstrains', {constrains: options, socket_id: connection.socket.id})
+            conection.constrains = options
+            this.connections.forEach((connection, key)=>{
+                if(key != connection.socket.id){
+                    connection.emit('removePeer', {'socket_id': id})
                 }
-            }
+            })
         })
     }
     handshakeHandlers(connection,relaySessionDescription){
-        connection.socket.on('relayICECandidate', (config) => {
-            if(config.socket_id in this.connections) {
-                this.connections[config.socket_id].socket.emit('iceCandidate',
-                    {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate});
-            }
-        });
-        connection.socket.on('relaySessionDescription', (config) => {
-            if (config.socket_id in this.connections) {
-                this.connections[config.socket_id].socket.emit('sessionDescription',
-                    {'socket_id': connection.socket.id, 'session_description': config.session_description, 'properties': config.properties});
-            }
+        connection.on('relayICECandidate', (config) => {
+            this.connections.get(config.socket_id).emit('iceCandidate', {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate} 
+        )})
+        connection.on('relaySessionDescription', (config) => {
+            this.connections.get(config.socket_id).emit('sessionDescription', {'socket_id': connection.socket.id, 'session_description': config.session_description, 'properties': config.properties})
         });
     }
     getPeer(id){
-        if(!this.connections[id])
+        if(!this.connections.get(id))
             console.log('There is no such a peer!');
-        return this.connections[id];
+        return this.connections.get(id);
     }
 
     closeRoom(){
+        
         for(let connection in this.connections){
             this.kickUser(connection);
         }

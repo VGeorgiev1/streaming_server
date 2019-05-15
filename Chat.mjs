@@ -8,11 +8,9 @@ export default class Chat{
     appendHandlers(socket){
         this.room.regHandler(socket,'sendMessage', (data)=>{
             let cons = this.room.getConnections()
-            for(let con in cons){
-                if(con != socket.id){
-                    cons[con].socket.emit('recieveMessage',data)
-                }
-            }    
+            cons.forEach((connection, key)=>{
+                connection.emit('recieveMessage',data)
+            })
         })
     }
 }

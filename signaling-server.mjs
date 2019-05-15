@@ -34,23 +34,27 @@ app.use("/public",express.static(path.join(path.resolve() + '/public')));
 app.set('view engine', 'pug');
 
 var loginware = function (req, res, next) {
-    db.Session.findOne({where:{sessionToken: req.cookies.sessionToken},
-         include: [db.User]}).then((ses,err)=>{
-        if(err)
-            console.log(err)
-        req.authenticated = false
-        if(ses){
-            db.logUser({name: ses.dataValues.user.dataValues.username}, ()=>{
-                req.authenticated = true
-                req.userId = ses.userId
-                req.secret = ses.dataValues.user.dataValues.secret
-                req.username = ses.dataValues.user.dataValues.username
+    if(req.cookies.sessionToken){
+        db.Session.findOne({where:{sessionToken: req.cookies.sessionToken},
+            include: [db.User]}).then((ses,err)=>{
+            if(err)
+                console.log(err)
+            req.authenticated = false
+            if(ses){
+                db.logUser({name: ses.dataValues.user.dataValues.username}, ()=>{
+                    req.authenticated = true
+                    req.userId = ses.userId
+                    req.secret = ses.dataValues.user.dataValues.secret
+                    req.username = ses.dataValues.user.dataValues.username
+                    next()
+                })
+            }else{
                 next()
-            })
-        }else{
-            next()
-        }
-    })
+            }
+        })  
+    }else{
+        next();
+    }
 }
 app.use(loginware)
 
@@ -342,6 +346,7 @@ app.get('/room/:channel',async (req,res)=>{
 io.on('connection', function (socket) {
     if(socket.request.headers.cookie){
         let token = cookie.parse(socket.request.headers.cookie)["sessionToken"]
+        console.log(token)
         if(token){
             sockets[token] = socket
             socket.on('page_left', (reason)=>{

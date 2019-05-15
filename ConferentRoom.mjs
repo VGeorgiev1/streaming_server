@@ -1,11 +1,13 @@
 import Room from './Room'
 import * as fs from 'fs';
+import Connection from './Connection'
 export default class ConferentRoom extends Room{
     constructor(name,rules,ownerId,channel,io){
         super(name, 'conferent',channel,io)
         this.viewers = {}
         this.broadcasters = {}
         this.broadcasters_list = []
+        this.viewers_list = []
         this.owner = ownerId
         this.rules = rules
         this.active = false
@@ -13,20 +15,30 @@ export default class ConferentRoom extends Room{
     addBroadcaster(socket, peerId, constrains,dissconnectHandler)
     {
         this.broadcasters_list.push(socket.id)
-        this.broadcasters[socket.id] = this.setupConnection(socket,peerId,constrains,dissconnectHandler)
-        for(let id in this.connections){
-            if(peerId != this.connections[id].peerId){
-                this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
-                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections[id].constrains})
-            }    
-        }
+        let broadcaster = new Connection(socket, peerId, constrains, dissconnectHandler) 
+        this.broadcasters[socket.id] = broadcaster
+        this.addConnection(socket.id,broadcaster)
+        this.handshakeHandlers(broadcaster)
+        this.muteUnmuteHandler(broadcaster)
+        this.partHandler(broadcaster, dissconnectHandler)
+        this.disconnectHandler(broadcaster, dissconnectHandler)
+
+
+        this.connections.forEach((connection, id)=>{
+            if(peerId != this.connections.get(id).peerId){
+                this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
+                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections.get(id).constrains})
+            } 
+        })
     }
-    addPeer(socket, peerId, constrains){
-        this.viewers.push(peerId)
-        this.viewers[socket.id] = this.setupConnection(socket,peerId,null);
+    addPeer(socket, peerId, constrains, dissconnectHandler){
+        this.viewers_list.push(peerId)
+        let viewer = new Connection(socket, peerId, null, dissconnectHandler) 
+        this.viewers[socket.id] = viewer
+        this.addConnection(socket.id,viewer)
         for(let id of this.broadcasters_list){
-            this.connections[id].socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
-            socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains': this.broadcaster[id].constrains})
+            this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
+            socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains':  this.connections.get(id).constrains})
         }
     }
     isBroadcaster(id){

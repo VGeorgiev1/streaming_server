@@ -40,7 +40,9 @@ export default class StreamingRoom extends Room{
             }
         })
         socket.on('disconnect', ()=>{
-            
+            for(let viewer in this.viewers_connections){
+                
+            }
             if(disconnecthandler){  
                 disconnecthandler();
             }
@@ -75,7 +77,6 @@ export default class StreamingRoom extends Room{
         socket.emit('addPeer', {socket_id: socket.id, localDescription: this.broadcaster_connection.localDescription})
         if(Object.keys(this.viewers_connections).length != 0){
             for(let viewer in this.viewers_connections){
-                console.log(viewer)
                 let promises = [];
                 for(let transceiver in this.broadcaster_transceivers){
                     this.viewers_connections[viewer].peerConnection.addTrack(this.broadcaster_transceivers[transceiver].receiver.track)
@@ -109,10 +110,8 @@ export default class StreamingRoom extends Room{
         await this.viewers_connections[socket.id].doOffer();
         let viewer = this.viewers_connections[socket.id]
         viewer.peerConnection.onnegotiationneeded = async(e)=> {
-            
             await viewer.doOffer()
             socket.emit('sessionDescription', {socket_id: socket.id, session_description: viewer.localDescription})
-
         } 
         this.remote_relay_handler(this.viewers_connections[peerId], socket, dissconnectHandler)
         socket.emit('addPeer', {socket_id: socket.id, localDescription: this.viewers_connections[socket.id].localDescription, constrains: this.broadcaster_constrains})

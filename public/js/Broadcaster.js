@@ -3,7 +3,7 @@ const img = document.getElementById('img');
 
 
 export default class Broadcaster extends Connection{
-    constructor(IO,CONSTRAINTS,ID){
+    constructor(IO,CONSTRAINS,ID){
         super(IO,ID)
         this.constrains = {};
 
@@ -16,8 +16,8 @@ export default class Broadcaster extends Connection{
             videoBitrate : 256
         }
         this.offers = {}
-        if(CONSTRAINTS != 'screen-share'){
-            this.constrains = CONSTRAINTS
+        if(!CONSTRAINS.screen){
+            this.constrains = CONSTRAINS
             this.local_media_stream = null
         }else{
             this.is_screen_share = true
