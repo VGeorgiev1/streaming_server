@@ -19,7 +19,11 @@ window.onload = ()=>{
                     console.log(constrains)
                     player.negotiatePlayer(constrains, mEl)
                 })
-            
+
+                connection.onPeerDiscconect((socket_id)=>{
+                    let normalizedId = socket_id.replace('#', '1').replace('/','2');
+                    $('#' + normalizedId).remove()
+                })
         })
 
     })

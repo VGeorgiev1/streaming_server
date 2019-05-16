@@ -44,7 +44,9 @@ export default class Broadcaster extends Connection{
     getVideoTrack(){
         return this.media_element
     }
-
+    getStream(){
+        return this.local_media_stream
+    }
     mixVideoTracks(toMix, current){
         let tag = current
         var canvas = document.createElement("canvas");
@@ -97,8 +99,17 @@ export default class Broadcaster extends Connection{
     hasVideo(){
         return this.video_devices.length != 0;
     }
+    hasActiveAudio(){
+        return this.local_media_stream.getAudioTracks().filter(t=>t.enabled).length != 0;
+    }
     hasActiveVideo(){
-        return this.local_media_stream.getVideoTracks().length != 0;
+        return this.local_media_stream.getVideoTracks().filter(t=>t.enabled).length != 0;
+    }
+    hasMutedAudio(){
+        return this.local_media_stream.getAudioTracks().filter(t=>!t.enabled).length != 0;
+    }
+    hasMutedVideo(){
+        return this.local_media_stream.getVideoTracks().filter(t=>!t.enabled).length != 0;
     }
     muteRelay(checkForSender){
         if(checkForSender){
@@ -148,17 +159,17 @@ export default class Broadcaster extends Connection{
                     this.senders[peer][track.kind] = {}
                 }
                
-                if(track.kind.includes('System') || track.kind.includes('screen')){
+                if(track.label.includes('System') || track.label.includes('screen')){
                     if(this.senders[peer][track.kind]["system"] && replaceIfExist){
                         this.senders[peer][track.kind]["system"].replaceTrack(track)
                     }else{
                         this.senders[socket_id][track.kind]["system"] = this.peers[peer].addTrack(track, this.local_media_stream)
                     }
                 }else{
-                    console.log(track)
                     if(this.senders[peer][track.kind]["user"] && replaceIfExist){
                         this.senders[peer][track.kind]["user"].replaceTrack(track)
                     }else{
+                        console.log(track)
                         this.senders[peer][track.kind]["user"] = this.peers[peer].addTrack(track,this.local_media_stream)
                     }
                 }
@@ -175,6 +186,7 @@ export default class Broadcaster extends Connection{
         return this.media_element
     }
     getConstrains(){
+
         return this.constrains
     }
     getRoomDetails(callback){
@@ -274,9 +286,9 @@ export default class Broadcaster extends Connection{
                 this.setOffers()
                 if(this.is_screen_share){
                     navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
-                        // if(stream.getAudioTracks().length==0){
-                        //     this.constrains.audio = false;
-                        // }
+                        if(stream.getAudioTracks().length==0){
+                            this.constrains.audio = false;
+                        }
                         this.local_media_stream = stream
                         this.constrains.screen = true;
                         this.setupScreen(details);

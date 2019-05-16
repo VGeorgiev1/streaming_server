@@ -8,16 +8,42 @@ export default class WebRtcConnection extends Connection {
 		super(socket,peerId,constrains,options.dissconnectHandler);
 		this.peerConnection = new RTCPeerConnection({
 			sdpSemantics: 'unified-plan'
-		});
+    });
+    this.peerConnection.ontrack = options.ontrack
     this.beforeOffer = options.beforeOffer
     this.onIceCandidate = options.onIceCandidate;
-    this.beforeOffer(this.peerConnection);
+    
   }
   attachIceCandidateListener(){
     this.peerConnection.addEventListener('icecandidate', this.onIceCandidate);
   }
-  async applyAnswer(answer){
+  setProperties(sdp, properties){
+    if(properties.audioBitrate){
+      sdp = this.sdp(sdp, 'audio', properties.audioBitrate)
+    }
+    if(properties.videoBitrate){
+      sdp = this.sdp(sdp, 'video', properties.videoBitrate)
+    }
+    return sdp
+  }
+  async applyAnswer(answer, properties){
     await this.peerConnection.setRemoteDescription(answer);
+  }
+  sdp(sdp, media, bitrate){
+    var lines = sdp.split("\n");
+    let matchMedia = new RegExp("m="+media)
+    let matches = matchMedia.exec(sdp)
+    if(matches == null) return sdp;
+    let mline = 0;
+    for (var i = 0; i < lines.length; i++) {
+        if (matchMedia.exec(lines[i]) != null) {
+            mline = i
+            break;
+        }
+    }
+    mline++;
+    lines.splice(mline,0,"b=AS:"+bitrate)
+    return lines.join("\n")
   }
   applyCandidate(candidate){
     if(candidate){
@@ -31,10 +57,15 @@ export default class WebRtcConnection extends Connection {
     const answer = await this.peerConnection.createAnswer();
     await this.peerConnection.setLocalDescription(answer);
   }
-  async doOffer(){
+  async doOffer(options){
     try{
-      
+    if(options.beforeOffer){
+      await this.beforeOffer(this.peerConnection)
+    }
     const offer = await this.peerConnection.createOffer();
+    if(options.properties){
+      offer.sdp = this.setProperties(offer.sdp,options.properties);
+    }
     await this.peerConnection.setLocalDescription(offer);
     }catch(e){
       console.log(e)

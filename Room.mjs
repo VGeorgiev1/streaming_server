@@ -72,7 +72,7 @@ export default class Room{
 
     muteUnmuteHandler(connection){
         connection.socket.on('new_constrains', (options)=>{ 
-            conection.constrains = options
+            connection.constrains = options
             this.connections.forEach((connection, key)=>{
                 if(key != connection.socket.id){
                     connection.emit('removePeer', {'socket_id': id})

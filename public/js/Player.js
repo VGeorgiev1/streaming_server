@@ -33,31 +33,25 @@ export default class Player{
         this.media = mEl;
         this.changeContext() 
         
-
+        console.log('negotate')
     }
     removePlayer(){
         this.body.remove();
     }
     changeContext(){
         this.constrains.video ?
-            ($(`#${this.id}.embed-responsive`).replaceWith(this.getVideoContext()), !this.iselement ? this.body.append(this.getVideoBitrateControl()):{})
-           :  $(`#${this.id}.embed-responsive`).replaceWith(this.getAudioContext())
+            $(`#${this.id}`).replaceWith(this.getVideoPlayer()) :  $(`#${this.id}`).replaceWith(this.getAudioPlayer())
     }
     buildBase(){
         if(!this.options.socket_id){
             this.id = 'local'
         }else{
             this.id = this.options.socket_id.replace('#', '1').replace('/','2');
-
         }
         this.col = $(`<div id = ${this.id} class="card border-dark col-${this.columns} pr-0 pl-0 mr-5 mb-5">`)
         this.col.append($('<h5 class="card-header white-text text-center py-4">').html("steaming"))
     }
-    isVideo(){
-        
-    }
     getPlayer(){
-        console.log(this.constrains.video)
         return this.constrains.video ? this.getVideoPlayer() : this.getAudioPlayer()
     }
     isElement(){
@@ -66,7 +60,6 @@ export default class Player{
     getVideoPlayer(){
         this.buildBase();
         this.body.empty();
-
         if(!this.iselement){
             return this.col.append(this.body
                     .append(this.getVideoContext())
@@ -91,11 +84,12 @@ export default class Player{
                 .append(this.getAudioBitrateControl())
                 .append(this.getAudioInputsControl()))
                 .append(this.getAudioMuteControl())
-            
                 if(this.media.hasVideo()){
                 this.col.append(this.getVideoMuteControl());
             }
+            console.log(this.col)
             return this.col
+
         }
         return this.col.append(this.body.append(this.getAudioContext()))
     }
@@ -123,90 +117,98 @@ export default class Player{
         return div_cont
     }
     getAudioMuteControl(){
-        return $('<button id="audio_mute" class="btn btn-danger">').html('Mute').click(()=>{
-            $('#audio_mute').html() == 'Mute'?
-                ($('#audio_mute').html('Umute').removeClass('btn-danger').addClass('btn-success'),
-                $('#audio_bitrate').remove(),
-                this.media.muteAudio())
-            :
-                ($('#audio_mute').html('Mute').removeClass('btn-success').addClass('btn-danger'),
-                $('#audio_bitrate').remove(),
-                this.body.append(this.getAudioBitrateControl()),
-                this.media.muteAudio())
-        })
+        if(this.media.hasActiveAudio() || this.media.hasMutedAudio()){
+            
+            if(!this.media.hasMutedAudio()){
+                return $('<button id="audio_mute" class="btn btn-danger">').html('Mute').click(()=>{
+                    this.media.muteAudio()  
+                })
+            }
+            return $('<button id="audio_mute" class="btn btn-success">').html('Unmute').click(()=>{
+                this.media.muteAudio()  
+            })
+        }
     }
     getVideoMuteControl(){
-        return $('<button class="btn btn-success" id="video_mute">').html('Start Video').click(()=>{
-            $('#video_mute').html() == 'Start Video' ?
-                ($('#video_mute').html('Stop Video'),
-                 $('#video_mute').removeClass('btn-success').addClass('btn-danger'),
-                this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl()),
-                this.media.hasActiveVideo()?this.media.muteVideo():this.media.requestVideo())
-            :
-                ($('#video_mute').html('Start Video'),
-                 $('#video_mute').removeClass('btn-danger').addClass('btn-success'),
-                 $('#video_input').remove(),
-                 $('#video_bitrate').remove(),
-                 this.media.muteVideo())
-        })
+        if(this.media.hasActiveVideo() || this.media.hasMutedVideo()){
+            if(this.media.hasActiveVideo() || this.media.hasMutedVideo()){
+            
+                if(!this.media.hasMutedAudio()){
+                    return $('<button id="audio_mute" class="btn btn-danger">').html('Stop camera').click(()=>{
+                        this.media.muteVideo()  
+                    })
+                }
+                return $('<button id="audio_mute" class="btn btn-success">').html('Start camera').click(()=>{
+                    this.media.muteVideo()  
+                })
+            }
+        }
     }
     getAudioBitrateControl(){
-        if( !$('#audio_bitrate').length ){
-            let div_audio = $('<div id="audio_bitrate" class="border border-dark py-4">')
-            let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
-            slider_audio.change(()=>{
-                this.media.setAudioBitrates(slider_audio.val())
-            })
-            let label_audio = $('<label for="audioBit">').html("Audio bitrate:")
-            div_audio.append(label_audio).append(slider_audio)
-            return div_audio;
+        if(this.media.hasActiveAudio()){
+            if( !$('#audio_bitrate').length ){
+                let div_audio = $('<div id="audio_bitrate" class="border border-dark py-4">')
+                let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
+                slider_audio.change(()=>{
+                    this.media.setAudioBitrates(slider_audio.val())
+                })
+                let label_audio = $('<label for="audioBit">').html("Audio bitrate:")
+                div_audio.append(label_audio).append(slider_audio)
+                return div_audio;
+            }
         }
     }
     getVideoBitrateControl(){
-        if( !$('#video_bitrate').length ){
-            let div_video = $('<div id="video_bitrate" class="border border-dark py-4">')
-            let slider_video = $('<input type="range" min="10" max="2000" name="videoBit" class="border border-dark">')
-            slider_video.change(()=>{
-                this.media.setVideoBitrates(slider_video.val())
-            })
-            let label_video = $('<label for="videoBit">').html("Video bitrate:")
-        
-            return div_video.append(label_video).append(slider_video);
+        if(this.media.hasActiveVideo()){
+            if( !$('#video_bitrate').length ){
+                let div_video = $('<div id="video_bitrate" class="border border-dark py-4">')
+                let slider_video = $('<input type="range" min="10" max="2000" name="videoBit" class="border border-dark">')
+                slider_video.change(()=>{
+                    this.media.setVideoBitrates(slider_video.val())
+                })
+                let label_video = $('<label for="videoBit">').html("Video bitrate:")
+            
+                return div_video.append(label_video).append(slider_video);
+            }
         }
     }
     getAudioInputsControl(){
-        let mics = this.media.getAudioDevices()
-        let div = $('<div class="border border-dark">')
+        if(this.media.hasActiveAudio()){
+            let mics = this.media.getAudioDevices()
+            let div = $('<div class="border border-dark">')
 
-        if(mics.length != 0){
-            let label_mic = $('<label for="mics">').html("Select microphone:")
-            let select_mics = $('<select name="mics" id="mic" class="form-control">').on('change', ()=>{
-                this.media.changeAudioTrack($(select_mics).children(":selected").attr("id"))
-            })
+            if(mics.length != 0){
+                let label_mic = $('<label for="mics">').html("Select microphone:")
+                let select_mics = $('<select name="mics" id="mic" class="form-control">').on('change', ()=>{
+                    this.media.changeAudioTrack($(select_mics).children(":selected").attr("id"))
+                })
 
-            for(let i=0;i < mics.length;i++){
-                select_mics.append($(`<option id='${mics[i].deviceId}'>`).html(mics[i].label))
+                for(let i=0;i < mics.length;i++){
+                    select_mics.append($(`<option id='${mics[i].deviceId}'>`).html(mics[i].label))
+                }
+                div.append(label_mic).append(select_mics)
             }
-            div.append(label_mic).append(select_mics)
+            return div;
         }
-        return div;
     }
     getVideoInputsControl(){
-        let cameras = this.media.getVideoDevices();
-        let div = $('<div id="video_input" class="border border-dark">')
-        if(cameras.length != 0){
-            let label_cam = $('<label for="cams">').html("Select camera:")
-            let select_cams = $('<select id="cams" class="form-control">').on('change', ()=>{
-                this.media.changeVideoTrack($(select_cams).children(":selected").attr("id"))
-            })
-            select_cams.append($('<option disabled selected value>').html('Select an cam'))      
-            for(let i=0;i < cameras.length;i++){
-                select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
+        if(this.media.hasActiveVideo()){
+            let cameras = this.media.getVideoDevices();
+            let div = $('<div id="video_input" class="border border-dark">')
+            if(cameras.length != 0){
+                let label_cam = $('<label for="cams">').html("Select camera:")
+                let select_cams = $('<select id="cams" class="form-control">').on('change', ()=>{
+                    this.media.changeVideoTrack($(select_cams).children(":selected").attr("id"))
+                })
+                select_cams.append($('<option disabled selected value>').html('Select an cam'))      
+                for(let i=0;i < cameras.length;i++){
+                    select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
+                }
+                div.append(label_cam).append(select_cams)
+                
             }
-            div.append(label_cam).append(select_cams)
-            
+            return div;
         }
-        return div;
     }
 
 }
