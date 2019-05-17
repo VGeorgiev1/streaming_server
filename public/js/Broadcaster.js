@@ -137,9 +137,8 @@ export default class Broadcaster extends Connection{
         }
     }
     muteVideo(){
-        let tracks = this.local_media_stream.getVideoTracks()
-        if(tracks){
-            tracks[0].enabled = !tracks[0].enabled;
+        let track = this.local_media_stream.getVideoTracks()[0]
+        if(track){
             track.enabled = !track.enabled;
             let checkForSender = false
             if(track.enabled){
@@ -149,8 +148,8 @@ export default class Broadcaster extends Connection{
         }
     }
     sendConstrains(){
-        let payload = this.constrains
-        this.signaling_socket.emit('new_constrains', payload)
+
+        this.signaling_socket.emit('new_constrains', this.constrains)
     }
     checkForSender(replaceIfExist){
         for(let peer in this.peers){
@@ -169,7 +168,6 @@ export default class Broadcaster extends Connection{
                     if(this.senders[peer][track.kind]["user"] && replaceIfExist){
                         this.senders[peer][track.kind]["user"].replaceTrack(track)
                     }else{
-                        console.log(track)
                         this.senders[peer][track.kind]["user"] = this.peers[peer].addTrack(track,this.local_media_stream)
                     }
                 }
@@ -238,7 +236,6 @@ export default class Broadcaster extends Connection{
         this.changeTracks({audio: {deviceId: { exact: id}, video: false}})
     }
     getUserMedia(constrains,callback){
-        console.log(constrains)
          navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
@@ -286,6 +283,7 @@ export default class Broadcaster extends Connection{
                 this.setOffers()
                 if(this.is_screen_share){
                     navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
+                        console.log(stream.getTracks())
                         if(stream.getAudioTracks().length==0){
                             this.constrains.audio = false;
                         }
@@ -320,7 +318,6 @@ export default class Broadcaster extends Connection{
     predictionsLoop(){
         setInterval(()=>{
             this.predictor.detect(this.media_element).then(predictions => {
-                console.log(predictions)
                 this.signaling_socket.emit("topics", predictions);
             });
         }, 30000);

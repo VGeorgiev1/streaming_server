@@ -10,6 +10,7 @@ export default class Player{
         this.constrains = options.constrains
         if(!this.iselement){
             this.media.onMediaNegotion(()=>{
+                console.log(this.media.getConstrains())
                 this.negotiatePlayer(this.media.getConstrains(), this.media);
             })
             this.media.onChannelLeft(()=>{
@@ -130,18 +131,21 @@ export default class Player{
         }
     }
     getVideoMuteControl(){
-        if(this.media.hasActiveVideo() || this.media.hasMutedVideo()){
-            if(this.media.hasActiveVideo() || this.media.hasMutedVideo()){
-            
-                if(!this.media.hasMutedAudio()){
-                    return $('<button id="audio_mute" class="btn btn-danger">').html('Stop camera').click(()=>{
-                        this.media.muteVideo()  
-                    })
-                }
+        if((this.media.hasActiveVideo() || this.media.hasMutedVideo()) || (this.media.hasVideo() && !this.media.hasMutedVideo())){
+            if(this.media.hasActiveVideo()){
+                return $('<button id="audio_mute" class="btn btn-danger">').html('Stop camera').click(()=>{
+                    this.media.muteVideo()  
+                })
+            }
+            if(this.media.hasMutedVideo()){
                 return $('<button id="audio_mute" class="btn btn-success">').html('Start camera').click(()=>{
                     this.media.muteVideo()  
                 })
             }
+            
+            return $('<button id="audio_mute" class="btn btn-success">').html('Start camera').click(()=>{
+                this.media.requestVideo()  
+            })
         }
     }
     getAudioBitrateControl(){

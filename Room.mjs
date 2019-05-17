@@ -63,7 +63,7 @@ export default class Room{
         })
     }
     partHandler(connection, disconnectHandler){
-        connection.socket.on('part', (details)=>{
+        connection.on('part', (details)=>{
             this.removePeer(connection.socket.id)
             if(disconnectHandler)
                 disconnectHandler(id)
@@ -71,11 +71,12 @@ export default class Room{
     }
 
     muteUnmuteHandler(connection){
-        connection.socket.on('new_constrains', (options)=>{ 
+        connection.on('new_constrains', (options)=>{
+            console.log(options) 
             connection.constrains = options
-            this.connections.forEach((connection, key)=>{
+            this.connections.forEach((con, key)=>{
                 if(key != connection.socket.id){
-                    connection.emit('removePeer', {'socket_id': id})
+                    con.emit('relayNewConstrains', {'socket_id': connection.socket.id, 'constrains': options})
                 }
             })
         })
