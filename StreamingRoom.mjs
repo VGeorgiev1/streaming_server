@@ -5,7 +5,7 @@ export default class StreamingRoom extends Room{
     constructor(name,ownerId,channel,io){
         super(name, 'streaming',channel,io)
         this.viewers = []
-        this.viewers_connections = []
+        this.viewers_connections = {}
         this.broadcaster_transceivers = [] 
         this.owner = ownerId
         this.broadcaster_connection;
@@ -13,6 +13,7 @@ export default class StreamingRoom extends Room{
         this.topics = [];
         this.broadcaster_constrains = {}
         this.senders = {}
+        this.tracks = {}
     }
     remote_relay_handler(peerConnection, disconnecthandler){
         peerConnection.on('relaySessionDescription', async (data)=>{
@@ -63,11 +64,31 @@ export default class StreamingRoom extends Room{
                 this.broadcaster_transceivers.push(peerConnection.addTransceiver('video'));
             },
             ontrack: (event) =>{
+                
                 let stream = event.streams[0]
                 for(let track of stream.getTracks()){
-                    for(let viewer of this.viewers_connections){
-                        let t = this.viewers_connections[viewer].peerConnection.addTransceiver(track.kind)
-                        t.sender.replaceTrack(track)
+                    if(!this.tracks[track.id]){
+                        this.tracks[track.id] = track
+                        for(let viewer in this.viewers_connections){
+                            let senders = this.viewers_connections[viewer].peerConnection.getSenders();
+                            if(senders.length == 0){
+                                for(let transceiver of this.broadcaster_transceivers){
+                                    this.viewers_connections[viewer].peerConnection.addTransceiver(transceiver.receiver.track.kind)
+                                }
+                            }
+                            senders = this.viewers_connections[viewer].peerConnection.getSenders();
+                            for(let sender of senders){
+                                if(sender.track && sender.track.id == track.id){
+                                    console.log('repalce track shuld be oke')
+                                    sender.replaceTrack(track)
+                                    break;
+                                }else{
+                                    console.log('add track shuld be oke')
+                                    this.viewers_connections[viewer].peerConnection.addTrack(track);
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -105,10 +126,10 @@ export default class StreamingRoom extends Room{
         })
         this.addConnection(socket.id,this.broadcaster_connection)
         if(Object.keys(this.viewers_connections).length != 0){
+            
             for(let viewer in this.viewers_connections){
-                for(let transceiver of this.broadcaster_transceivers){
-                    let new_t = this.viewers_connections[viewer].peerConnection.addTransceiver(transceiver.receiver.track.kind); 
-                    new_t.sender.replaceTrack(transceiver.receiver.track)
+                for(let track in this.tracks){
+                    this.viewers_connections[viewer].peerConnection.addTrack(this.tracks[track])
                 }
             }
         }
@@ -118,9 +139,13 @@ export default class StreamingRoom extends Room{
         let viewer = new WebRtcConnection(socket,peerId, constrains,{
             beforeOffer: (peerConnection) =>{
                     let promises = [];
+                    console.log(this.broadcaster_transceivers)
                     for(let transceiver of this.broadcaster_transceivers){
-                        let new_t = peerConnection.addTransceiver(transceiver.receiver.track.kind); 
-                        promises.push(new_t.sender.replaceTrack(transceiver.receiver.track))
+                        
+                        if(transceiver){
+                            let new_t = peerConnection.addTransceiver(transceiver.receiver.track.kind); 
+                            promises.push(new_t.sender.replaceTrack(transceiver.receiver.track))
+                        }
                     }
                     return Promise.all(promises);
             },
@@ -139,15 +164,17 @@ export default class StreamingRoom extends Room{
         })
         await viewer.doOffer({beforeOffer: true});
         this.viewers_connections[socket.id] = viewer
-
         viewer.peerConnection.onnegotiationneeded = async(e)=> {
             await viewer.doOffer({beforeOffer: false});
             viewer.emit('sessionDescription', {socket_id: socket.id, session_description: viewer.localDescription})
         } 
-        if(this.broadcaster_connection)
         this.remote_relay_handler(viewer, dissconnectHandler)
         viewer.emit('addPeer', {socket_id: socket.id, localDescription: this.viewers_connections[socket.id].localDescription, constrains: this.broadcaster_constrains})
-        
+        viewer.on('disconnect', ()=>{
+            if(dissconnectHandler){
+                dissconnectHandler();
+            }
+        })
         this.addConnection(socket.id,viewer)
     }
     addSocket(socket,constrains,peerId){
@@ -169,6 +196,8 @@ export default class StreamingRoom extends Room{
             constrains = null
             this.addViewer(socket,constrains, peerId, (id)=>{
                 this.viewers.splice(this.viewers.indexOf(peerId),1)
+                console.log('delete')
+                delete this.viewers_connections[socket.id]
             })
         }
         
