@@ -1,6 +1,6 @@
-import Room from './Room'
+import Room from './Room.mjs'
 import * as fs from 'fs';
-import Connection from './Connection'
+import Connection from './Connection.mjs'
 export default class ConferentRoom extends Room{
     constructor(name,rules,ownerId,channel,io){
         super(name, 'conferent',channel,io)

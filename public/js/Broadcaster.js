@@ -42,7 +42,9 @@ export default class Broadcaster extends Connection{
         }
     }
     getVideoTrack(){
-        return this.media_element
+        let replacement = this.media_element.cloneNode(true)
+        replacement.srcObject = new MediaStream(this.local_media_stream.getTracks())
+        return replacement
     }
     getStream(){
         return this.local_media_stream
@@ -73,6 +75,10 @@ export default class Broadcaster extends Connection{
             videoForCanvas.srcObject = stream
             videoForCanvas.autoplay = true
             let mixed = this.mixVideoTracks(videoForCanvas,this.getVideoTrack());
+            let tracks = [mixed.getVideoTracks()[0]]
+            this.local_media_stream.getAudioTracks().map(t=>tracks.push(t))
+            let new_stream = new MediaStream(tracks)
+            this.media_element.srcObject = new_stream
             let track = mixed.getVideoTracks()[0]
             for(let peer in this.peers){
                 if(!this.senders[peer]["video"]){

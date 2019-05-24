@@ -1,4 +1,4 @@
-import Room from './Room'
+import Room from './Room.mjs'
 import * as fs from 'fs';
 export default class SurvillianceRoom extends Room{
     constructor(name,ownerId,channel,io){

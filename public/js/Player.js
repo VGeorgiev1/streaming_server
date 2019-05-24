@@ -140,7 +140,7 @@ export default class Player{
         }
     }
     getVideoMuteControl(){
-        if(this.media.hasActiveVideo() || this.media.hasMutedVideo()){
+        if(this.media.hasActiveVideo() || this.media.hasMutedVideo() || this.media.hasVideo()){
             return $('<button class="btn btn-success" id="video_mute">').html('Start Video').click(()=>{
                 $('#video_mute').html() == 'Start Video' ?
                     ($('#video_mute').html('Stop Video'),

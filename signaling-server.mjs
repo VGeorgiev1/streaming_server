@@ -9,14 +9,13 @@ import path from 'path';
 import pug from 'pug'
 import bodyParser from 'body-parser'
 import DbManager from './db.mjs'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import cookieParser from 'cookie-parser'
 import RoomContainer from './RoomContainer.mjs'
 import Room from './Room.mjs';
 import crypto from 'crypto'
 import Chat from './Chat.mjs'
 import cookie from 'cookie'
-import errorhandler from 'errorhandler'
 
 
 
@@ -27,7 +26,6 @@ var roomsContainer = []
 let io = new SocketIO(server);
 var SALT_ROUNDS = 10
 app.use(cookieParser());
-app.use(errorhandler())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 

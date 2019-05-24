@@ -32,6 +32,9 @@ function createConnection(constrains){
         $('.card-body').append($('<button class="btn btn-success">Start audio with mixing</button>').click(()=>{
             broadcaster.requestAudio()
         }))
+        $('.card-body').append($('<button class="btn btn-success">Start video with mixing</button>').click(()=>{
+            broadcaster.mixVideoSources()
+        }))
     }) 
 }
 

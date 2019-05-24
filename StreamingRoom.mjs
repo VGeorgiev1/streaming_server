@@ -1,6 +1,6 @@
-import Room from './Room'
+import Room from './Room.mjs'
 import * as fs from 'fs';
-import WebRtcConnection from './WebRtcConnection'
+import WebRtcConnection from './WebRtcConnection.mjs'
 export default class StreamingRoom extends Room{
     constructor(name,ownerId,channel,io){
         super(name, 'streaming',channel,io)
@@ -60,30 +60,38 @@ export default class StreamingRoom extends Room{
         this.broadcaster_constrains = constrains
         this.broadcaster_connection = new WebRtcConnection(socket,peerId,constrains,{
             beforeOffer: async (peerConnection) =>{
-                this.broadcaster_transceivers.push(peerConnection.addTransceiver('audio'));
-                this.broadcaster_transceivers.push(peerConnection.addTransceiver('video'));
+                if(this.broadcaster_constrains.video){
+                    this.broadcaster_transceivers.push(peerConnection.addTransceiver('video'));
+                }
+                if(this.broadcaster_constrains.audio){
+                    this.broadcaster_transceivers.push(peerConnection.addTransceiver('audio'));
+                }
             },
             ontrack: (event) =>{
                 
                 let stream = event.streams[0]
+                //let tracks = stream.getTracks();
+
                 for(let track of stream.getTracks()){
+                    
                     if(!this.tracks[track.id]){
                         this.tracks[track.id] = track
+                        this.broadcaster_constrains[track.kind] = true;
                         for(let viewer in this.viewers_connections){
                             let senders = this.viewers_connections[viewer].peerConnection.getSenders();
-                            if(senders.length == 0){
-                                for(let transceiver of this.broadcaster_transceivers){
-                                    this.viewers_connections[viewer].peerConnection.addTransceiver(transceiver.receiver.track.kind)
-                                }
+                            if(senders.filter(s=> s.track.kind == track.kind).length == 0){
+                                this.viewers_connections[viewer].peerConnection.addTransceiver(track.kind)
                             }
                             senders = this.viewers_connections[viewer].peerConnection.getSenders();
                             for(let sender of senders){
                                 if(sender.track && sender.track.id == track.id){
-                                    console.log('repalce track shuld be oke')
+                                    console.log('replace')
+                                    console.log(track.id)
                                     sender.replaceTrack(track)
                                     break;
                                 }else{
-                                    console.log('add track shuld be oke')
+                                    console.log('add')
+                                    console.log(track.id)
                                     this.viewers_connections[viewer].peerConnection.addTrack(track);
                                     break;
                                 }
@@ -112,10 +120,10 @@ export default class StreamingRoom extends Room{
         this.broadcaster_connection.emit('addPeer', {socket_id: socket.id, localDescription: this.broadcaster_connection.localDescription})
         
         this.broadcaster_connection.on('disconnect', ()=>{
-            for(let transceiver in this.broadcaster_transceivers){
-                this.broadcaster_transceivers[transceiver].stop();
-                delete this.broadcaster_transceivers[transceiver] 
+            for(let transceiver of this.broadcaster_transceivers){
+                transceiver.stop(); 
             }
+            this.broadcaster_transceivers = [];
             this.broadcaster_connection = null;
             for(let viewer in this.viewers_connections){
                 this.viewers_connections[viewer].emit('removePeer', {'socket_id': this.viewers_connections[viewer].socket.id})
@@ -125,29 +133,16 @@ export default class StreamingRoom extends Room{
             }
         })
         this.addConnection(socket.id,this.broadcaster_connection)
-        if(Object.keys(this.viewers_connections).length != 0){
-            
-            for(let viewer in this.viewers_connections){
-                for(let track in this.tracks){
-                    this.viewers_connections[viewer].peerConnection.addTrack(this.tracks[track])
-                }
-            }
-        }
     }
     
     async addViewer(socket,constrains,peerId, dissconnectHandler){
         let viewer = new WebRtcConnection(socket,peerId, constrains,{
             beforeOffer: (peerConnection) =>{
                     let promises = [];
-                    console.log(this.broadcaster_transceivers)
-                    for(let transceiver of this.broadcaster_transceivers){
-                        
-                        if(transceiver){
-                            let new_t = peerConnection.addTransceiver(transceiver.receiver.track.kind); 
-                            promises.push(new_t.sender.replaceTrack(transceiver.receiver.track))
-                        }
+                    for(let track in this.tracks){
+                        peerConnection.addTransceiver(this.tracks[track].kind);
+                        peerConnection.addTrack(this.tracks[track])
                     }
-                    return Promise.all(promises);
             },
             onIceCandidate: ((event)=>{
                     if (event.candidate) {
