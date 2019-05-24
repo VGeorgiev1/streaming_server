@@ -16,6 +16,7 @@ import Room from './Room.mjs';
 import crypto from 'crypto'
 import Chat from './Chat.mjs'
 import cookie from 'cookie'
+import errorhandler from 'errorhandler'
 
 
 
@@ -26,13 +27,17 @@ var roomsContainer = []
 let io = new SocketIO(server);
 var SALT_ROUNDS = 10
 app.use(cookieParser());
+app.use(errorhandler())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
 app.use("/public",express.static(path.join(path.resolve() + '/public')));
 
 app.set('view engine', 'pug');
-
+process.on('unhandledRejection', (reason, p) => {
+    console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+    // application specific logging, throwing an error, or other logic here
+});
 var loginware = function (req, res, next) {
     if(req.cookies.sessionToken){
         db.Session.findOne({where:{sessionToken: req.cookies.sessionToken},
