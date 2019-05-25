@@ -50,40 +50,44 @@ export default class Broadcaster extends Connection{
     getStream(){
         return this.local_media_stream
     }
-    mixVideoTracks(toMix, current){
+    mixVideoTracks(toMix, current,x,y,w,h){
         let tag = current
         var canvas = document.createElement("canvas");
-        let view_wview = 1280;
-        let view_hview = 720;
+        let view_wview = window.screen.availWidth;
+        let view_hview = window.screen.availHeight;
         canvas.tabIndex = 0;
         var ctx = canvas.getContext("2d");
         canvas.height = view_hview;
         canvas.width = view_wview
         let draw = ()=>{
             ctx.drawImage(tag, 0, 0, view_wview, view_hview);
-            ctx.drawImage(toMix, 0, 0, 300, 300);
+            ctx.drawImage(toMix, x, y, w, h);
 
             this.animationId = window.requestAnimationFrame(draw);
         }
         this.animationId = window.requestAnimationFrame(draw);
         return canvas.captureStream(30);
     }
-    mixVideoSources(video){
+    mixVideoSources(x,y,w,h){
+        
         let old_track = this.local_media_stream.getVideoTracks()[0];
         this.getUserMedia({audio:false, video: { width: 1280, height: 720 }},(stream)=>{
             this.local_media_stream.addTrack(stream.getVideoTracks()[0])
             let videoForCanvas = document.createElement('video')
             videoForCanvas.srcObject = stream
             videoForCanvas.autoplay = true
-            let mixed = this.mixVideoTracks(videoForCanvas,this.getVideoTrack());
+
+            let mixed = this.mixVideoTracks(videoForCanvas,this.getVideoTrack(), x,y,w,h);
             let tracks = [mixed.getVideoTracks()[0]]
             this.local_media_stream.getAudioTracks().map(t=>tracks.push(t))
+
             let new_stream = new MediaStream(tracks)
             this.media_element.srcObject = new_stream
             if(this.onMediaNegotiationCallback){
                 this.onMediaNegotiationCallback(0)
             }
             let track = mixed.getVideoTracks()[0]
+
             for(let peer in this.peers){
                 if(!this.senders[peer]["video"]){
                     this.senders[peer]["video"] = {}

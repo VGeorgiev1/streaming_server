@@ -137,8 +137,11 @@ export default class Player{
                 this.video_controls = !this.video_controls
 
                 if(this.media.isScreen() && !this.media.hasActiveCamera()){
-                    //this.video_controls = !this.video_controls
-                    this.media.mixVideoSources();
+                    if($('input[name="video"]').filter(function(){return $(this).val().length==0}).length == 0){                        
+                        this.media.mixVideoSources(Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()));
+                    }else{
+                        return null;
+                    }
                 }else if(this.media.hasActiveCamera() || this.media.hasMutedCamera()){
                     this.media.muteVideo()
                     if(!this.media.hasActiveVideo()){
@@ -149,8 +152,8 @@ export default class Player{
                     this.media.requestVideo();
                 }
                 this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl())
+                
             })
-            console.log(this.video_controls)
             if(this.video_controls){
                 btn.html('Start video')
                 btn.removeClass('btn-danger').addClass('btn-success')
@@ -163,7 +166,6 @@ export default class Player{
     }
     getAudioBitrateControl(){
         if(this.media.hasActiveAudio()){
-            console.log('not true')
             if(!$('#audio_bitrate').length){
                 let div_audio = $('<div id="audio_bitrate" class="border border-dark py-4">')
                 let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
@@ -221,6 +223,15 @@ export default class Player{
                 select_cams.append($('<option disabled selected value>').html('Select an cam'))      
                 for(let i=0;i < cameras.length;i++){
                     select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
+                }
+                let options = null;
+                if(this.media.isScreen()){
+                    options = $('<div class="input-group">')
+                        .append('<span class="input-group-text">Start x:</span>').append($('<input type="text" id="startX" class="form-control" name="video">'))
+                        .append('<span class="input-group-text">Start y:</span>').append($('<input type="text" id="startY" class="form-control" name="video">'))
+                        .append('<span class="input-group-text">Width:</span>').append($('<input type="text" id="width" class="form-control" name="video">'))
+                        .append('<span class="input-group-text">Heigth:</span>').append($('<input type="text" id="height" class="form-control" name="video">'))
+                    div.append(options)
                 }
                 div.append(label_cam).append(select_cams)
                 
