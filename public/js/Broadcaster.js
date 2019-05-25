@@ -15,6 +15,7 @@ export default class Broadcaster extends Connection{
             audioBitrate : 50,
             videoBitrate : 256
         }
+        this.animationId = null;
         this.offers = {}
         if(!CONSTRAINS.screen){
             this.constrains = CONSTRAINS
@@ -58,19 +59,19 @@ export default class Broadcaster extends Connection{
         var ctx = canvas.getContext("2d");
         canvas.height = view_hview;
         canvas.width = view_wview
-        function draw()
-        {
+        let draw = ()=>{
             ctx.drawImage(tag, 0, 0, view_wview, view_hview);
             ctx.drawImage(toMix, 0, 0, 300, 300);
 
-            window.requestAnimationFrame(draw);
+            this.animationId = window.requestAnimationFrame(draw);
         }
-        window.requestAnimationFrame(draw);
+        this.animationId = window.requestAnimationFrame(draw);
         return canvas.captureStream(30);
     }
     mixVideoSources(video){
         let old_track = this.local_media_stream.getVideoTracks()[0];
         this.getUserMedia({audio:false, video: { width: 1280, height: 720 }},(stream)=>{
+            this.local_media_stream.addTrack(stream.getVideoTracks()[0])
             let videoForCanvas = document.createElement('video')
             videoForCanvas.srcObject = stream
             videoForCanvas.autoplay = true
@@ -79,22 +80,26 @@ export default class Broadcaster extends Connection{
             this.local_media_stream.getAudioTracks().map(t=>tracks.push(t))
             let new_stream = new MediaStream(tracks)
             this.media_element.srcObject = new_stream
+            if(this.onMediaNegotiationCallback){
+                this.onMediaNegotiationCallback(0)
+            }
             let track = mixed.getVideoTracks()[0]
             for(let peer in this.peers){
                 if(!this.senders[peer]["video"]){
                     this.senders[peer]["video"] = {}
                 }
-                this.senders[peer][old_track.kind]["system"].replaceTrack(track)
+                this.senders[peer][old_track.kind].replaceTrack(track)
             }
         })
     }
     requestAudio(){
         this.constrains.audio = true
-        this.changeTracks({audio:true})
+        this.changeTracks({audio:true}, {forceAdd: true})
     }
     requestVideo(){
+        console.log('please request video')
         this.constrains.video = true
-        this.changeTracks(this.constrains)
+        this.changeTracks(this.constrains,{forceAdd: true})
     }
     setVideoBitrates(videoBitrate){
         if(this.constrains.video && videoBitrate >=8 && videoBitrate<=2000){
@@ -102,11 +107,20 @@ export default class Broadcaster extends Connection{
             this.changeSdpSettings({video_bitrate: this.properties.videoBitrate})
         }
     }
+    isScreen(){
+        return this.is_screen_share
+    }
     hasVideo(){
         return this.video_devices.length != 0;
     }
     hasActiveAudio(){
         return this.local_media_stream.getAudioTracks().filter(t=>t.enabled).length != 0;
+    }
+    hasActiveCamera(){
+        return this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen') && t.enabled).length != 0
+    }
+    hasMutedCamera(){
+        return this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen') && !t.enabled).length != 0
     }
     hasActiveVideo(){
         return this.local_media_stream.getVideoTracks().filter(t=>t.enabled).length != 0;
@@ -135,48 +149,73 @@ export default class Broadcaster extends Connection{
         let track = this.local_media_stream.getAudioTracks()[0]
         if(track){
             track.enabled = !track.enabled;
-            let checkForSender = false
-            if(track.enabled){
-                checkForSender = true;                
-            }
-            this.muteRelay(checkForSender)
+            this.muteRelay(track.enabled)
         }
     }
     muteVideo(){
-        let track = this.local_media_stream.getVideoTracks()[0]
-        if(track){
-            track.enabled = !track.enabled;
-            let checkForSender = false
-            if(track.enabled){
-                checkForSender = true;                
+        if(!this.animationId){
+            let track = this.local_media_stream.getVideoTracks()[0]
+            if(track){
+                track.enabled = !track.enabled;
+                this.muteRelay(track.enabled)
             }
-            this.muteRelay(checkForSender)
+        }else{
+            cancelAnimationFrame(this.animationId)
+            this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen')).map(t=>t.stop())
+            this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
+            this.media_element.srcObject = this.local_media_stream
+            if(this.onMediaNegotiationCallback){
+                this.onMediaNegotiationCallback()
+            }
+            this.checkForSender({replaceIfExist: true})
         }
     }
     sendConstrains(){
 
         this.signaling_socket.emit('new_constrains', this.constrains)
     }
-    checkForSender(replaceIfExist){
+    checkForSender(options){
         for(let peer in this.peers){
             this.local_media_stream.getTracks().forEach(track =>{
+                //console.log(track)
                 if(!this.senders[peer][track.kind]){
                     this.senders[peer][track.kind] = {}
                 }
-               
-                if(track.label.includes('System') || track.label.includes('screen')){
-                    if(this.senders[peer][track.kind]["system"] && replaceIfExist){
-                        this.senders[peer][track.kind]["system"].replaceTrack(track)
-                    }else{
-                        this.senders[socket_id][track.kind]["system"] = this.peers[peer].addTrack(track, this.local_media_stream)
+                let senders = this.peers[peer].getSenders();
+                for(let sender of senders){
+                    if(sender.track.kind == track.kind && options.replaceIfExist){
+                        sender.replaceTrack(track)
+                        break;
                     }
-                }else{
-                    if(this.senders[peer][track.kind]["user"] && replaceIfExist){
-                        this.senders[peer][track.kind]["user"].replaceTrack(track)
-                    }else{
-                        this.senders[peer][track.kind]["user"] = this.peers[peer].addTrack(track,this.local_media_stream)
+                    if((sender.track.id != track.id) && (track.kind == sender.track.kind) && options.forceAdd){
+                        this.peers[peer].addTrack(track, this.local_media_stream)
+                        break;
                     }
                 }
+                // if(options.forceAdd){
+                //     this.peers[peer].addTrack(track,this.local_media_stream)
+                // }else if(this.senders[peer][track.kind] && options.replaceIfExist){
+                //     this.senders[peer][track.kind].replaceTrack(track)
+                // }
+                
+                // if(track.label.includes('System') || track.label.includes('screen')){
+                    
+                //     console.log(this.senders[peer])
+                //     console
+                //     if(this.senders[peer][track.kind]["system"] && replaceIfExist){
+                //         console.log('replace track in system')
+                //         this.senders[peer][track.kind]["system"].replaceTrack(track)
+                //     }else{
+                //         this.senders[socket_id][track.kind]["system"] = this.peers[peer].addTrack(track, this.local_media_stream)
+                //     }
+                // }else{
+                //     if(this.senders[peer][track.kind]["user"] && replaceIfExist){
+                //         console.log('replace track')
+                //         this.senders[peer][track.kind]["user"].replaceTrack(track)
+                //     }else{
+                //         this.senders[peer][track.kind]["user"] = this.peers[peer].addTrack(track,this.local_media_stream)
+                //     }
+                // }
             })
         }
     }
@@ -197,17 +236,13 @@ export default class Broadcaster extends Connection{
         this.signaling_socket.emit('get_room_details', this.channel)
         this.regHandler('room_details', callback)
     }
-    setOffers(constrains){
-        this.offers.audio = true;
-        this.offers.video = true;
-    }
     setCocoInterval(interval,callback){
        setInterval(()=>{
             let frame = this.captureFrame();
             this.signaling_socket.emit('tensor', {'data': frame, 'width': this.media_element.width, 'height': this.media_element.height})
         },interval)
     }
-    changeTracks(constrains){
+    changeTracks(constrains, options){
         this.getUserMedia(constrains, (stream)=>{
             if(!this.constrains.audio) stream.getAudioTracks()[0] ?stream.getAudioTracks()[0].enabled = false : null
             if(!this.constrains.video) stream.getVideoTracks()[0] ?stream.getVideoTracks()[0].enabled = false : null
@@ -215,7 +250,7 @@ export default class Broadcaster extends Connection{
             stream.getTracks().forEach(track =>{
                 this.local_media_stream.addTrack(track)
             })
-            this.checkForSender(true)
+            this.checkForSender(options)
             this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
                 this.constrains = new_constrains;
                 this.media_element = new_element;
@@ -228,18 +263,18 @@ export default class Broadcaster extends Connection{
         })
     }
     changeVideoTrack(id, callback){
-        this.local_media_stream.getVideoTracks().forEach(track=>{
+        this.local_media_stream.getVideoTracks().filter(t=>!t.label.include('screen')).forEach(track=>{
             track.stop();
         })
         this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState != 'ended'))
-        this.changeTracks({audio: false, video : {deviceId: { exact: id}}});
+        this.changeTracks({audio: false, video : {deviceId: { exact: id}}},{replaceIfExist: true});
     }
     changeAudioTrack(id, callback){
-        this.local_media_stream.getAudioTracks().forEach(track=>{
+        this.local_media_stream.getAudioTracks().filter(t=>!t.label.include('System')).forEach(track=>{
             track.stop();
         })
         this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState != 'ended'))
-        this.changeTracks({audio: {deviceId: { exact: id}, video: false}})
+        this.changeTracks({audio: {deviceId: { exact: id}, video: false}},{replaceIfExist:true})
     }
     getUserMedia(constrains,callback){
          navigator.mediaDevices.getUserMedia(constrains)
@@ -276,34 +311,43 @@ export default class Broadcaster extends Connection{
                     this.onchannelleft()
                 }
             }
+            v.onended = callback
         }else{
-            callback = (event) => {
-                this.muteVideo();
-            }
+            // callback = (event) => {
+            //     this.muteVideo();
+            // }
         }
-        v.onended = callback
+        
     }
     createConnectDisconnectHandlers(callback){
         this.regConnectHandlers(()=> {
             this.getRoomDetails((details)=>{
-                this.setOffers()
                 if(this.is_screen_share){
-                    navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
-                        console.log(stream.getTracks())
-                        if(stream.getAudioTracks().length==0){
-                            this.constrains.audio = false;
-                        }
-                        this.local_media_stream = stream
-                        this.constrains.screen = true;
-                        this.setupScreen(details);
-                        this.joinChannel(this.constrains)
-                        callback(this.media_element)
-                        if(details.type == 'streaming'){
-                            cocoSsd.load().then(model => {
-                                this.predictionsLoop()
-                            });
-                        }
+                    this.findDevices(()=>{
+                        navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
+                        
+                            if(stream.getAudioTracks().length==0){
+                                this.constrains.audio = false;
+                            }
+                            stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
+                               this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
+                               this.media_element.srcObject = this.local_media_stream
+                               this.checkForSender({replaceIfExist:true})
+                               this.is_screen_share = false;
+                            })
+                            this.local_media_stream = stream
+                            this.constrains.screen = true;
+                            this.setupScreen(details);
+                            this.joinChannel(this.constrains)
+                            callback(this.media_element)
+                            if(details.type == 'streaming'){
+                                cocoSsd.load().then(model => {
+                                    this.predictionsLoop()
+                                });
+                            }
+                        })
                     })
+                    
                 }else{
                     this.findConstrains(details.rules,()=>{
                         this.setupLocalMedia(this.constrains,

@@ -128,13 +128,13 @@ export default class Connection {
                         if(!this.senders[socket_id][track.kind]){
                             this.senders[socket_id][track.kind] = {}
                         }
-                        if(track.label.includes('System') || track.label.includes('screen')){
-                            this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
-                        }else{
-                            console.log(track)
+                        this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream);
+                        // if(track.label.includes('System') || track.label.includes('screen')){
+                        //     this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
+                        // }else{
 
-                            this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
-                        }
+                        //     this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
+                        // }
 
                 });
             }
@@ -277,7 +277,7 @@ export default class Connection {
     joinChannel(constrains) {
         this.signaling_socket.emit('join', { "constrains": constrains, "id": this.id});
     }
-    async findConstrains(rules,callback) {
+    findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
             let use_audio, use_video = false
             let searchingFor = ''
@@ -285,6 +285,11 @@ export default class Connection {
                 if (devices[i].kind === 'audioinput') use_audio = true, this.audio_devices.push(devices[i]);
                 if (devices[i].kind === 'videoinput') use_video = true, this.video_devices.push(devices[i]);
             }
+            callback()
+        })
+    }
+    async findConstrains(rules,callback) {
+        this.findDevices(()=>{
             if(rules){
                 if((!rules.audio && rules.audio != null) || !this.constrains.audio) {
                     this.constrains.audio = false
@@ -293,15 +298,16 @@ export default class Connection {
                     this.constrains.video = false
                 }
             }else{
-                if(this.constrains.audio && use_audio){
-                    this.constrains.audio = use_audio;
+                if(this.constrains.audio){
+                    this.constrains.audio = this.audio_devices.length != 0;
                 }
-                if(this.constrains.video && use_video){
-                    this.constrains.video = use_video
+                if(this.constrains.video){
+                    this.constrains.video =  this.video_devices.length != 0;
                 }
             }
             callback()
         })
+        
     }
     findWebRTC() {
         return (navigator.getUserMedia ||

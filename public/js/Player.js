@@ -5,12 +5,12 @@ export default class Player{
         this.media = options.media;
         this.options = options
         this.reso = options.reso
+        this.video_controls = true;
         this.iselement = this.isElement()
         console.log(options.constrains)
         this.constrains = options.constrains
         if(!this.iselement){
             this.media.onMediaNegotion(()=>{
-                console.log(this.media.getConstrains())
                 this.negotiatePlayer(this.media.getConstrains(), this.media);
             })
             this.media.onChannelLeft(()=>{
@@ -34,7 +34,6 @@ export default class Player{
         this.media = mEl;
         this.changeContext() 
         
-        console.log('negotate')
     }
     removePlayer(){
         this.body.remove();
@@ -129,37 +128,43 @@ export default class Player{
             return $('<button id="audio_mute" class="btn btn-success">').html('Unmute').click(()=>{
                 this.muteAudio()  
             })
-            // return $('<button id="audio_mute" class="btn btn-danger">').html('Mute').click(()=>{
-            //     this.media.hasMutedAudio()?
-            //         ($('#audio_mute').html('Umute').removeClass('btn-danger').addClass('btn-success'),
-            //         this.media.muteAudio())
-            //     :
-            //         ($('#audio_mute').html('Mute').removeClass('btn-success').addClass('btn-danger'),
-            //         this.media.muteAudio())
-            // })
         }
     }
     getVideoMuteControl(){
-        if(this.media.hasActiveVideo() || this.media.hasMutedVideo() || this.media.hasVideo()){
-            return $('<button class="btn btn-success" id="video_mute">').html('Start Video').click(()=>{
-                $('#video_mute').html() == 'Start Video' ?
-                    ($('#video_mute').html('Stop Video'),
-                    $('#video_mute').removeClass('btn-success').addClass('btn-danger'),
-                    this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl()),
-                    this.media.hasActiveVideo()?this.media.muteVideo():this.media.requestVideo())
-                :
-                    ($('#video_mute').html('Start Video'),
-                    $('#video_mute').removeClass('btn-danger').addClass('btn-success'),
-                    $('#video_input').remove(),
-                    $('#video_bitrate').remove(),
-                    this.media.muteVideo())
+        if(this.media.hasVideo()){
+            let btn =  $('<button class="btn btn-success" id="video_mute">').html('Start Video')
+            btn.click(()=>{
+                this.video_controls = !this.video_controls
+
+                if(this.media.isScreen() && !this.media.hasActiveCamera()){
+                    //this.video_controls = !this.video_controls
+                    this.media.mixVideoSources();
+                }else if(this.media.hasActiveCamera() || this.media.hasMutedCamera()){
+                    this.media.muteVideo()
+                    if(!this.media.hasActiveVideo()){
+                        $('#video_input').remove()
+                        $('#video_bitrate').remove()
+                    }
+                }else{
+                    this.media.requestVideo();
+                }
+                this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl())
             })
+            console.log(this.video_controls)
+            if(this.video_controls){
+                btn.html('Start video')
+                btn.removeClass('btn-danger').addClass('btn-success')
+            }else{
+                btn.html('Stop Video')
+                btn.removeClass('btn-success').addClass('btn-danger')
+            }
+            return btn;
         }
     }
     getAudioBitrateControl(){
         if(this.media.hasActiveAudio()){
             console.log('not true')
-            if( !$('#audio_bitrate').length ){
+            if(!$('#audio_bitrate').length){
                 let div_audio = $('<div id="audio_bitrate" class="border border-dark py-4">')
                 let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
                 slider_audio.change(()=>{
@@ -173,7 +178,7 @@ export default class Player{
     }
     getVideoBitrateControl(){
         if(this.media.hasActiveVideo()){
-            if( !$('#video_bitrate').length ){
+            if( !$('#video_bitrate').length){
                 let div_video = $('<div id="video_bitrate" class="border border-dark py-4">')
                 let slider_video = $('<input type="range" min="10" max="2000" name="videoBit" class="border border-dark">')
                 slider_video.change(()=>{
@@ -186,9 +191,9 @@ export default class Player{
         }
     }
     getAudioInputsControl(){
-        if(this.media.hasActiveAudio()){
+        if(this.media.hasActiveAudio() && !$('#audio_input').length){
             let mics = this.media.getAudioDevices()
-            let div = $('<div class="border border-dark">')
+            let div = $('<div id="audio_input" class="border border-dark">')
 
             if(mics.length != 0){
                 let label_mic = $('<label for="mics">').html("Select microphone:")
@@ -205,7 +210,7 @@ export default class Player{
         }
     }
     getVideoInputsControl(){
-        if(this.media.hasActiveVideo()){
+        if(this.media.hasActiveVideo() && !$('#video_input').length){
             let cameras = this.media.getVideoDevices();
             let div = $('<div id="video_input" class="border border-dark">')
             if(cameras.length != 0){

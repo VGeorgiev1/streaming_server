@@ -85,13 +85,9 @@ export default class StreamingRoom extends Room{
                             senders = this.viewers_connections[viewer].peerConnection.getSenders();
                             for(let sender of senders){
                                 if(sender.track && sender.track.id == track.id){
-                                    console.log('replace')
-                                    console.log(track.id)
                                     sender.replaceTrack(track)
                                     break;
                                 }else{
-                                    console.log('add')
-                                    console.log(track.id)
                                     this.viewers_connections[viewer].peerConnection.addTrack(track);
                                     break;
                                 }
@@ -123,6 +119,10 @@ export default class StreamingRoom extends Room{
             for(let transceiver of this.broadcaster_transceivers){
                 transceiver.stop(); 
             }
+            for(let track in this.tracks){
+                this.tracks[track].stop();
+            }
+            this.tracks = {}
             this.broadcaster_transceivers = [];
             this.broadcaster_connection = null;
             for(let viewer in this.viewers_connections){

@@ -29,12 +29,6 @@ function createConnection(constrains){
         let chat = new Chat(broadcaster.getSocket())
         $('.row').prepend(player.getPlayer())
         $('.big-container').append(chat.getChatInstance())
-        $('.card-body').append($('<button class="btn btn-success">Start audio with mixing</button>').click(()=>{
-            broadcaster.requestAudio()
-        }))
-        $('.card-body').append($('<button class="btn btn-success">Start video with mixing</button>').click(()=>{
-            broadcaster.mixVideoSources()
-        }))
     }) 
 }
 
