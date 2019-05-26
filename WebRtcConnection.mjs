@@ -5,7 +5,7 @@ const RTCPeerConnection = wrtc.default.RTCPeerConnection;
 const RTCIceCandidate = wrtc.default.RTCIceCandidate;
 export default class WebRtcConnection extends Connection {
 	constructor(socket,peerId, constrains,options) {
-		super(socket,peerId,constrains,options.dissconnectHandler);
+		super(socket,peerId,constrains,null,options.dissconnectHandler);
 		this.peerConnection = new RTCPeerConnection({
 			sdpSemantics: 'unified-plan'
     });
