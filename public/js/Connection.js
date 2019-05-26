@@ -184,6 +184,7 @@ export default class Connection {
         this.regHandler('sessionDescription', (config) => {
             var socket_id = config.socket_id;
             var peer_connection = this.peers[socket_id];
+            console.log(config)
             this.peers[socket_id].properties = config.properties;
             if(!peer_connection){
                 peer_connection = new RTCPeerConnection(

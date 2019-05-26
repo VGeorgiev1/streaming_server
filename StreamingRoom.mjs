@@ -26,7 +26,7 @@ export default class StreamingRoom extends Room{
                         await this.viewers_connections[viewer].doOffer({properties: data.properties});
                         this.viewers_connections[viewer].emit('sessionDescription', {"socket_id":this.viewers_connections[viewer].socket.id, "session_description": this.viewers_connections[viewer].localDescription, "properties": data.properties})
                     }
-                    peerConnection.emit('sessionDescription', {"socket_id": data.socket_id, "session_description": this.broadcaster_connection.localDescription})
+                    peerConnection.emit('sessionDescription', {"socket_id": data.socket_id, "session_description": this.broadcaster_connection.localDescription, 'properties': this.broadcaster_connection.properties})
                  }else{
 				    await this.broadcaster_connection.applyAnswer(data.session_description,data.properties);
 				    this.broadcaster_connection.attachIceCandidateListener();
@@ -44,6 +44,7 @@ export default class StreamingRoom extends Room{
             }
         })
         peerConnection.on('ready-state', data=>{
+            console.log(data)
             if(this.broadcaster_connection){
                 if(data.socket_id == this.broadcaster_connection.socket.id){
                     peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.broadcaster_connection.localDescription, properties: data.properties})
