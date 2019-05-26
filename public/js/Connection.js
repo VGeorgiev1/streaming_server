@@ -6,6 +6,7 @@ export default class Connection {
     constructor(io, id) {
         this.channel = channel;
         this.id = id
+        
         this.peers = {};
         this.peer_media_elements = {};
         this.onBroadcasterCallback = null
@@ -68,8 +69,9 @@ export default class Connection {
             const offer = await peer_connection.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
             
             await peer_connection.setLocalDescription(offer);
-            offer.sdp = this.setProperties(offer.sdp,properties);
-
+            if(properties){
+                offer.sdp = this.setProperties(offer.sdp,properties);
+            }
             this.signaling_socket.emit('relaySessionDescription',
             { 'socket_id': socket_id, 'session_description': offer, 'properties': this.properties});
         } catch (e) {
@@ -83,10 +85,10 @@ export default class Connection {
         
         this.regHandler('addPeer', async(config) => {
             var socket_id = config.socket_id;
-            console.log(config.properties)
             if (socket_id in this.peers) {
                 return;
             }
+            console.log(config)
             var peer_connection = new RTCPeerConnection({
                 sdpSemantics: 'unified-plan'
             });
@@ -112,8 +114,10 @@ export default class Connection {
                     })
                 } 
             }
+            
             this.peers[socket_id] = peer_connection;
             this.peers[socket_id].properties = config.properties
+            this.peers[socket_id].constrains = config.constrains
             peer_connection.onicecandidate = (event) => {
                 if (event.candidate) {
                     this.signaling_socket.emit('relayICECandidate', {
@@ -132,12 +136,7 @@ export default class Connection {
                             this.senders[socket_id][track.kind] = {}
                         }
                         this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream);
-                        // if(track.label.includes('System') || track.label.includes('screen')){
-                        //     this.senders[socket_id][track.kind]["system"] = peer_connection.addTrack(track, this.local_media_stream)
-                        // }else{
 
-                        //     this.senders[socket_id][track.kind]["user"] = peer_connection.addTrack(track, this.local_media_stream)
-                        // }
 
                 });
             }
@@ -145,7 +144,6 @@ export default class Connection {
                 peer_connection.onnegotiationneeded = async(event) =>{
                     this.negotiate(peer_connection, socket_id, this.peers[socket_id].properties)
                 }
-                //this.negotiate(peer_connection, socket_id, this.properties)
             }
             this.signaling_socket.emit('ready-state', {socket_id: socket_id, properties: this.properties});
         })
@@ -184,19 +182,17 @@ export default class Connection {
         this.regHandler('sessionDescription', (config) => {
             var socket_id = config.socket_id;
             var peer_connection = this.peers[socket_id];
-            console.log(config)
             this.peers[socket_id].properties = config.properties;
             if(!peer_connection){
-                peer_connection = new RTCPeerConnection(
-                    { "iceServers": ICE_SERVERS },
-                    { "optional": [{ "DtlsSrtpKeyAgreement": true }] }
-                );
+                peer_connection = new RTCPeerConnection({
+                    sdpSemantics: 'unified-plan'
+                });
                 this.peers[socket_id] = peer_connection   
             }
             var remote_description = config.session_description;
             
             var desc = new RTCSessionDescription(remote_description);
-            if(remote_description.type == "answer"){
+            if(remote_description.type == "answer" && this.peers[socket_id].properties){
                 desc.sdp = this.setProperties(desc.sdp, this.peers[socket_id].properties)
             }
             var stuff = peer_connection.setRemoteDescription(desc)
@@ -239,8 +235,9 @@ export default class Connection {
     }
     regChangeConstrainsHandler(){
         this.signaling_socket.on('relayNewConstrains', (options)=>{
-            console.log(options.constrains)
+            
             if(this.peer_media_elements[options.socket_id]){
+                this.peers[options.socket_id].constrains = options.constrains
                 let element = this.peer_media_elements[options.socket_id];
                 this.setupStream(element.srcObject, options.constrains)
                 this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{

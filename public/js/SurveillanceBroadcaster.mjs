@@ -1,4 +1,4 @@
-import Broadcaster from './Broadcaster.js'
+import Broadcaster from './SurveilanceBroadcaster.mjs'
 import Player from './Player.js'
 import Chat from './Chat.mjs'
 let connection = null 
@@ -10,7 +10,7 @@ window.onload = ()=>{
     let connections = 1;
     let columnsOnMedia = 3;
     connection.subscribeTo(window.channel, (mEl)=>{
-        let broadcaster = new Player({'media': connection,'constrains': connection.getConstrains(), 'reso': '1by1'},3)
+        let broadcaster = new Player({'media': connection.getMediaElement(),'constrains': connection.getConstrains(), 'reso': '1by1'},3)
         $('.row:nth-child(1)').append(broadcaster.getPlayer())
         //$('.big-container').append(chat.getChatInstance())
     })

@@ -1,12 +1,10 @@
 import Connection from "./Connection.js"
-const img = document.getElementById('img');
 
 
 export default class Broadcaster extends Connection{
     constructor(IO,CONSTRAINS,ID){
         super(IO,ID)
         this.constrains = {};
-
         this.media_element = null
         this.senders = {}
         this.audio_devices = []
@@ -300,7 +298,6 @@ export default class Broadcaster extends Connection{
                 if(this.is_screen_share){
                     this.findDevices(()=>{
                         navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
-                        
                             if(stream.getAudioTracks().length==0){
                                 this.constrains.audio = false;
                             }

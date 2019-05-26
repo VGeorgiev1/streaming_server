@@ -16,7 +16,6 @@ export default class Room{
                 socket.emit('room_details', {type:this.type,rules:this.rules,active:this.active})
             })
             socket.on('join', (data)=>{
-                console.log('join')
                 this.addSocket(socket,data.constrains, data.id, data.properties)
             })
         });
@@ -88,7 +87,7 @@ export default class Room{
             this.connections.get(config.socket_id).emit('iceCandidate', {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate} 
         )})
         connection.on('relaySessionDescription', (config) => {
-            connection.properties = config.properties
+            //connection.properties = config.properties
             this.connections.get(config.socket_id).emit('sessionDescription', {'socket_id': connection.socket.id, 'session_description': config.session_description, 'properties': connection.properties})
         });
     }

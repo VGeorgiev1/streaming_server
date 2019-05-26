@@ -1,22 +1,21 @@
-import Viewer from './Viewer.js'
+import Viewer from './SurveillanceSpectator.js'
 import Player from './Player.js'
 let connection = null;
 
 window.onload = ()=>{
     let connections = 1;
-    connection = new Viewer("http://localhost",io,id)
+    connection = new Viewer(io,window.id)
     let player = null;
     connection.subscribeTo(window.channel, ()=>{
         connection.onBroadcaster((mEl, socket_id, constrains)=>{
-            player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains},3);
+            player = new Player({'media': connection, 'socket_id': socket_id, 'constrains': constrains},3);
             if(connections / 3 == 1){
                 let breaker = $('<div class="w-100">');
                 $('.row:nth-child(1)').append(breaker)
             }
             connection.onBroadcastNegotiation((constrains,mEl)=>{
-                console.log(constrains)
-                console.log(mEl)
-                player.negotiatePlayer(constrains, mEl)
+                
+                player.negotiatePlayer(constrains, connection)
             })
             connections++
             $('.row:nth-child(1)').append(player.getPlayer())
