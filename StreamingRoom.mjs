@@ -71,7 +71,6 @@ export default class StreamingRoom extends Room{
             ontrack: (event) =>{
                 
                 let stream = event.streams[0]
-                //let tracks = stream.getTracks();
 
                 for(let track of stream.getTracks()){
                     

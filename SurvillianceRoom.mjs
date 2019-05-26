@@ -1,29 +1,41 @@
 import Room from './Room.mjs'
-import * as fs from 'fs';
+import Connection from './public/js/Connection';
 export default class SurvillianceRoom extends Room{
     constructor(name,ownerId,channel,io){
         super(name, 'surveillance',channel,io)
         this.broadcasterStreams = [] 
         this.spectator = {}
-        this.broadcasters_list = []
+        this.broadcasters = {}
         this.owner = ownerId
         this.active = false
     }
-    addBroadcaster(socket, peerId, constrains,dissconnectHandler)
+    addBroadcaster(socket, peerId, constrains,properties,dissconnectHandler)
     {
-        let broadcaster=this.setupConnection(socket,peerId,constrains,dissconnectHandler)
-        this.broadcasterStreams.push(broadcaster)
+        let broadcaster = new Connection(socket,peerId,constrains,properties,dissconnectHandler);
+        this.broadcasters[socket_id] = broadcaster
+        this.addConnection(socket.id,broadcaster)
+        this.handshakeHandlers(broadcaster)
+        this.muteUnmuteHandler(broadcaster)
+        this.partHandler(broadcaster, dissconnectHandler)
+        this.disconnectHandler(broadcaster, dissconnectHandler)
+
         if(this.active){
-            this.spectator.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
-            broadcaster.socket.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null})
+            this.spectator.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains, 'properties': properties})
+            broadcaster.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
         }
     }
     addSpectator(socket, peerId,dissconnectHandler){
-        this.spectator=this.setupConnection(socket,peerId,null,dissconnectHandler)
+        this.spectator = new Connection(socket,peerId,null,null,dissconnectHandler);
+        this.addConnection(socket.id,broadcaster)
+        this.handshakeHandlers(broadcaster)
+        this.muteUnmuteHandler(broadcaster)
+        this.partHandler(broadcaster, dissconnectHandler)
+        this.disconnectHandler(broadcaster, dissconnectHandler)
+
         if(this.active){
-            for(let broadcaster of this.broadcasterStreams){
-                broadcaster.socket.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null})
-                this.spectator.socket.emit('addPeer', {'socket_id': broadcaster.socket.id, 'should_create_offer': false, 'constrains': broadcaster.constrains})
+            for(let broadcaster in this.broadcasters){
+                this.broadcasters[broadcaster].emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
+                this.spectator.emit('addPeer', {'socket_id': this.broadcasters[broadcaster].socket.id, 'should_create_offer': false, 'constrains': this.broadcasters[broadcaster].constrains, 'properties': null})
             }
         }
     }
