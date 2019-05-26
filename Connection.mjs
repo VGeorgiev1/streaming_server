@@ -2,12 +2,13 @@
 
 import EventEmitter from 'events'
 export default class Connection extends EventEmitter {
-  constructor(socket, peerId, constrains, dissconnectHandler) {
+  constructor(socket, peerId, constrains,properties, dissconnectHandler) {
     super();
     this.state = 'open';
     this.peerId = peerId
     this.constrains = constrains
     this.socket = socket
+    this.properties = properties
     this.dissconnectHandler = dissconnectHandler;
   }
 

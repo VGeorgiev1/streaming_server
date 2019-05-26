@@ -17,7 +17,7 @@ export default class Room{
             })
             socket.on('join', (data)=>{
                 console.log('join')
-                this.addSocket(socket,data.constrains, data.id)
+                this.addSocket(socket,data.constrains, data.id, data.properties)
             })
         });
     }
@@ -71,8 +71,7 @@ export default class Room{
     }
 
     muteUnmuteHandler(connection){
-        connection.on('new_constrains', (options)=>{
-            console.log(options) 
+        connection.on('new_constrains', (options)=>{ 
             connection.constrains = options
             this.connections.forEach((con, key)=>{
                 if(key != connection.socket.id){
@@ -80,13 +79,17 @@ export default class Room{
                 }
             })
         })
+        connection.on('new_properties', (options)=>{
+            connection.properties = options.properties
+        })
     }
     handshakeHandlers(connection,relaySessionDescription){
         connection.on('relayICECandidate', (config) => {
             this.connections.get(config.socket_id).emit('iceCandidate', {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate} 
         )})
         connection.on('relaySessionDescription', (config) => {
-            this.connections.get(config.socket_id).emit('sessionDescription', {'socket_id': connection.socket.id, 'session_description': config.session_description, 'properties': config.properties})
+            connection.properties = config.properties
+            this.connections.get(config.socket_id).emit('sessionDescription', {'socket_id': connection.socket.id, 'session_description': config.session_description, 'properties': connection.properties})
         });
     }
     getPeer(id){

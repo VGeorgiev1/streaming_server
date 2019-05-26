@@ -101,7 +101,6 @@ export default class Broadcaster extends Connection{
         this.changeTracks({audio:true}, {forceAdd: true})
     }
     requestVideo(){
-        console.log('please request video')
         this.constrains.video = true
         this.changeTracks(this.constrains,{forceAdd: true})
     }
@@ -181,52 +180,24 @@ export default class Broadcaster extends Connection{
     checkForSender(options){
         for(let peer in this.peers){
             this.local_media_stream.getTracks().forEach(track =>{
-                //console.log(track)
-                if(!this.senders[peer][track.kind]){
-                    this.senders[peer][track.kind] = {}
-                }
-                let senders = this.peers[peer].getSenders();
-                for(let sender of senders){
-                    if(sender.track.kind == track.kind && options.replaceIfExist){
-                        sender.replaceTrack(track)
+                for(let sender in this.senders[peer]){
+                    if(this.senders[peer][sender].track.kind == track.kind && options.replaceIfExist){
+                        this.senders[peer][sender].replaceTrack(track)
                         break;
                     }
-                    if((sender.track.id != track.id) && (track.kind == sender.track.kind) && options.forceAdd){
-                        this.peers[peer].addTrack(track, this.local_media_stream)
+                    if(this.senders[peer][sender].track.id != track.id && options.forceAdd){
+                        this.senders[peer][sender] = this.peers[peer].addTrack(track, this.local_media_stream)
                         break;
                     }
                 }
-                // if(options.forceAdd){
-                //     this.peers[peer].addTrack(track,this.local_media_stream)
-                // }else if(this.senders[peer][track.kind] && options.replaceIfExist){
-                //     this.senders[peer][track.kind].replaceTrack(track)
-                // }
-                
-                // if(track.label.includes('System') || track.label.includes('screen')){
-                    
-                //     console.log(this.senders[peer])
-                //     console
-                //     if(this.senders[peer][track.kind]["system"] && replaceIfExist){
-                //         console.log('replace track in system')
-                //         this.senders[peer][track.kind]["system"].replaceTrack(track)
-                //     }else{
-                //         this.senders[socket_id][track.kind]["system"] = this.peers[peer].addTrack(track, this.local_media_stream)
-                //     }
-                // }else{
-                //     if(this.senders[peer][track.kind]["user"] && replaceIfExist){
-                //         console.log('replace track')
-                //         this.senders[peer][track.kind]["user"].replaceTrack(track)
-                //     }else{
-                //         this.senders[peer][track.kind]["user"] = this.peers[peer].addTrack(track,this.local_media_stream)
-                //     }
-                // }
             })
         }
     }
     changeSdpSettings(properties){
+        this.signaling_socket.emit('new_properties', {properties: this.properties})
         for(let socket_id in this.peers){
             let peer_connection = this.peers[socket_id]
-            this.negotiate(peer_connection, socket_id, this.properties)
+            this.negotiate(peer_connection, socket_id, this.peers[socket_id].properties)
         }
     }
     getMediaElement(){

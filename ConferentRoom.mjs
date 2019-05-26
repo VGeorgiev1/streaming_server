@@ -12,10 +12,10 @@ export default class ConferentRoom extends Room{
         this.rules = rules
         this.active = false
     }
-    addBroadcaster(socket, peerId, constrains,dissconnectHandler)
+    addBroadcaster(socket, peerId, constrains,properties,dissconnectHandler)
     {
         this.broadcasters_list.push(socket.id)
-        let broadcaster = new Connection(socket, peerId, constrains, dissconnectHandler) 
+        let broadcaster = new Connection(socket, peerId, constrains, properties, dissconnectHandler) 
         this.broadcasters[socket.id] = broadcaster
         this.addConnection(socket.id,broadcaster)
         this.handshakeHandlers(broadcaster)
@@ -26,8 +26,8 @@ export default class ConferentRoom extends Room{
 
         this.connections.forEach((connection, id)=>{
             if(peerId != this.connections.get(id).peerId){
-                this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains})
-                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections.get(id).constrains})
+                this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains, 'properties': properties})
+                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections.get(id).constrains, 'properties': this.connections.get(id).properties})
             } 
         })
     }
@@ -44,7 +44,7 @@ export default class ConferentRoom extends Room{
     isBroadcaster(id){
         return true//return this.broadcasters.indexOf(id) != -1
     }
-    addSocket(socket,constrains,peerId){
+    addSocket(socket,constrains,peerId,properties){
         this.triggerConnect(socket)
         if(!this.isBroadcaster(peerId)){
             if(this.viewers.indexOf(peerId) != -1){
@@ -55,7 +55,7 @@ export default class ConferentRoom extends Room{
         }
         else{
             this.active = true;
-            this.addBroadcaster(socket, peerId, constrains,()=>{
+            this.addBroadcaster(socket, peerId, constrains,properties,()=>{
                 this.broadcasters_list.splice(this.broadcasters_list.indexOf(peerId),1)
                 if(this.broadcasters_list.length == 0){
                     this.active = false
