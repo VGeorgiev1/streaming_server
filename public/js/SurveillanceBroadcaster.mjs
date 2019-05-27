@@ -5,7 +5,6 @@ let connection = null
 window.Broadcaster = Broadcaster;
 
 window.onload = ()=>{
-    var SIGNALING_SERVER = "http://localhost";
     connection = new Broadcaster(io ,{audio: true, video: false},window.id)
     let connections = 1;
     let columnsOnMedia = 3;

@@ -237,14 +237,14 @@ export default class Broadcaster extends Connection{
         })
     }
     changeVideoTrack(id, callback){
-        this.local_media_stream.getVideoTracks().filter(t=>!t.label.include('screen')).forEach(track=>{
+        this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen')).forEach(track=>{
             track.stop();
         })
         this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState != 'ended'))
         this.changeTracks({audio: false, video : {deviceId: { exact: id}}},{replaceIfExist: true});
     }
     changeAudioTrack(id, callback){
-        this.local_media_stream.getAudioTracks().filter(t=>!t.label.include('System')).forEach(track=>{
+        this.local_media_stream.getAudioTracks().filter(t=>!t.label.includes('System')).forEach(track=>{
             track.stop();
         })
         this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState != 'ended'))
