@@ -45,6 +45,12 @@ export default class Room{
     addConnection(socket_id,connection){
         this.connections.set(socket_id, connection)
     }
+    attachHandlers(connection, dissconnectHandler){
+        this.handshakeHandlers(connection)
+        this.muteUnmuteHandler(connection)
+        this.partHandler(connection, dissconnectHandler)
+        this.disconnectHandler(connection, dissconnectHandler)
+    }
     disconnectHandler(connection, disconnectHandler){
         connection.on('disconnect', () =>{
             this.removePeer(connection.socket.id)
@@ -88,7 +94,7 @@ export default class Room{
             this.connections.get(config.socket_id).emit('iceCandidate', {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate} 
         )})
         connection.on('relaySessionDescription', (config) => {
-            //connection.properties = config.properties
+            connection.properties = config.properties
             this.connections.get(config.socket_id).emit('sessionDescription', {'socket_id': connection.socket.id, 'session_description': config.session_description, 'properties': connection.properties})
         });
     }

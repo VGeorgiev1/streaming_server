@@ -8,7 +8,6 @@ export default class SurveillanceSpectator extends Viewer{
     }
     joinChannel(){
         this.signaling_socket.on('properties',(data)=>{
-            console.log(data)
             this.peers[data.id].properties = data.properties
             this.peers[data.id].constrains = data.constrains
             this.peers[data.id].media_state = data.media_state  
