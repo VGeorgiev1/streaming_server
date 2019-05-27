@@ -35,7 +35,7 @@ export default class Player{
         
     }
     removePlayer(){
-        this.body.remove();
+        this.col.remove();
     }
     changeContext(){
         this.constrains.video ?

@@ -158,7 +158,6 @@ export default class Broadcaster extends Connection{
             let track = this.local_media_stream.getVideoTracks()[0]
             if(track){
                 track.enabled = !track.enabled;
-                console.log(track.enabled)
                 this.muteRelay(track.enabled)
             }
         }else{

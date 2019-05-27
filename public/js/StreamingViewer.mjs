@@ -4,7 +4,7 @@ import Chat from './Chat.mjs'
 let connection = null;
 
 window.onload = ()=>{
-    connection = new Viewer("http://localhost",io,window.id)
+    connection = new Viewer(io,window.id)
     let player =null;
     connection.subscribeTo(window.channel, ()=>{
         connection.onBroadcaster((mEl, socket_id, constrains)=>{
@@ -12,13 +12,12 @@ window.onload = ()=>{
                 let chat = new Chat(connection.getSocket())
                 $('.big-container').append(chat.getChatInstance())
                 $('.row').append(player.getPlayer())
-                // connection.onBroadcastNegotiation((constrains,mEl)=>{
-                //     player.negotiatePlayer(constrains, mEl)
-                // })
+                connection.onBroadcastNegotiation((constrains,mEl)=>{
+                    player.negotiatePlayer(constrains, mEl)
+                })
 
                 connection.onPeerDiscconect((socket_id)=>{
-                    let normalizedId = socket_id.replace('#', '1').replace('/','2');
-                    $('#' + normalizedId).remove()
+                    player.removePlayer();
                 })
         })
 

@@ -44,7 +44,6 @@ export default class StreamingRoom extends Room{
             }
         })
         peerConnection.on('ready-state', data=>{
-            console.log(data)
             if(this.broadcaster_connection){
                 if(data.socket_id == this.broadcaster_connection.socket.id){
                     peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.broadcaster_connection.localDescription, properties: data.properties})
@@ -191,7 +190,6 @@ export default class StreamingRoom extends Room{
             constrains = null
             this.addViewer(socket,constrains, peerId, (id)=>{
                 this.viewers.splice(this.viewers.indexOf(peerId),1)
-                console.log('delete')
                 delete this.viewers_connections[socket.id]
             })
         }

@@ -5,25 +5,24 @@ let connection = null;
 window.onload = ()=>{
     let connections = 1;
     connection = new Viewer(io,window.id)
-    let player = null;
+    let players = {};
     connection.subscribeTo(window.channel, ()=>{
         connection.onBroadcaster((mEl, socket_id, constrains)=>{
-            console.log(constrains)
-            player = new Player({'media': connection, 'socket_id': socket_id, 'constrains': constrains, 'reso': '1by1'},3);
+            players[socket_id] = new Player({'media': connection, 'socket_id': socket_id, 'constrains': constrains, 'reso': '1by1'},3);
             if(connections / 3 == 1){
                 let breaker = $('<div class="w-100">');
                 $('.row:nth-child(1)').append(breaker)
             }
             connection.onBroadcastNegotiation((constrains,mEl)=>{
                 
-                player.negotiatePlayer(constrains, connection)
+                players[socket_id].negotiatePlayer(constrains, connection)
             })
             connections++
-            $('.row:nth-child(1)').append(player.getPlayer())
+            $('.row:nth-child(1)').append(players[socket_id].getPlayer())
         })
 
         connection.onPeerDiscconect((socket_id)=>{
-            $(`#${socket_id}`).remove()
+            players[socket_id].removePlayer()
             connections--
             if(connections / 3 == 1){
                 $(".w-100").last().remove();

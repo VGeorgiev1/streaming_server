@@ -29,7 +29,7 @@ export default class SurvillianceRoom extends Room{
             broadcaster.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
         }
     }
-    attachHandlers(){
+    attachControlHandlers(){
         this.spectator.on('request_video', (data)=>{
             this.connections.get(data.socket_id).emit('request_video')
         })
@@ -59,6 +59,7 @@ export default class SurvillianceRoom extends Room{
         this.spectator = new Connection(socket,peerId,null,null,dissconnectHandler);
         this.addConnection(socket.id,this.spectator)
         this.attachHandlers(this.spectator, dissconnectHandler)
+        this.attachControlHandlers();
         if(this.active){
             for(let broadcaster in this.broadcasters){
                 this.broadcasters[broadcaster].emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
@@ -70,7 +71,7 @@ export default class SurvillianceRoom extends Room{
         return id == this.owner
     }
     isBroadcaster(id){
-        return !this.isOwner(id)//return this.broadcasters.indexOf(id) != -1
+        return !this.isOwner(id)
     }
     addSocket(socket,constrains,peerId, properties,media_state){
         if(!this.isOwner(peerId)){
