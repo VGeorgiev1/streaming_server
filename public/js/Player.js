@@ -109,6 +109,7 @@ export default class Player{
             div_cont.append(this.iselement ? $(media): $(media.getMediaElement(this.options.socket_id)))
 
         }else{
+            console.log('here')
             div_cont.append(this.iselement ? $(this.media): $(this.media.getMediaElement(this.options.socket_id)))
         }
         return div_cont
@@ -139,7 +140,7 @@ export default class Player{
                     }else{
                         return null;
                     }
-                }else if(this.media.hasActiveCamera(this.options.socket_id) || this.media.hasMutedCamera()){
+                }else if(this.media.hasActiveCamera(this.options.socket_id) || this.media.hasMutedCamera(this.options.socket_id)){
                     this.media.muteVideo(this.options.socket_id)
                     if(!this.media.hasActiveVideo(this.options.socket_id)){
                         $('#video_input').remove()
@@ -167,7 +168,7 @@ export default class Player{
                 let div_audio = $('<div id="audio_bitrate" class="border border-dark py-4">')
                 let slider_audio = $('<input type="range" min="8" max="50" name="audioBit" class="border border-dark">')
                 slider_audio.change(()=>{
-                    this.media.setAudioBitrates(this.options.socket_id,slider_audio.val())
+                    this.media.setAudioBitrates(slider_audio.val(),this.options.socket_id)
                 })
                 let label_audio = $('<label for="audioBit">').html("Audio bitrate:")
                 div_audio.append(label_audio).append(slider_audio)
@@ -176,12 +177,13 @@ export default class Player{
         }
     }
     getVideoBitrateControl(){
+        console.log('bitrate')
         if(this.media.hasActiveVideo(this.options.socket_id)){
             if( !$('#video_bitrate').length){
                 let div_video = $('<div id="video_bitrate" class="border border-dark py-4">')
                 let slider_video = $('<input type="range" min="10" max="2000" name="videoBit" class="border border-dark">')
                 slider_video.change(()=>{
-                    this.media.setVideoBitrates(this.options.socket_id,slider_video.val())
+                    this.media.setVideoBitrates(slider_video.val(),this.options.socket_id)
                 })
                 let label_video = $('<label for="videoBit">').html("Video bitrate:")
             
@@ -222,7 +224,7 @@ export default class Player{
                     select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
                 }
                 let options = null;
-                if(this.media.isScreen()){
+                if(this.media.isScreen(this.options.socket_id)){
                     options = $('<div class="input-group">')
                         .append('<span class="input-group-text">Start x:</span>').append($('<input type="text" id="startX" class="form-control" name="video">'))
                         .append('<span class="input-group-text">Start y:</span>').append($('<input type="text" id="startY" class="form-control" name="video">'))

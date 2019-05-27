@@ -349,7 +349,6 @@ app.get('/room/:channel',async (req,res)=>{
 io.on('connection', function (socket) {
     if(socket.request.headers.cookie){
         let token = cookie.parse(socket.request.headers.cookie)["sessionToken"]
-        console.log(token)
         if(token){
             sockets[token] = socket
             socket.on('page_left', (reason)=>{

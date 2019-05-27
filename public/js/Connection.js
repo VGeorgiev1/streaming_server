@@ -67,7 +67,6 @@ export default class Connection {
         peer_connection._negotiating = true;
         try {
             const offer = await peer_connection.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
-            
             await peer_connection.setLocalDescription(offer);
             if(properties){
                 offer.sdp = this.setProperties(offer.sdp,properties);
@@ -88,14 +87,12 @@ export default class Connection {
             if (socket_id in this.peers) {
                 return;
             }
-            console.log(config)
             var peer_connection = new RTCPeerConnection({
                 sdpSemantics: 'unified-plan'
             });
            
             peer_connection.ontrack = (event) => {
                 let stream = event.streams[0] || new MediaStream(peer_connection.getReceivers().map(receiver => receiver.track));
-                
                 if (!this.peer_media_elements[socket_id]) {
                     this.attachMediaStream(null,stream,{muted: false}, (new_element, new_constrains)=>{
                         this.peer_media_elements[socket_id] = new_element
@@ -118,6 +115,8 @@ export default class Connection {
             this.peers[socket_id] = peer_connection;
             this.peers[socket_id].properties = config.properties
             this.peers[socket_id].constrains = config.constrains
+            this.peers[socket_id].media_state = config.media_state
+            console.log(config.media_state)
             peer_connection.onicecandidate = (event) => {
                 if (event.candidate) {
                     this.signaling_socket.emit('relayICECandidate', {
@@ -183,6 +182,7 @@ export default class Connection {
             var socket_id = config.socket_id;
             var peer_connection = this.peers[socket_id];
             this.peers[socket_id].properties = config.properties;
+            
             if(!peer_connection){
                 peer_connection = new RTCPeerConnection({
                     sdpSemantics: 'unified-plan'

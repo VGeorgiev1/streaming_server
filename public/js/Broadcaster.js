@@ -82,7 +82,7 @@ export default class Broadcaster extends Connection{
             let new_stream = new MediaStream(tracks)
             this.media_element.srcObject = new_stream
             if(this.onMediaNegotiationCallback){
-                this.onMediaNegotiationCallback(0)
+                this.onMediaNegotiationCallback()
             }
             let track = mixed.getVideoTracks()[0]
 
@@ -134,7 +134,7 @@ export default class Broadcaster extends Connection{
     }
     muteRelay(checkForSender){
         if(checkForSender){
-            this.checkForSender(true)
+            this.checkForSender({replaceIfExist: true})
         }
         this.attachMediaStream(this.media_element, this.local_media_stream, {returnElm: true}, (new_element, new_constrains)=>{
             this.media_element = new_element;
@@ -158,6 +158,7 @@ export default class Broadcaster extends Connection{
             let track = this.local_media_stream.getVideoTracks()[0]
             if(track){
                 track.enabled = !track.enabled;
+                console.log(track.enabled)
                 this.muteRelay(track.enabled)
             }
         }else{
@@ -221,6 +222,7 @@ export default class Broadcaster extends Connection{
             if(!this.constrains.video) stream.getVideoTracks()[0] ?stream.getVideoTracks()[0].enabled = false : null
            
             stream.getTracks().forEach(track =>{
+                console.log(track)
                 this.local_media_stream.addTrack(track)
             })
             this.checkForSender(options)
@@ -230,7 +232,7 @@ export default class Broadcaster extends Connection{
                 this.media_element.muted = true
                 this.sendConstrains()
                 if(this.onMediaNegotiationCallback){
-                    this.onMediaNegotiationCallback(new_constrains,this)
+                    this.onMediaNegotiationCallback()
                 }
             })
         })

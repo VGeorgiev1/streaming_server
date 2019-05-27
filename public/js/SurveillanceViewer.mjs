@@ -8,7 +8,8 @@ window.onload = ()=>{
     let player = null;
     connection.subscribeTo(window.channel, ()=>{
         connection.onBroadcaster((mEl, socket_id, constrains)=>{
-            player = new Player({'media': connection, 'socket_id': socket_id, 'constrains': constrains},3);
+            console.log(constrains)
+            player = new Player({'media': connection, 'socket_id': socket_id, 'constrains': constrains, 'reso': '1by1'},3);
             if(connections / 3 == 1){
                 let breaker = $('<div class="w-100">');
                 $('.row:nth-child(1)').append(breaker)

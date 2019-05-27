@@ -8,7 +8,10 @@ export default class SurveillanceSpectator extends Viewer{
     }
     joinChannel(){
         this.signaling_socket.on('properties',(data)=>{
+            console.log(data)
             this.peers[data.id].properties = data.properties
+            this.peers[data.id].constrains = data.constrains
+            this.peers[data.id].media_state = data.media_state  
             this.onMediaNegotiationCallback()
         })
         this.signaling_socket.emit('join', {'constrains': null, 'id': this.id, 'properties': null})
@@ -17,32 +20,36 @@ export default class SurveillanceSpectator extends Viewer{
         return this.peers[id].constrains
     }
     getMediaElement(id){
+        console.log(this.peer_media_elements[id])
         return this.peer_media_elements[id]
     }
     hasVideo(id){
-        console.log(this.peers)
-        return this.peers[id].properties.has_video
+        return this.peers[id].media_state.has_video
     }
     hasActiveAudio(id){
-        return this.peers[id].properties.has_active_audio;
+        return this.peers[id].media_state.has_active_audio;
     }
     hasMutedAudio(id){
-        return this.peers[id].properties.has_muted_audio;
+        return this.peers[id].media_state.has_muted_audio;
     }
     isScreen(id){
-        return this.peers[id].properties.isScreen;
+        return this.peers[id].media_state.isScreen;
     }
     hasActiveCamera(id){
-        return this.peers[id].properties.has_active_camera;
+
+        return this.peers[id].media_state.has_active_camera;
+    }
+    hasActiveVideo(id){
+        return this.peers[id].media_state.has_active_video
     }
     hasMutedCamera(id){
-        return this.peers[id].properties.has_muted_camera;
+        return this.peers[id].media_state.has_muted_camera;
     }
     getAudioDevices(id){
-        return this.peers[id].properties.audioDevices;
+        return this.peers[id].media_state.audioDevices;
     }
     getVideoDevices(id){
-        return this.peers[id].properties.videoDevices;
+        return this.peers[id].media_state.videoDevices;
     }
     onMediaNegotiation(callback){
         this.onMediaNegotiationCallback = callback;
@@ -57,6 +64,7 @@ export default class SurveillanceSpectator extends Viewer{
         this.signaling_socket.emit('mute_audio', {socket_id: id})
     }
     muteVideo(id){
+        console.log('mute video')
         this.signaling_socket.emit('mute_video', {socket_id: id})
     }
     setAudioBitrates(val,id){

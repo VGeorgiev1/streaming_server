@@ -10,20 +10,25 @@ export default class SurvillianceRoom extends Room{
         this.broadcasters_list = []
         this.active = false
     }
-    addBroadcaster(socket, peerId, constrains,properties,dissconnectHandler)
+    addBroadcaster(socket, peerId, constrains,properties,media_state,dissconnectHandler)
     {
         let broadcaster = new Connection(socket,peerId,constrains,properties,dissconnectHandler);
         this.broadcasters[socket.id] = broadcaster
+        broadcaster.media_state = media_state
         this.addConnection(socket.id,broadcaster)
         this.handshakeHandlers(broadcaster)
         this.muteUnmuteHandler(broadcaster)
         this.partHandler(broadcaster, dissconnectHandler)
         this.disconnectHandler(broadcaster, dissconnectHandler)
-        broadcaster.on('properties', (data)=>{
-            this.spectator.emit('properties', {id: socket.id, properties: data.properties})
+        broadcaster.on('new_properties', (data)=>{
+            
+            broadcaster.properties = data.properties
+            broadcaster.constrains = data.constrains
+            broadcaster.media_state = data.media_state
+            this.spectator.emit('properties', {id: socket.id, properties: data.properties, constrains: broadcaster.constrains, media_state:data.media_state})
         })
         if(this.active){
-            this.spectator.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains, 'properties': properties})
+            this.spectator.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains, 'properties': properties, 'media_state':broadcaster.media_state })
             broadcaster.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
         }
     }
@@ -53,7 +58,7 @@ export default class SurvillianceRoom extends Room{
             this.connections.get(data.socket_id).emit('change_video', {device_id: data.track_id})
         })
     }
-    addSpectator(socket, peerId,properties,dissconnectHandler){
+    addSpectator(socket, peerId,dissconnectHandler){
         this.spectator = new Connection(socket,peerId,null,null,dissconnectHandler);
         this.addConnection(socket.id,this.spectator)
         this.handshakeHandlers(this.spectator)
@@ -64,7 +69,7 @@ export default class SurvillianceRoom extends Room{
         if(this.active){
             for(let broadcaster in this.broadcasters){
                 this.broadcasters[broadcaster].emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
-                this.spectator.emit('addPeer', {'socket_id': this.broadcasters[broadcaster].socket.id, 'should_create_offer': false, 'constrains': this.broadcasters[broadcaster].constrains, 'properties': this.broadcasters[broadcaster].properties})
+                this.spectator.emit('addPeer', {'socket_id': this.broadcasters[broadcaster].socket.id, 'should_create_offer': false, 'constrains': this.broadcasters[broadcaster].constrains, 'properties': this.broadcasters[broadcaster].properties, 'media_state': this.broadcasters[broadcaster].media_state})
             }
         }
     }
@@ -74,14 +79,14 @@ export default class SurvillianceRoom extends Room{
     isBroadcaster(id){
         return !this.isOwner(id)//return this.broadcasters.indexOf(id) != -1
     }
-    addSocket(socket,constrains,peerId, properties){
+    addSocket(socket,constrains,peerId, properties,media_state){
         if(!this.isOwner(peerId)){
             if(this.broadcasters_list.indexOf(peerId) != -1){
                 console.log('Broadcaster already exits')
                 return;
             }
             this.broadcasters_list.push(peerId)
-            this.addBroadcaster(socket,constrains, peerId,properties,()=>{
+            this.addBroadcaster(socket, peerId,constrains,properties,media_state,()=>{
                 this.broadcasters_list.splice(this.broadcasters_list.indexOf(peerId),1)
             })
         }

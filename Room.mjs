@@ -16,7 +16,7 @@ export default class Room{
                 socket.emit('room_details', {type:this.type,rules:this.rules,active:this.active})
             })
             socket.on('join', (data)=>{
-                this.addSocket(socket,data.constrains, data.id, data.properties)
+                this.addSocket(socket,data.constrains, data.id, data.properties,data.media_state)
             })
         });
     }
@@ -68,7 +68,11 @@ export default class Room{
                 disconnectHandler(id)
         })
     }
-
+    propertiesHandler(connection){
+        connection.on('new_properties', (options)=>{
+            connection.properties = options.properties
+        })
+    }
     muteUnmuteHandler(connection){
         connection.on('new_constrains', (options)=>{ 
             connection.constrains = options
@@ -77,9 +81,6 @@ export default class Room{
                     con.emit('relayNewConstrains', {'socket_id': connection.socket.id, 'constrains': options})
                 }
             })
-        })
-        connection.on('new_properties', (options)=>{
-            connection.properties = options.properties
         })
     }
     handshakeHandlers(connection,relaySessionDescription){
