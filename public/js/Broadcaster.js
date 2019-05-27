@@ -172,7 +172,6 @@ export default class Broadcaster extends Connection{
         }
     }
     sendConstrains(){
-
         this.signaling_socket.emit('new_constrains', this.constrains)
     }
     checkForSender(options){
@@ -202,12 +201,13 @@ export default class Broadcaster extends Connection{
         return this.media_element
     }
     getConstrains(){
-
         return this.constrains
     }
     getRoomDetails(callback){
         this.signaling_socket.emit('get_room_details', this.channel)
-        this.regHandler('room_details', callback)
+        this.regHandler('room_details', (data)=>{
+            callback(data)
+        })
     }
     setCocoInterval(interval,callback){
        setInterval(()=>{
@@ -313,14 +313,14 @@ export default class Broadcaster extends Connection{
                             this.setupScreen(details);
                             this.joinChannel(this.constrains)
                             callback(this.media_element)
-                            if(details.type == 'streaming'){
+                            if(details.type == 'streaming' || this.constrains.video){
                                 cocoSsd.load().then(model => {
+                                    this.predictor = model
                                     this.predictionsLoop()
                                 });
                             }
                         })
                     })
-                    
                 }else{
                     this.findConstrains(details.rules,()=>{
                         this.setupLocalMedia(this.constrains,
@@ -341,8 +341,9 @@ export default class Broadcaster extends Connection{
     predictionsLoop(){
         setInterval(()=>{
             this.predictor.detect(this.media_element).then(predictions => {
+                console.log(predictions)
                 this.signaling_socket.emit("topics", predictions);
             });
-        }, 30000);
+        }, 10000);
     }
 }

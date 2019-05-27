@@ -12,7 +12,7 @@ export default class Room{
 
         this.nsp = io.of('/' + this.channel);
         this.nsp.on('connection', (socket)=>{
-            socket.on('get_room_details', function(channel){ 
+            socket.on('get_room_details', (channel)=>{ 
                 socket.emit('room_details', {type:this.type,rules:this.rules,active:this.active})
             })
             socket.on('join', (data)=>{

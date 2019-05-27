@@ -2,9 +2,10 @@ import Room from './Room.mjs'
 import * as fs from 'fs';
 import WebRtcConnection from './WebRtcConnection.mjs'
 export default class StreamingRoom extends Room{
-    constructor(name,ownerId,channel,io){
+    constructor(name,ownerId,channel,io,settings){
         super(name, 'streaming',channel,io)
         this.viewers = []
+        this.settings = settings
         this.viewers_connections = {}
         this.broadcaster_transceivers = [] 
         this.owner = ownerId
@@ -16,6 +17,14 @@ export default class StreamingRoom extends Room{
         this.tracks = {}
     }
     remote_relay_handler(peerConnection, disconnecthandler){
+        peerConnection.on('topics', (predictions)=>{
+            if(this.settings.max_topics){
+                if(this.topics.length >= this.settings.max_topics){
+                    this.topics = []
+                }
+            }
+            predictions.map(p=>this.topics.push(p))
+        })
         peerConnection.on('relaySessionDescription', async (data)=>{
             if (data.socket_id == this.broadcaster_connection.socket.id) {
                  if(data.session_description.type == 'offer'){
@@ -68,11 +77,8 @@ export default class StreamingRoom extends Room{
                 }
             },
             ontrack: (event) =>{
-                
                 let stream = event.streams[0]
-
                 for(let track of stream.getTracks()){
-                    
                     if(!this.tracks[track.id]){
                         this.tracks[track.id] = track
                         this.broadcaster_constrains[track.kind] = true;

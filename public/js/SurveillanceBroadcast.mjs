@@ -1,6 +1,6 @@
 import Broadcaster from "./Broadcaster.js"
 
-export default class SurveilanceBroadcaster extends Broadcaster{
+export default class SurveillanceBroadcast extends Broadcaster{
     constructor(IO,CONSTRAINS,ID){
         super(ID,CONSTRAINS,ID)
         this.onMediaNegotiationCallback = ()=>{
