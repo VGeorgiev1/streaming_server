@@ -31,6 +31,18 @@ export default class SurvillianceRoom extends Room{
             broadcaster.emit('addPeer', {'socket_id': this.spectator.socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
         }
     }
+    addSpectator(socket, peerId,dissconnectHandler){
+        this.spectator = new Connection(socket,peerId,null,null,dissconnectHandler);
+        this.addConnection(socket.id,this.spectator)
+        this.attachHandlers(this.spectator, dissconnectHandler)
+        this.attachControlHandlers();
+        if(this.active){
+            for(let broadcaster in this.broadcasters){
+                this.broadcasters[broadcaster].emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
+                this.spectator.emit('addPeer', {'socket_id': this.broadcasters[broadcaster].socket.id, 'should_create_offer': false, 'constrains': this.broadcasters[broadcaster].constrains, 'properties': this.broadcasters[broadcaster].properties, 'media_state': this.broadcasters[broadcaster].media_state})
+            }
+        }
+    }
     attachControlHandlers(){
         this.spectator.on('request_video', (data)=>{
             this.connections.get(data.socket_id).emit('request_video')
@@ -56,18 +68,6 @@ export default class SurvillianceRoom extends Room{
         this.spectator.on('change_video', (data)=>{
             this.connections.get(data.socket_id).emit('change_video', {device_id: data.track_id})
         })
-    }
-    addSpectator(socket, peerId,dissconnectHandler){
-        this.spectator = new Connection(socket,peerId,null,null,dissconnectHandler);
-        this.addConnection(socket.id,this.spectator)
-        this.attachHandlers(this.spectator, dissconnectHandler)
-        this.attachControlHandlers();
-        if(this.active){
-            for(let broadcaster in this.broadcasters){
-                this.broadcasters[broadcaster].emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': null, 'properties': null})
-                this.spectator.emit('addPeer', {'socket_id': this.broadcasters[broadcaster].socket.id, 'should_create_offer': false, 'constrains': this.broadcasters[broadcaster].constrains, 'properties': this.broadcasters[broadcaster].properties, 'media_state': this.broadcasters[broadcaster].media_state})
-            }
-        }
     }
     isOwner(id){
         return id == this.owner

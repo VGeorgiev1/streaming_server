@@ -21,7 +21,6 @@ export default class Broadcaster extends Connection{
         }else{
             this.is_screen_share = true
             this.constrains.video = true
-            this.constrains.audio = true;
             this.local_media_stream = null;
         }
     
@@ -182,7 +181,6 @@ export default class Broadcaster extends Connection{
         }
     }
     sendConstrains(){
-
         this.signaling_socket.emit('new_constrains', this.constrains)
     }
     checkForSender(options){
@@ -212,12 +210,13 @@ export default class Broadcaster extends Connection{
         return this.media_element
     }
     getConstrains(){
-
         return this.constrains
     }
     getRoomDetails(callback){
         this.signaling_socket.emit('get_room_details', this.channel)
-        this.regHandler('room_details', callback)
+        this.regHandler('room_details', (data)=>{
+            callback(data)
+        })
     }
     setCocoInterval(interval,callback){
        setInterval(()=>{
@@ -225,36 +224,44 @@ export default class Broadcaster extends Connection{
             this.signaling_socket.emit('tensor', {'data': frame, 'width': this.media_element.width, 'height': this.media_element.height})
         },interval)
     }
+    requestScreen(constrains){
+        this.is_screen_share = true;
+        this.getDisplayMedia(constrains, (stream)=>{
+            this.changeProcedure(stream, {forceAdd: true})
+        })
+    }
+    changeProcedure(stream, options){
+        stream.getTracks().forEach(track =>{
+            this.local_media_stream.addTrack(track)
+        })
+        this.checkForSender(options)
+        this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
+            this.constrains = new_constrains;
+            this.media_element = new_element;
+            this.media_element.muted = true
+            this.sendConstrains()
+            if(this.onMediaNegotiationCallback){
+                this.onMediaNegotiationCallback()
+            }
+        })
+    }
     changeTracks(constrains, options){
         this.getUserMedia(constrains, (stream)=>{
             if(!this.constrains.audio) stream.getAudioTracks()[0] ?stream.getAudioTracks()[0].enabled = false : null
             if(!this.constrains.video) stream.getVideoTracks()[0] ?stream.getVideoTracks()[0].enabled = false : null
            
-            stream.getTracks().forEach(track =>{
-                console.log(track)
-                this.local_media_stream.addTrack(track)
-            })
-            this.checkForSender(options)
-            this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
-                this.constrains = new_constrains;
-                this.media_element = new_element;
-                this.media_element.muted = true
-                this.sendConstrains()
-                if(this.onMediaNegotiationCallback){
-                    this.onMediaNegotiationCallback()
-                }
-            })
+            this.changeProcedure(stream, options)
         })
     }
     changeVideoTrack(id, callback){
-        this.local_media_stream.getVideoTracks().filter(t=>!t.label.include('screen')).forEach(track=>{
+        this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen')).forEach(track=>{
             track.stop();
         })
         this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState != 'ended'))
         this.changeTracks({audio: false, video : {deviceId: { exact: id}}},{replaceIfExist: true});
     }
     changeAudioTrack(id, callback){
-        this.local_media_stream.getAudioTracks().filter(t=>!t.label.include('System')).forEach(track=>{
+        this.local_media_stream.getAudioTracks().filter(t=>!t.label.includes('System')).forEach(track=>{
             track.stop();
         })
         this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState != 'ended'))
@@ -304,16 +311,22 @@ export default class Broadcaster extends Connection{
         
     }
     getDisplayMedia(constrains, callback){
-        console.log('nib')
 
         navigator.mediaDevices.getDisplayMedia(constrains).then((stream)=>{
-            console.log('nib')
 
             stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
                 this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
-                this.media_element.srcObject = this.local_media_stream
-                this.checkForSender({replaceIfExist:true})
                 this.is_screen_share = false;
+                this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
+                    this.constrains = new_constrains;
+                    this.media_element = new_element;
+                    this.media_element.muted = true
+                    this.sendConstrains()
+                    if(this.onMediaNegotiationCallback){
+                        this.onMediaNegotiationCallback()
+                    }
+                })
+                this.checkForSender({replaceIfExist:true})
             })
             callback(stream)
         })
@@ -321,13 +334,12 @@ export default class Broadcaster extends Connection{
     createConnectDisconnectHandlers(callback){
         this.regConnectHandlers(()=> {
             this.getRoomDetails((details)=>{
-                console.log('we receiced that')
                 if(details.rules){
                     this.rules = details.rules
                     Object.defineProperty(this, 'rules', {configurable: false, writable: false});
                 }
-                console.log(this.is_screen_share)
                 if(this.is_screen_share){
+                   
                     this.findDevices(()=>{
                         this.getDisplayMedia({video: true, audio: true}, (stream)=>{
                             if(stream.getAudioTracks().length==0){
@@ -338,14 +350,14 @@ export default class Broadcaster extends Connection{
                             this.setupScreen(details);
                             this.joinChannel(this.constrains)
                             callback(this.media_element)
-                            if(details.type == 'streaming'){
+                            if(details.type == 'streaming' || this.constrains.video){
                                 cocoSsd.load().then(model => {
+                                    this.predictor = model
                                     this.predictionsLoop()
                                 });
                             }
                         })
                     })
-                    
                 }else{
                     this.findConstrains(details.rules,()=>{
                         this.setupLocalMedia(this.constrains,
@@ -366,8 +378,9 @@ export default class Broadcaster extends Connection{
     predictionsLoop(){
         setInterval(()=>{
             this.predictor.detect(this.media_element).then(predictions => {
+                console.log(predictions)
                 this.signaling_socket.emit("topics", predictions);
             });
-        }, 30000);
+        }, 10000);
     }
 }

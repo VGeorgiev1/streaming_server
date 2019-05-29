@@ -2,10 +2,12 @@ import Room from './Room.mjs'
 import StreamingRoom from './StreamingRoom.mjs'
 import ConferentRoom from './ConferentRoom.mjs'
 import SurvillianceRoom from './SurvillianceRoom.mjs'
+
+let MAX_TOPICS = 10;
+
 export default class RoomContainer{
     constructor(server) {
         this.rooms = {}
-
     }
     where(options){
         let filtered = []
@@ -49,7 +51,7 @@ export default class RoomContainer{
                                 new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.io)
                             break;
             case 'streaming':
-                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io)
+                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io,{max_topics: MAX_TOPICS})
                             break;
             case 'surveillance':
                             this.rooms[roomObj.channel] = new SurvillianceRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io)

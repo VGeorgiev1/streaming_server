@@ -65,6 +65,7 @@ export default class Player{
                     .append(this.getAudioBitrateControl())
                     .append(this.getAudioMuteControl())
                     .append(this.getVideoMuteControl())
+                    .append(this.getScreenControl())
                     .append(this.getVideoBitrateControl())
                     .append(this.getAudioInputsControl())
                     .append(this.getVideoInputsControl()))
@@ -83,6 +84,7 @@ export default class Player{
                 .append(this.getAudioBitrateControl())
                 .append(this.getAudioInputsControl()))
                 .append(this.getAudioMuteControl())
+                .append(this.getScreenControl())
             if(this.media.hasVideo(this.options.socket_id)){
                 this.col.append(this.getVideoMuteControl());
             }
@@ -128,17 +130,32 @@ export default class Player{
             })
         }
     }
+    getScreenControl(){
+        let screen = null;
+        if(!this.media.isScreen()){
+            screen = $('<button class="btn btn-success" id="screen_mute">').html('Share screen')
+                
+            screen.click(()=>{
+                if(!this.media.isScreen(this.options.socket_id) && this.media.hasActiveCamera()){
+                    this.media.mixVideoSources({audio: true, video: true}, true, Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()))
+                }else if(!this.media.hasActiveCamera()){
+                    this.media.requestScreen({audio:true, video:true});
+                }
+                
+            })
+        }
+        return screen;
+    }
     getVideoMuteControl(){
         if(this.media.hasVideo(this.options.socket_id)){
-            let btn =  $('<button class="btn btn-success" id="video_mute">').html('Start Video')
-            btn.click(()=>{
+            let camera = $('<button class="btn btn-success" id="video_mute">').html('Start Video')
+
+            camera.click(()=>{
                 this.video_controls = !this.video_controls
 
                 if(this.media.isScreen(this.options.socket_id) && !this.media.hasActiveCamera(this.options.socket_id)){
                     if($('input[name="video"]').filter(function(){return $(this).val().length==0}).length == 0){                        
-                        this.media.mixVideoSources({audio:true, video:true},true,Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()));
-                    }else{
-                        return null;
+                        this.media.mixVideoSources({audio:true, video:true},false,Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()));
                     }
                 }else if(this.media.hasActiveCamera(this.options.socket_id) || this.media.hasMutedCamera(this.options.socket_id)){
                     this.media.muteVideo(this.options.socket_id)
@@ -153,13 +170,13 @@ export default class Player{
                 
             })
             if(this.video_controls){
-                btn.html('Start video')
-                btn.removeClass('btn-danger').addClass('btn-success')
+                camera.html('Start video')
+                camera.removeClass('btn-danger').addClass('btn-success')
             }else{
-                btn.html('Stop Video')
-                btn.removeClass('btn-success').addClass('btn-danger')
+                camera.html('Stop Video')
+                camera.removeClass('btn-success').addClass('btn-danger')
             }
-            return btn;
+            return camera;
         }
     }
     getAudioBitrateControl(){
@@ -177,7 +194,6 @@ export default class Player{
         }
     }
     getVideoBitrateControl(){
-        console.log('bitrate')
         if(this.media.hasActiveVideo(this.options.socket_id)){
             if( !$('#video_bitrate').length){
                 let div_video = $('<div id="video_bitrate" class="border border-dark py-4">')
@@ -224,14 +240,14 @@ export default class Player{
                     select_cams.append($(`<option id='${cameras[i].deviceId}'>`).html(cameras[i].label))
                 }
                 let options = null;
-                if(this.media.isScreen(this.options.socket_id)){
+                //if(this.media.isScreen(this.options.socket_id)){
                     options = $('<div class="input-group">')
                         .append('<span class="input-group-text">Start x:</span>').append($('<input type="text" id="startX" class="form-control" name="video">'))
                         .append('<span class="input-group-text">Start y:</span>').append($('<input type="text" id="startY" class="form-control" name="video">'))
                         .append('<span class="input-group-text">Width:</span>').append($('<input type="text" id="width" class="form-control" name="video">'))
                         .append('<span class="input-group-text">Heigth:</span>').append($('<input type="text" id="height" class="form-control" name="video">'))
                     div.append(options)
-                }
+                //}
                 div.append(label_cam).append(select_cams)
                 
             }

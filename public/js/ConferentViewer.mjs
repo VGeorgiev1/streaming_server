@@ -4,7 +4,7 @@ let connection = null;
 
 window.onload = ()=>{
     let connections = 0;
-    connection = new Viewer("http://localhost",io,id)
+    connection = new Viewer(io,id)
     let players = {};
     connection.subscribeTo(window.channel, (mEl, socket_id, constrains)=>{
         connection.onBroadcaster((mEl, socket_id, constrains)=>{
