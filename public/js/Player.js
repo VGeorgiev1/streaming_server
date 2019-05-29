@@ -136,7 +136,7 @@ export default class Player{
 
                 if(this.media.isScreen(this.options.socket_id) && !this.media.hasActiveCamera(this.options.socket_id)){
                     if($('input[name="video"]').filter(function(){return $(this).val().length==0}).length == 0){                        
-                        this.media.mixVideoSources(Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()));
+                        this.media.mixVideoSources({audio:true, video:true},true,Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()));
                     }else{
                         return null;
                     }

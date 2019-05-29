@@ -11,6 +11,7 @@ export default class ConferentRoom extends Room{
         this.owner = ownerId
         this.rules = rules
         this.active = false
+        this.setupStartHandlers()
     }
     addBroadcaster(socket, peerId, constrains,properties,dissconnectHandler)
     {

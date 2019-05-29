@@ -72,7 +72,21 @@ db.initializeTables(()=>{
         if(err)
             console.log(err)
         for(let room of rooms){
-            chat_container.push(new Chat(room_container.addRoom({type: room.dataValues.type, id:room.dataValues.id, name:room.dataValues.name,audio:room.dataValues.audio, video:room.dataValues.video, screen:room.dataValues.screen, owner: room.dataValues.owned_by.secret,channel:room.dataValues.channel, io: io})))
+            let options = {
+                type: room.dataValues.type,
+                id:room.dataValues.id,
+                name:room.dataValues.name,
+                owner: room.dataValues.owned_by.secret,
+                channel:room.dataValues.channel,
+                io: io
+            }
+            if(room.rule){
+                options.audio = room.rule.dataValues.audio
+                options.video = room.rule.dataValues.video
+                options.screen = room.rule.dataValues.screen
+
+            }
+            chat_container.push(new Chat(room_container.addRoom(options)))
         }
         server.listen(PORT, null, () => {
             console.log("Listening on port " + PORT);

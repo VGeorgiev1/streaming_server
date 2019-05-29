@@ -56,7 +56,6 @@ function search(){
                         let card = $('<div class="card border-dark mb-3" style="max-width: 20rem;">')
                         let header = $('<p class="card-header">').html(user.username)
                         let card_body = $('<div class="card-body text-dark">')
-                        console.log(user.id)
                         let cont = $(`<div id=${user.id}>`)
                         switch(user.status){
                             case 'invite':

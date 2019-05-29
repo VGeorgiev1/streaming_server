@@ -1,5 +1,4 @@
 import Room from './Room.mjs'
-import * as fs from 'fs';
 import WebRtcConnection from './WebRtcConnection.mjs'
 export default class StreamingRoom extends Room{
     constructor(name,ownerId,channel,io){
@@ -14,6 +13,8 @@ export default class StreamingRoom extends Room{
         this.broadcaster_constrains = {}
         this.senders = {}
         this.tracks = {}
+        this.setupStartHandlers()
+
     }
     remote_relay_handler(peerConnection, disconnecthandler){
         peerConnection.on('relaySessionDescription', async (data)=>{

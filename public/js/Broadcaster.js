@@ -66,12 +66,12 @@ export default class Broadcaster extends Connection{
         this.animationId = window.requestAnimationFrame(draw);
         return canvas.captureStream(30);
     }
-    mixVideoSources(x,y,w,h){
-        
+    mixVideoSources(new_constrains,screen, x,y,w,h){
         let old_track = this.local_media_stream.getVideoTracks()[0];
-        this.getUserMedia({audio:false, video: { width: 1280, height: 720 }},(stream)=>{
+        let callback = (stream)=>{
             this.local_media_stream.addTrack(stream.getVideoTracks()[0])
             let videoForCanvas = document.createElement('video')
+           
             videoForCanvas.srcObject = stream
             videoForCanvas.autoplay = true
 
@@ -92,15 +92,25 @@ export default class Broadcaster extends Connection{
                 }
                 this.senders[peer][old_track.kind].replaceTrack(track)
             }
-        })
+        }
+        if(screen){
+            this.getDisplayMedia(new_constrains,callback)
+        }else{
+            this.getUserMedia(new_constrains,callback)
+        }
+        
     }
     requestAudio(){
-        this.constrains.audio = true
-        this.changeTracks({audio:true}, {forceAdd: true})
+        if(this.rules.audio){
+            this.constrains.audio = true
+            this.changeTracks({audio:true}, {forceAdd: true})
+        }
     }
     requestVideo(){
-        this.constrains.video = true
-        this.changeTracks(this.constrains,{forceAdd: true})
+        if(this.rules.video){
+            this.constrains.video = true
+            this.changeTracks(this.constrains,{forceAdd: true})
+        }
     }
     setVideoBitrates(videoBitrate){
         if(this.constrains.video && videoBitrate >=8 && videoBitrate<=2000){
@@ -293,21 +303,36 @@ export default class Broadcaster extends Connection{
         }
         
     }
+    getDisplayMedia(constrains, callback){
+        console.log('nib')
+
+        navigator.mediaDevices.getDisplayMedia(constrains).then((stream)=>{
+            console.log('nib')
+
+            stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
+                this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
+                this.media_element.srcObject = this.local_media_stream
+                this.checkForSender({replaceIfExist:true})
+                this.is_screen_share = false;
+            })
+            callback(stream)
+        })
+    }
     createConnectDisconnectHandlers(callback){
         this.regConnectHandlers(()=> {
             this.getRoomDetails((details)=>{
+                console.log('we receiced that')
+                if(details.rules){
+                    this.rules = details.rules
+                    Object.defineProperty(this, 'rules', {configurable: false, writable: false});
+                }
+                console.log(this.is_screen_share)
                 if(this.is_screen_share){
                     this.findDevices(()=>{
-                        navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then((stream)=>{
+                        this.getDisplayMedia({video: true, audio: true}, (stream)=>{
                             if(stream.getAudioTracks().length==0){
                                 this.constrains.audio = false;
                             }
-                            stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
-                               this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
-                               this.media_element.srcObject = this.local_media_stream
-                               this.checkForSender({replaceIfExist:true})
-                               this.is_screen_share = false;
-                            })
                             this.local_media_stream = stream
                             this.constrains.screen = true;
                             this.setupScreen(details);

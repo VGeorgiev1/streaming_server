@@ -9,6 +9,8 @@ export default class SurvillianceRoom extends Room{
         this.owner = ownerId
         this.broadcasters_list = []
         this.active = false
+        this.setupStartHandlers()
+
     }
     addBroadcaster(socket, peerId, constrains,properties,media_state,dissconnectHandler)
     {
