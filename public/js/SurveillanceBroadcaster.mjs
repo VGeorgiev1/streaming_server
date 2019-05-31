@@ -17,10 +17,3 @@ window.onload = ()=>{
         $('.row:nth-child(1)').append(broadcaster.getPlayer())
     })
 }
-document.addEventListener('screen_ready', function() {
-    let screen = new Broadcaster(io,'screen-share',window.id)
-    screen.subscribeTo(window.channel, (mEl)=>{
-        let player = new Player({'media': screen, 'constrains': screen.getConstrains(), reso: '16by9'},6)
-        $('.row').prepend(player.getPlayer())
-    })
-});

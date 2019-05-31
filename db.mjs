@@ -21,6 +21,16 @@ export default class DbManager {
         }
         this.Op = Op
     }
+    getFriends(id,callback){
+        return this.Friends.findAll({where:{
+            [this.Op.or]:[
+                {userId: id},
+                {friendId: id}]},
+            include: [
+                {model: this.User,as: 'friend'},
+                {model: this.User,as: 'user'}
+            ]})
+    }
     goOffline(id,callback){
         this.User.findOne({where:{id: id}}).then(async(user)=>{
             if(user){
@@ -86,8 +96,32 @@ export default class DbManager {
             errorback(e)
         })
     }
-    getAllRoomsAndRules(){
+    getAllRoomsAndRules(callback){
         return this.Room.findAll({include: [this.Rule,{model:this.User, as:'owned_by'}]})
+    }
+    findSession(token){
+        return this.Session.findOne({where:{sessionToken: token},include: [this.User]})
+    }
+    findUserByUsername(usrname){
+        return this.User.findAll({where:{
+                    username: {
+                        [this.Op.like]: `%${usrname}%`
+                    }
+                }})
+    }
+    findFriend(userId,friendId){
+        return this.Friends.findOne({where:{
+            userId: Math.min(userId, friendId),  
+            friendId: Math.max(userId, friendId)},
+            include: [
+                {model: this.User,as: 'friend'},
+                {model: this.User,as: 'user'}]
+        })
+    }
+    removeFriend(userId, friendId){
+       return this.Friends.destroy({where:{
+            userId: Math.min(userId,friendId), friendId: Math.max(userId,friendId)}
+        })
     }
     initializeTables(callback){
         this.seq.authenticate()
@@ -103,7 +137,7 @@ export default class DbManager {
             this.Session.belongsTo(this.User, {foreignKey: 'userId'})
             this.Friends.belongsTo(this.User, {as: 'user'});
             this.Friends.belongsTo(this.User, {as: 'friend'})
-            this.seq.sync()
+            return this.seq.sync()
             .then(() => {
                 callback()
             })

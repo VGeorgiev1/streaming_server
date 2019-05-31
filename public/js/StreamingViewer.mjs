@@ -7,18 +7,18 @@ window.onload = ()=>{
     connection = new Viewer(io,window.id)
     let player =null;
     connection.subscribeTo(window.channel, ()=>{
-        connection.onBroadcaster((mEl, socket_id, constrains)=>{
+        connection.onBroadcaster((socket_id, constrains,mEl)=>{
                 player = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, reso: '16by9'},9);
                 let chat = new Chat(connection.getSocket())
                 $('.big-container').append(chat.getChatInstance())
                 $('.row').append(player.getPlayer())
-                connection.onBroadcastNegotiation((constrains,mEl)=>{
-                    player.negotiatePlayer(constrains, mEl)
-                })
+        })
+        connection.onBroadcastNegotiation((socket_id,constrains,mEl)=>{
+            player.negotiatePlayer(constrains, mEl)
+        })
 
-                connection.onPeerDiscconect((socket_id)=>{
-                    player.removePlayer();
-                })
+        connection.onPeerDiscconect((socket_id)=>{
+            player.removePlayer();
         })
 
     })

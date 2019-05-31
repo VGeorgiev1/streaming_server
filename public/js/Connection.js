@@ -1,7 +1,3 @@
-var ICE_SERVERS = [
-    { url: "stun:stun.l.google.com:19302" }
-];
-
 export default class Connection {
     constructor(io, id) {
         this.channel = channel;
@@ -87,6 +83,7 @@ export default class Connection {
             if (socket_id in this.peers) {
                 return;
             }
+            console.log(config)
             var peer_connection = new RTCPeerConnection({
                 sdpSemantics: 'unified-plan'
             });
@@ -97,7 +94,7 @@ export default class Connection {
                     this.attachMediaStream(null,stream,{muted: false}, (new_element, new_constrains)=>{
                         this.peer_media_elements[socket_id] = new_element
                         if(this.onBroadcasterCallback){
-                            this.onBroadcasterCallback(this.peer_media_elements[socket_id], socket_id, new_constrains)
+                            this.onBroadcasterCallback(socket_id, new_constrains, this.peer_media_elements[socket_id])
                         }  
                     })
                 }else{
@@ -106,7 +103,8 @@ export default class Connection {
                     (new_element, new_constrains)=>{
                         this.peer_media_elements[socket_id] = new_element
                         if(this.onBroadcastNegotitaioncallback){
-                            this.onBroadcastNegotitaioncallback(new_constrains,new_element)
+
+                            this.onBroadcastNegotitaioncallback(socket_id, new_constrains,new_element)
                         }
                     })
                 } 
@@ -116,7 +114,8 @@ export default class Connection {
             this.peers[socket_id].properties = config.properties
             this.peers[socket_id].constrains = config.constrains
             this.peers[socket_id].media_state = config.media_state
-            console.log(config.media_state)
+
+
             peer_connection.onicecandidate = (event) => {
                 if (event.candidate) {
                     this.signaling_socket.emit('relayICECandidate', {
@@ -140,8 +139,12 @@ export default class Connection {
                 });
             }
             if (config.should_create_offer) {
-                peer_connection.onnegotiationneeded = async(event) =>{
-                    this.negotiate(peer_connection, socket_id, this.peers[socket_id].properties)
+                if(this.constrains != null){
+                    peer_connection.onnegotiationneeded = async(event) =>{
+                        this.negotiate(peer_connection, socket_id, this.peers[socket_id].properties)
+                    }
+                }else{
+                    this.negotiate(peer_connection, socket_id,this.peers[socket_id].properties)
                 }
             }
             this.signaling_socket.emit('ready-state', {socket_id: socket_id, properties: this.properties});
@@ -218,7 +221,6 @@ export default class Connection {
                             console.log(e.message)
                         })
                 }else{
-                    
                     console.log(remote_description.type)
                 }
             })
@@ -243,7 +245,7 @@ export default class Connection {
                 this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
                     this.peer_media_elements[options.socket_id] = new_element;
                     if(this.onBroadcastNegotitaioncallback){
-                        this.onBroadcastNegotitaioncallback(options.constrains,new_element)
+                        this.onBroadcastNegotitaioncallback(options.socket_id,options.constrains,new_element)
                     }
                 })
             }
@@ -285,16 +287,16 @@ export default class Connection {
     }
     findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
-            console.log(devices)
+            let use_audio, use_video = false
+            let searchingFor = ''
             for (let i = 0; i < devices.length; i++) {
-                if (devices[i].kind === 'audioinput')this.audio_devices.push(devices[i]);
-                if (devices[i].kind === 'videoinput')this.video_devices.push(devices[i]);
+                if (devices[i].kind === 'audioinput') use_audio = true, this.audio_devices.push(devices[i]);
+                if (devices[i].kind === 'videoinput') use_video = true, this.video_devices.push(devices[i]);
             }
             callback()
         })
     }
     async findConstrains(rules,callback) {
-        console.log('here')
         this.findDevices(()=>{
             if(rules){
                 if((!rules.audio && rules.audio != null) || !this.constrains.audio) {
@@ -311,7 +313,6 @@ export default class Connection {
                     this.constrains.video =  this.video_devices.length != 0;
                 }
             }
-            console.log(this.constrains)
             callback()
         })
         

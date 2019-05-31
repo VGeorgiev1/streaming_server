@@ -18,7 +18,6 @@ import Chat from './Chat.mjs'
 import cookie from 'cookie'
 
 
-
 const connectionString =  process.env.DATABASE_URL || 'postgres://localhost:5432/stream_app';
 var app = express()
 var server = http.createServer(app)
@@ -38,8 +37,7 @@ process.on('unhandledRejection', (reason, p) => {
 });
 var loginware = function (req, res, next) {
     if(req.cookies.sessionToken){
-        db.Session.findOne({where:{sessionToken: req.cookies.sessionToken},
-            include: [db.User]}).then((ses,err)=>{
+        db.findSession(req.cookies.sessionToken).then((ses,err)=>{
             if(err)
                 console.log(err)
             req.authenticated = false
@@ -66,7 +64,7 @@ let call_container = new RoomContainer()
 
 let chat_container = []
 let sockets = {}
-let db = new DbManager()
+const db = new DbManager()
 db.initializeTables(()=>{
     db.getAllRoomsAndRules().then((rooms,err)=>{
         if(err)
@@ -84,9 +82,23 @@ db.initializeTables(()=>{
                 options.audio = room.rule.dataValues.audio
                 options.video = room.rule.dataValues.video
                 options.screen = room.rule.dataValues.screen
+                let broadcasters = []
+                broadcasters.push(room.dataValues.owned_by.secret)
+                db.getFriends(room.dataValues.owned_by.id).then((users, err)=>{
+                    for(let row of users){
+                        if(room.dataValues.owned_by.id == row.userId){
+                            broadcasters.push(row.friend.dataValues.secret)
+                        }else{
+                            broadcasters.push(row.user.dataValues.secret)
+                        }
+                    }
+                    options.broadcasters = broadcasters
+                    chat_container.push(new Chat(room_container.addRoom(options)))
 
+                })
+            }else{
+                chat_container.push(new Chat(room_container.addRoom(options)))
             }
-            chat_container.push(new Chat(room_container.addRoom(options)))
         }
         server.listen(PORT, null, () => {
             console.log("Listening on port " + PORT);
@@ -108,9 +120,6 @@ app.get('/', async(req, res)=>{
         let user = await db.User.findOne({where:{secret: room.owner}})
         if(user)
             room.username = user.dataValues.username
-        else{
-           
-        }
     }
     res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     
@@ -131,11 +140,9 @@ app.post('/accept', (req, res)=>{
     }
 })
 app.post('/remove', (req,res)=>{
-    db.Friends.destroy({where:{
-            userId: Math.min(req.userId,req.body.id), friendId: Math.max(req.userId,req.body.id)}
-        }).then((result)=>{
+    this.removeFriend(req.userId,req.body.id).then((result)=>{
             res.send("removed")
-        })
+    })
 })
 app.get('/search', async(req,res)=>{
     let topic= req.query.topic
@@ -147,48 +154,29 @@ app.get('/search', async(req,res)=>{
     res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
 })
 app.post('/search', (req,res)=>{
-    db.User.findAll({
-        where:{
-            username: {
-                [db.Op.like]: `%${req.body.username}%`
-            }
-        }}).then(async (users,err)=>{
+    db.findUserByUsername(req.body.username).then(async (users,err)=>{
             let dataValues = []
             for(let user of users){
                 if(user.dataValues.id != req.userId){
-                    let row = await db.Friends.findOne({where:{
-                        userId: Math.min(user.dataValues.id, req.userId),  
-                        friendId: Math.max(user.dataValues.id, req.userId)},
-                        include: [
-                            {model: db.User,as: 'friend'},
-                            {model: db.User,as: 'user'}]
-                    })
-                    
+                    let row = await db.findFriend(user.dataValues.id, req.userId)
                     if(row != null){
-                            if(req.userId == row.userId){
-                                dataValues.push({id: row.friend.dataValues.id, username: row.friend.dataValues.username, status:row.status})
-                            }else{
-                                dataValues.push({id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
-                            }
+                        if(req.userId == row.userId){
+                            dataValues.push({id: row.friend.dataValues.id, username: row.friend.dataValues.username, status:row.status})
+                        }else{
+                            dataValues.push({id: row.user.dataValues.id, username: row.user.dataValues.username, status: row.status == 'friends' ? row.status: row.status == 'invite' ? 'request': 'invite'})
+                        }
                     }else{
                         dataValues.push({id: user.dataValues.id, username: user.dataValues.username, status:'not_affiliated'})
                     }
                 }
             }
-        res.send(OneDToTwoD(dataValues, 3))
+            res.send(OneDToTwoD(dataValues, 3))
     })
 })
 app.get('/people', (req, res)=>{
     if(!req.authenticated) {res.redirect('/login')}
     else{
-    db.Friends.findAll({where:{
-        [db.Op.or]:[
-            {userId: req.userId},
-            {friendId: req.userId}]},
-        include: [
-            {model: db.User,as: 'friend'},
-            {model: db.User,as: 'user'}
-        ]}).then((users, err)=>{
+    db.getFriends(req.userId).then((users, err)=>{
             let dataValues = []
             for(let row of users){
                 if(req.userId == row.userId){
@@ -308,7 +296,6 @@ app.get('/logout', async(req,res)=>{
             db.goOffline(req.userId,()=>{
                 db.destroySession(req.cookies.sessionToken).then(()=>{
                     res.clearCookie("sessionToken");
-                    console.log('redirect')
                     res.redirect('/')
                 })
             })

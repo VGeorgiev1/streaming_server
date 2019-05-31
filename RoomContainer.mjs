@@ -48,7 +48,8 @@ export default class RoomContainer{
         switch(roomObj.type){
             case 'conferent':
                             this.rooms[roomObj.channel] = 
-                                new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.io)
+                                new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.broadcasters, roomObj.io)
+
                             break;
             case 'streaming':
                             this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io,{max_topics: MAX_TOPICS})
