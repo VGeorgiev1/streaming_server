@@ -222,9 +222,29 @@ app.post('/room/create', async (req,res)=>{
                 type:req.body.type,
                 channel:room.dataValues.channel,
                 io: io
+            }            
+            if(req.body.type == 'conferent'){
+                let broadcasters = []
+                db.User.findOne({where: {id: room.dataValues.owner}}).then((user)=>{
+                    broadcasters.push(user.dataValues.secret);
+                    
+                    db.getFriends(user.dataValues.id).then((users, err)=>{
+                        for(let row of users){
+                            if(user.dataValues.id == row.userId){
+                                broadcasters.push(row.friend.dataValues.secret)
+                            }else{
+                                broadcasters.push(row.user.dataValues.secret)
+                            }
+                        }
+                        roomObj.broadcasters = broadcasters
+                        chat_container.push(new Chat(room_container.addRoom(roomObj)))
+                        res.redirect('/room/'+room.dataValues.channel)
+                    })
+                })
+            }else{
+                chat_container.push(new Chat(room_container.addRoom(roomObj)))
+                res.redirect('/room/'+room.dataValues.channel)
             }
-            room_container.addRoom(roomObj)
-            res.redirect('/room/'+room.dataValues.channel)
         })
     }
 })

@@ -99,14 +99,23 @@ export default class Broadcaster extends Connection{
         }
         
     }
+    requestScreen(constrains){
+        if(!this.rules || this.rules.screen){
+            this.is_screen_share = true;
+            this.getDisplayMedia(constrains, (stream)=>{
+                this.changeProcedure(stream, {forceAdd: true})
+            })
+        }
+    }
     requestAudio(){
-        if(this.rules.audio){
+        if(!this.rules || this.rules.audio){
             this.constrains.audio = true
             this.changeTracks({audio:true}, {forceAdd: true})
         }
     }
     requestVideo(){
-        if(this.rules.video){
+       
+        if(!this.rules || this.rules.video){
             this.constrains.video = true
             this.changeTracks(this.constrains,{forceAdd: true})
         }
@@ -224,12 +233,7 @@ export default class Broadcaster extends Connection{
             this.signaling_socket.emit('tensor', {'data': frame, 'width': this.media_element.width, 'height': this.media_element.height})
         },interval)
     }
-    requestScreen(constrains){
-        this.is_screen_share = true;
-        this.getDisplayMedia(constrains, (stream)=>{
-            this.changeProcedure(stream, {forceAdd: true})
-        })
-    }
+   
     changeProcedure(stream, options){
         stream.getTracks().forEach(track =>{
             this.local_media_stream.addTrack(track)
@@ -342,6 +346,7 @@ export default class Broadcaster extends Connection{
                    
                     this.findDevices(()=>{
                         this.getDisplayMedia({video: true, audio: true}, (stream)=>{
+                            console.log(stream)
                             if(stream.getAudioTracks().length==0){
                                 this.constrains.audio = false;
                             }

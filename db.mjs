@@ -21,7 +21,7 @@ export default class DbManager {
         }
         this.Op = Op
     }
-    getFriends(id,callback){
+    getFriends(id){
         return this.Friends.findAll({where:{
             [this.Op.or]:[
                 {userId: id},
