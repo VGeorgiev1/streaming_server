@@ -15,15 +15,49 @@ export default class Broadcaster extends Connection{
         }
         this.animationId = null;
         this.offers = {}
-        if(!CONSTRAINS.screen){
-            this.constrains = CONSTRAINS
-            this.local_media_stream = null
-        }else{
-            this.is_screen_share = true
-            this.constrains.video = true
-            this.local_media_stream = null;
+        this.constrains = CONSTRAINS
+
+        
+        this.createConnectDisconnectHandlers = (callback)=>{
+            this.regConnectHandlers(()=> {
+                this.getRoomDetails((details)=>{
+                    if(details.rules){
+                        this.rules = details.rules
+                        Object.defineProperty(this, 'rules', {configurable: false, writable: false});
+                    }
+                    if(this.constrains.screen){
+                        this.findDevices(()=>{
+                            this.getDisplayMedia({video: true, audio: true}, (stream)=>{
+                                if(stream.getAudioTracks().length==0){
+                                    this.constrains.audio = false;
+                                }else{
+                                    this.constrains.audio = true
+                                }
+                                this.local_media_stream = stream
+                                this.constrains.screen = true;
+                                this.setupScreen(details);
+                                this.joinChannel(this.constrains)
+                                callback(this.media_element)
+                            })
+                        })
+                    }else{
+                        this.findConstrains(details.rules,()=>{
+                            this.setupLocalMedia(this.constrains,
+                            (mEl,stream) => {
+                                this.local_media_stream = stream
+                                this.joinChannel(this.constrains);
+                                if(callback)
+                                    callback(mEl)
+                            },
+                            (e) => {
+                                console.log("Couldn't set up media: " + e)
+                            })
+                        })
+                    }
+                    
+                })
+            })
         }
-    
     }
     
     getAudioDevices(){
@@ -85,12 +119,7 @@ export default class Broadcaster extends Connection{
             }
             let track = mixed.getVideoTracks()[0]
 
-            for(let peer in this.peers){
-                if(!this.senders[peer]["video"]){
-                    this.senders[peer]["video"] = {}
-                }
-                this.senders[peer][old_track.kind].replaceTrack(track)
-            }
+            this.checkForSender({replaceIfExist:true})
         }
         if(screen){
             this.getDisplayMedia(new_constrains,callback)
@@ -118,7 +147,7 @@ export default class Broadcaster extends Connection{
         }
     }
     isScreen(){
-        return this.is_screen_share
+        return this.constrains.screen
     }
     hasVideo(){
         return this.video_devices.length != 0;
@@ -186,14 +215,16 @@ export default class Broadcaster extends Connection{
     checkForSender(options){
         for(let peer in this.peers){
             this.local_media_stream.getTracks().forEach(track =>{
-                for(let sender in this.senders[peer]){
-                    if(this.senders[peer][sender].track.kind == track.kind && options.replaceIfExist){
-                        this.senders[peer][sender].replaceTrack(track)
-                        break;
-                    }
-                    if(this.senders[peer][sender].track.id != track.id && options.forceAdd){
-                        this.senders[peer][sender] = this.peers[peer].addTrack(track, this.local_media_stream)
-                        break;
+                for(let sender of this.peers[peer].getSenders()){
+                    if(sender.track){
+                        if(sender.track.kind == track.kind && options.replaceIfExist){
+                            sender.replaceTrack(track)
+                            break;
+                        }
+                        if(sender.track.id != track.id && options.forceAdd){
+                            sender = this.peers[peer].addTrack(track, this.local_media_stream)
+                            break;
+                        }
                     }
                 }
             })
@@ -225,8 +256,8 @@ export default class Broadcaster extends Connection{
         },interval)
     }
     requestScreen(constrains){
-        this.is_screen_share = true;
         this.getDisplayMedia(constrains, (stream)=>{
+            this.constrains.screen = true;
             this.changeProcedure(stream, {forceAdd: true})
         })
     }
@@ -291,23 +322,7 @@ export default class Broadcaster extends Connection{
         this.media_element.srcObject = this.local_media_stream
         this.media_element.autoplay = 'autoplay'
         this.media_element.muted = true
-        this.media_element.width = 1480;
-        this.media_element.height = 1080;
-        let v = this.local_media_stream.getVideoTracks()[0]
-        let callback;
-        if(details.type == 'conferent'){
-            callback = (event) => {
-                this.partChannel()
-                if(this.onchannelleft){
-                    this.onchannelleft()
-                }
-            }
-            v.onended = callback
-        }else{
-            // callback = (event) => {
-            //     this.muteVideo();
-            // }
-        }
+
         
     }
     getDisplayMedia(constrains, callback){
@@ -316,7 +331,18 @@ export default class Broadcaster extends Connection{
 
             stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
                 this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
-                this.is_screen_share = false;
+                
+                this.constrains.screen = false;
+                for(let peer in this.peers){
+                    for(let sender of this.peers[peer].getSenders()){
+                        if(sender.track){
+                            if(sender.track.label.includes('screen') || sender.track.label.includes('System')){
+                                this.peers[peer].removeTrack(sender)
+                            } 
+                        }
+                    }
+                }
+
                 this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
                     this.constrains = new_constrains;
                     this.media_element = new_element;
@@ -331,56 +357,5 @@ export default class Broadcaster extends Connection{
             callback(stream)
         })
     }
-    createConnectDisconnectHandlers(callback){
-        this.regConnectHandlers(()=> {
-            this.getRoomDetails((details)=>{
-                if(details.rules){
-                    this.rules = details.rules
-                    Object.defineProperty(this, 'rules', {configurable: false, writable: false});
-                }
-                if(this.is_screen_share){
-                   
-                    this.findDevices(()=>{
-                        this.getDisplayMedia({video: true, audio: true}, (stream)=>{
-                            if(stream.getAudioTracks().length==0){
-                                this.constrains.audio = false;
-                            }
-                            this.local_media_stream = stream
-                            this.constrains.screen = true;
-                            this.setupScreen(details);
-                            this.joinChannel(this.constrains)
-                            callback(this.media_element)
-                            if(details.type == 'streaming' || this.constrains.video){
-                                cocoSsd.load().then(model => {
-                                    this.predictor = model
-                                    this.predictionsLoop()
-                                });
-                            }
-                        })
-                    })
-                }else{
-                    this.findConstrains(details.rules,()=>{
-                        this.setupLocalMedia(this.constrains,
-                        (mEl,stream) => {
-                            this.local_media_stream = stream
-                            this.joinChannel(this.constrains);
-                            if(callback)
-                                callback(mEl)
-                        },
-                        (e) => {
-                            console.log("Couldn't set up media: " + e)
-                        })
-                    })
-                }
-            })
-        })
-    }
-    predictionsLoop(){
-        setInterval(()=>{
-            this.predictor.detect(this.media_element).then(predictions => {
-                console.log(predictions)
-                this.signaling_socket.emit("topics", predictions);
-            });
-        }, 10000);
-    }
+
 }

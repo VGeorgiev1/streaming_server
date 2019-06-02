@@ -130,12 +130,7 @@ export default class Connection {
             if (this.constrains != null) {
                 this.senders[socket_id] = {}
                 this.local_media_stream.getTracks().filter(t=>t.enabled).map((track) =>{
-                        if(!this.senders[socket_id][track.kind]){
-                            this.senders[socket_id][track.kind] = {}
-                        }
-                        this.senders[socket_id][track.kind] = peer_connection.addTrack(track, this.local_media_stream);
-
-
+                    peer_connection.addTrack(track, this.local_media_stream);
                 });
             }
             if (config.should_create_offer) {
@@ -229,19 +224,18 @@ export default class Connection {
             })
         });
     }
-    setupStream(stream, constrains){
-        stream.getTracks().forEach((t)=>{
-            if(t.kind == 'audio'){ t.enabled = constrains.audio};
-            if(t.kind == 'video'){ t.enabled = constrains.video};
-        })
-    }
     regChangeConstrainsHandler(){
         this.signaling_socket.on('relayNewConstrains', (options)=>{
             
             if(this.peer_media_elements[options.socket_id]){
                 this.peers[options.socket_id].constrains = options.constrains
                 let element = this.peer_media_elements[options.socket_id];
-                this.setupStream(element.srcObject, options.constrains)
+
+                element.srcObject.getTracks().forEach((t)=>{
+                    if(t.kind == 'audio'){ t.enabled = options.constrains.audio};
+                    if(t.kind == 'video'){ t.enabled = options.constrains.video};
+                })
+
                 this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
                     this.peer_media_elements[options.socket_id] = new_element;
                     if(this.onBroadcastNegotitaioncallback){
@@ -316,12 +310,6 @@ export default class Connection {
             callback()
         })
         
-    }
-    findWebRTC() {
-        return (navigator.getUserMedia ||
-            navigator.webkitGetUserMedia ||
-            navigator.mozGetUserMedia ||
-            navigator.msGetUserMedia)
     }
 
 

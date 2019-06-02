@@ -16,19 +16,12 @@ export default class StreamingRoom extends Room{
         this.tracks = {}
         this.setupStartHandlers()
 
+
     }
     remote_relay_handler(peerConnection, disconnecthandler){
-        peerConnection.on('topics', (predictions)=>{
-            if(this.settings.max_topics){
-                if(this.topics.length >= this.settings.max_topics){
-                    this.topics = []
-                }
-            }
-            predictions.map(p=>this.topics.push(p))
-        })
         peerConnection.on('relaySessionDescription', async (data)=>{
-            if (data.socket_id == this.broadcaster_connection.socket.id) {
-                 if(data.session_description.type == 'offer'){
+           
+                if(data.session_description.type == 'offer'){
                     data.session_description.sdp = peerConnection.setProperties(data.session_description.sdp,data.properties)
                     await this.broadcaster_connection.applyAnswer(data.session_description)
                     await this.broadcaster_connection.doAnswer()
@@ -37,30 +30,21 @@ export default class StreamingRoom extends Room{
                         this.viewers_connections[viewer].emit('sessionDescription', {"socket_id":this.viewers_connections[viewer].socket.id, "session_description": this.viewers_connections[viewer].localDescription, "properties": data.properties})
                     }
                     peerConnection.emit('sessionDescription', {"socket_id": data.socket_id, "session_description": this.broadcaster_connection.localDescription, 'properties': this.broadcaster_connection.properties})
-                 }else{
-				    await this.broadcaster_connection.applyAnswer(data.session_description,data.properties);
-				    this.broadcaster_connection.attachIceCandidateListener();
+                }else{
+                    let connection = this.connections.get(data.socket_id)
+				    await connection.applyAnswer(data.session_description,data.properties);
+				    connection.attachIceCandidateListener();
                 }
-            } else {
-                await this.viewers_connections[data.socket_id].applyAnswer(data.session_description);
-                this.viewers_connections[data.socket_id].attachIceCandidateListener();
-			}
         })
         peerConnection.on('relayICECandidate', (data)=>{
-            if(data.socket_id == this.broadcaster_connection.socket.id){
-                this.broadcaster_connection.applyCandidate(data.candidate)
-            }else{
-                this.viewers_connections[data.socket_id].applyCandidate(data.candidate)
-            }
+            this.connections.get(data.socket_id).applyCandidate(data.candidate)
         })
         peerConnection.on('ready-state', data=>{
+            if(this.broadcaster_connection && data.socket_id == this.broadcaster_connection.socket.id){
+                this.broadcaster_connection.properties = data.properties
+            }
             if(this.broadcaster_connection){
-                if(data.socket_id == this.broadcaster_connection.socket.id){
-                    peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.broadcaster_connection.localDescription, properties: data.properties})
-                    this.broadcaster_connection.properties = data.properties
-                }else{
-                    peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.viewers_connections[data.socket_id].localDescription, properties: this.broadcaster_connection.properties})
-                }
+               peerConnection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.connections.get(data.socket_id).localDescription, properties: this.broadcaster_connection.properties})
             }
         })
         
@@ -81,6 +65,7 @@ export default class StreamingRoom extends Room{
                 let stream = event.streams[0]
                 for(let track of stream.getTracks()){
                     if(!this.tracks[track.id]){
+
                         this.tracks[track.id] = track
                         this.broadcaster_constrains[track.kind] = true;
                         for(let viewer in this.viewers_connections){
@@ -101,21 +86,16 @@ export default class StreamingRoom extends Room{
                         }
                     }
                 }
-            },
-            onIceCandidate: ((event)=>{
-                if (event.candidate) {
-                    socket.emit('iceCandidate',
-                    {
-                        'socket_id': socket.id,
-                        'ice_candidate': {
-                            'sdpMLineIndex': event.candidate.sdpMLineIndex,
-                            'candidate': event.candidate.candidate
-                        }
-                    });
-                }
-            })
+            }
         })
-
+        this.broadcaster_connection.on('topics', (predictions)=>{
+            if(this.settings.max_topics){
+                if(this.topics.length >= this.settings.max_topics){
+                    this.topics = []
+                }
+            }
+            predictions.map(p=>this.topics.push(p))
+        })
         await this.broadcaster_connection.doOffer({beforeOffer: true});
 
         this.remote_relay_handler(this.broadcaster_connection, dissconnectHandler)
@@ -129,6 +109,7 @@ export default class StreamingRoom extends Room{
                 this.tracks[track].stop();
             }
             this.tracks = {}
+            this.topics = []
             this.broadcaster_transceivers = [];
             this.broadcaster_connection = null;
             for(let viewer in this.viewers_connections){
@@ -145,8 +126,14 @@ export default class StreamingRoom extends Room{
         let viewer = new WebRtcConnection(socket,peerId, constrains,{
             beforeOffer: (peerConnection) =>{
                     let promises = [];
+                    if(this.broadcaster_constrains.video){
+                        peerConnection.addTransceiver('video');
+                    }
+                    if(this.broadcaster_constrains.audio){
+                        peerConnection.addTransceiver('audio');
+
+                    }
                     for(let track in this.tracks){
-                        peerConnection.addTransceiver(this.tracks[track].kind);
                         peerConnection.addTrack(this.tracks[track])
                     }
             },

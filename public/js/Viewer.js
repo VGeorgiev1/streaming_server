@@ -5,13 +5,13 @@ var ICE_SERVERS = [
 export default class Viewer extends Connection{ 
     constructor(io,id){
         super(io,id)
-    }
-    createConnectDisconnectHandlers(callback){
-        this.regConnectHandlers(()=>{
-            this.joinChannel()
-            if(callback)
-                callback()
-        })
+        this.createConnectDisconnectHandlers= () =>{
+            this.regConnectHandlers(()=>{
+                this.joinChannel()
+                if(callback)
+                    callback()
+            })
+        }
     }
 
 }

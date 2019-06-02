@@ -263,7 +263,8 @@ app.post('/call', (req,res)=>{
         screen:true,
         owner: req.secret,
         channel:crypto.randomBytes(10).toString("hex"),
-        io: io
+        io: io,
+        broadcasters: [req.userId, req.body.id]
     }
     let call_room = call_container.addRoom(call)
     db.Session.findOne({where:{userId: req.body.id}}).then((ses)=>{

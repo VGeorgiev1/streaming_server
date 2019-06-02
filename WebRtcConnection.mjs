@@ -11,7 +11,18 @@ export default class WebRtcConnection extends Connection {
     });
     this.peerConnection.ontrack = options.ontrack
     this.beforeOffer = options.beforeOffer
-    this.onIceCandidate = options.onIceCandidate;
+    this.onIceCandidate = ((event)=>{
+      if (event.candidate) {
+          socket.emit('iceCandidate',
+          {
+              'socket_id': socket.id,
+              'ice_candidate': {
+                  'sdpMLineIndex': event.candidate.sdpMLineIndex,
+                  'candidate': event.candidate.candidate
+              }
+          });
+      }
+  })
     
   }
   attachIceCandidateListener(){
