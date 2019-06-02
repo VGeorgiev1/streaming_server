@@ -17,7 +17,7 @@ export default class Broadcaster extends Connection{
         this.offers = {}
         this.constrains = CONSTRAINS
 
-        
+
         this.createConnectDisconnectHandlers = (callback)=>{
             this.regConnectHandlers(()=> {
                 this.getRoomDetails((details)=>{
@@ -128,14 +128,23 @@ export default class Broadcaster extends Connection{
         }
         
     }
+    requestScreen(constrains){
+        if(!this.rules || this.rules.screen){
+            this.constrains.video = true;
+            this.getDisplayMedia(constrains, (stream)=>{
+                this.changeProcedure(stream, {forceAdd: true})
+            })
+        }
+    }
     requestAudio(){
-        if(this.rules.audio){
+        if(!this.rules || this.rules.audio){
             this.constrains.audio = true
             this.changeTracks({audio:true}, {forceAdd: true})
         }
     }
     requestVideo(){
-        if(this.rules.video){
+       
+        if(!this.rules || this.rules.video){
             this.constrains.video = true
             this.changeTracks(this.constrains,{forceAdd: true})
         }
@@ -255,12 +264,7 @@ export default class Broadcaster extends Connection{
             this.signaling_socket.emit('tensor', {'data': frame, 'width': this.media_element.width, 'height': this.media_element.height})
         },interval)
     }
-    requestScreen(constrains){
-        this.getDisplayMedia(constrains, (stream)=>{
-            this.constrains.screen = true;
-            this.changeProcedure(stream, {forceAdd: true})
-        })
-    }
+   
     changeProcedure(stream, options){
         stream.getTracks().forEach(track =>{
             this.local_media_stream.addTrack(track)
@@ -357,5 +361,4 @@ export default class Broadcaster extends Connection{
             callback(stream)
         })
     }
-
 }

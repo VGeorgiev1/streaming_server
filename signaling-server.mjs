@@ -222,9 +222,29 @@ app.post('/room/create', async (req,res)=>{
                 type:req.body.type,
                 channel:room.dataValues.channel,
                 io: io
+            }            
+            if(req.body.type == 'conferent'){
+                let broadcasters = []
+                db.User.findOne({where: {id: room.dataValues.owner}}).then((user)=>{
+                    broadcasters.push(user.dataValues.secret);
+                    
+                    db.getFriends(user.dataValues.id).then((users, err)=>{
+                        for(let row of users){
+                            if(user.dataValues.id == row.userId){
+                                broadcasters.push(row.friend.dataValues.secret)
+                            }else{
+                                broadcasters.push(row.user.dataValues.secret)
+                            }
+                        }
+                        roomObj.broadcasters = broadcasters
+                        chat_container.push(new Chat(room_container.addRoom(roomObj)))
+                        res.redirect('/room/'+room.dataValues.channel)
+                    })
+                })
+            }else{
+                chat_container.push(new Chat(room_container.addRoom(roomObj)))
+                res.redirect('/room/'+room.dataValues.channel)
             }
-            room_container.addRoom(roomObj)
-            res.redirect('/room/'+room.dataValues.channel)
         })
     }
 })
@@ -254,22 +274,25 @@ app.get('/call/:channel', (req,res)=>{
     }
 })
 app.post('/call', (req,res)=>{
-    let call = {
-        type: 'conferent',
-        id: req.userId,
-        name: 'call' + req.userId,
-        audio:true,
-        video:true,
-        screen:true,
-        owner: req.secret,
-        channel:crypto.randomBytes(10).toString("hex"),
-        io: io,
-        broadcasters: [req.userId, req.body.id]
-    }
-    let call_room = call_container.addRoom(call)
-    db.Session.findOne({where:{userId: req.body.id}}).then((ses)=>{
-        res.send(call_room.channel)
-        sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
+    db.User.findOne({where:{id:req.body.id}}).then((user,err)=>{
+        let call = {
+            type: 'conferent',
+            id: req.userId,
+            name: 'call' + req.userId,
+            audio:true,
+            video:true,
+            screen:true,
+            owner: req.secret,
+            channel:crypto.randomBytes(10).toString("hex"),
+            io: io,
+            broadcasters: [req.secret, user.dataValues.secret]
+        }
+        let call_room = call_container.addRoom(call)
+        db.Session.findOne({where:{userId: req.body.id}}).then((ses)=>{
+            res.send(call_room.channel)
+            sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
+        })
+        
     })
     
 })
@@ -310,8 +333,6 @@ app.post('/login', async(req,res)=>{
             if(authenticated){
                 db.checkForSessionOrCreate(user.dataValues.id, crypto.randomBytes(10).toString("hex")).then((ses,err)=>{ 
                     res.cookie('sessionToken' , ses[0].dataValues.sessionToken).redirect('/')
-                }).catch(e=>{
-
                 })
             }else{
                 res.send("The password and username doesn't match!")
