@@ -22,7 +22,10 @@ export default class WebRtcConnection extends Connection {
               }
           });
       }
-  })
+    })
+    socket.on('relayICECandidate', (data)=>{
+      this.applyCandidate(data.candidate)
+    })
     
   }
   attachIceCandidateListener(){

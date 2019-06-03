@@ -20,7 +20,6 @@ export default class ConferentRoom extends Room{
         let broadcaster = new Connection(socket, peerId, constrains, properties, dissconnectHandler) 
         this.broadcasters[socket.id] = broadcaster
         this.addConnection(socket.id,broadcaster)
-        this.attachHandlers(broadcaster, dissconnectHandler)
         
         this.connections.forEach((connection, id)=>{
             if(peerId != this.connections.get(id).peerId){
@@ -34,7 +33,6 @@ export default class ConferentRoom extends Room{
         let viewer = new Connection(socket, peerId, null, dissconnectHandler) 
         this.viewers[socket.id] = viewer
         this.addConnection(socket.id,viewer)
-        this.attachHandlers(viewer, dissconnectHandler)
         for(let id of this.active_broadcasters){
             this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
             socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains':  this.connections.get(id).constrains})
@@ -53,7 +51,6 @@ export default class ConferentRoom extends Room{
                 console.log('Viewer alrady exits')
                 return;
             }
-            console.log('viewer?')
             this.addPeer(socket, peerId)
         }
         else{

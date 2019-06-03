@@ -46,18 +46,19 @@ export default class Room{
     }
     addConnection(socket_id,connection){
         this.connections.set(socket_id, connection)
+        this.attachHandlers(connection)
     }
-    attachHandlers(connection, dissconnectHandler){
+    attachHandlers(connection){
         this.handshakeHandlers(connection)
         this.muteUnmuteHandler(connection)
-        this.partHandler(connection, dissconnectHandler)
-        this.disconnectHandler(connection, dissconnectHandler)
+        this.partHandler(connection)
+        this.disconnectHandler(connection)
     }
     disconnectHandler(connection, disconnectHandler){
         connection.on('disconnect', () =>{
             this.removePeer(connection.socket.id)
-            if(disconnectHandler)
-                disconnectHandler(connection.socket.id)
+            if(connection.disconnectHandler)
+                connection.disconnectHandler(connection.socket.id)
         });
     }
     removePeer(id){
@@ -72,8 +73,8 @@ export default class Room{
     partHandler(connection, disconnectHandler){
         connection.on('part', (details)=>{
             this.removePeer(connection.socket.id)
-            if(disconnectHandler)
-                disconnectHandler(id)
+            if(connection.disconnectHandler)
+                connection.disconnectHandler(id)
         })
     }
     propertiesHandler(connection){

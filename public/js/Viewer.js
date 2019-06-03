@@ -5,7 +5,7 @@ var ICE_SERVERS = [
 export default class Viewer extends Connection{ 
     constructor(io,id){
         super(io,id)
-        this.createConnectDisconnectHandlers= () =>{
+        this.createConnectDisconnectHandlers= (callback) =>{
             this.regConnectHandlers(()=>{
                 this.joinChannel()
                 if(callback)
