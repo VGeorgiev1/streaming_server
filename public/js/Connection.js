@@ -256,6 +256,13 @@ export default class Connection {
             if (callback)
                 callback()
         })
+        this.regHandler('disconnect', ()=>{
+            for(let peer in this.peers){
+                //this.peers[peer].stop()
+                this.onPeerDiscconectCallback(peer)
+            }
+            
+        })
     }
     regRemovePeer() {
         this.regHandler('removePeer', (config) => {
@@ -281,17 +288,18 @@ export default class Connection {
     }
     findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
-            let use_audio, use_video = false
-            let searchingFor = ''
+            console.log(devices)
             for (let i = 0; i < devices.length; i++) {
-                if (devices[i].kind === 'audioinput') use_audio = true, this.audio_devices.push(devices[i]);
-                if (devices[i].kind === 'videoinput') use_video = true, this.video_devices.push(devices[i]);
+                if (devices[i].kind === 'audioinput')  this.audio_devices.push(devices[i]);
+                if (devices[i].kind === 'videoinput')  this.video_devices.push(devices[i]);
             }
             callback()
         })
     }
     async findConstrains(rules,callback) {
+        
         this.findDevices(()=>{
+            console.log('devices found')
             if(rules){
                 if((!rules.audio && rules.audio != null) || !this.constrains.audio) {
                     this.constrains.audio = false
@@ -314,9 +322,11 @@ export default class Connection {
 
 
     setupMedia(constrains, stream, options) {
-        let media = constrains.video ?
-          document.createElement('video') :
+        let media = constrains.video || constrains.video ?
+          document.createElement('video')
+            :
           document.createElement('audio');
+
         media.autoplay = "autoplay"
         media.muted = options.muted 
         media.controls = "controls";

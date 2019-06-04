@@ -37,23 +37,13 @@ export default class StreamingRoom extends Room{
                 this.broadcaster_connection.properties = data.properties
                 this.broadcaster_connection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.connections.get(data.socket_id).localDescription, properties: this.broadcaster_connection.properties})
             },
-            'disconnect': ()=>{
-                for(let transceiver of this.broadcaster_transceivers){
-                    transceiver.stop(); 
+            'topics': (predictions)=>{
+                if(this.settings.max_topics){
+                    if(this.topics.length >= this.settings.max_topics){
+                        this.topics = []
+                    }
                 }
-                for(let track in this.tracks){
-                    this.tracks[track].stop();
-                }
-                this.tracks = {}
-                this.topics = []
-                this.broadcaster_transceivers = [];
-                this.broadcaster_connection = null;
-                for(let viewer in this.viewers_connections){
-                    this.viewers_connections[viewer].emit('removePeer', {'socket_id': this.viewers_connections[viewer].socket.id})
-                }
-                if(this.broadcaster_connection.dissconnectHandler){  
-                    this.broadcaster_connection.dissconnectHandler();
-                }
+                predictions.map(p=>this.topics.push(p))
             }
         }
         this.viewer_handlers ={
@@ -63,15 +53,14 @@ export default class StreamingRoom extends Room{
 				connection.attachIceCandidateListener();
             },
             'ready-state': (data)=>{
-                this.connections.get(data.socket_id).emit('sessionDescription', {socket_id: data.socket_id, session_description: this.connections.get(data.socket_id).localDescription, properties: this.broadcaster_connection.properties})
-            },
-            'disconnect': (data)=>{
-
+                if(this.broadcaster_connection){
+                    this.connections.get(data.socket_id).emit('sessionDescription', {socket_id: data.socket_id, session_description: this.connections.get(data.socket_id).localDescription, properties: this.broadcaster_connection.properties})
+                }
             }
         }
     }
     attachHandlers(connection){
-        if(connection.socket.id == this.broadcaster_connection.socket.id){
+        if(this.broadcaster_connection && (connection.socket.id == this.broadcaster_connection.socket.id)){
             for(let handler in this.broadcaster_handlers){
                 connection.on(handler, this.broadcaster_handlers[handler])
             }
@@ -80,8 +69,9 @@ export default class StreamingRoom extends Room{
                 connection.on(handler, this.viewer_handlers[handler])
             } 
         }
+        connection.on('disconnect', connection.disconnectHandler);
     }
-    async addBroadcaster(socket, constrains, peerId, dissconnectHandler){
+    async addBroadcaster(socket, constrains, peerId, disconnectHandler){
         this.broadcaster_constrains = constrains
         this.broadcaster_connection = new WebRtcConnection(socket,peerId,constrains,{
             beforeOffer: async (peerConnection) =>{
@@ -92,6 +82,7 @@ export default class StreamingRoom extends Room{
                     this.broadcaster_transceivers.push(peerConnection.addTransceiver('audio'));
                 }
             },
+            disconnectHandler: disconnectHandler,
             ontrack: (event) =>{
                 let stream = event.streams[0]
                 for(let track of stream.getTracks()){
@@ -119,14 +110,6 @@ export default class StreamingRoom extends Room{
                 }
             }
         })
-        this.broadcaster_connection.on('topics', (predictions)=>{
-            if(this.settings.max_topics){
-                if(this.topics.length >= this.settings.max_topics){
-                    this.topics = []
-                }
-            }
-            predictions.map(p=>this.topics.push(p))
-        })
         await this.broadcaster_connection.doOffer({beforeOffer: true});
 
         this.broadcaster_connection.emit('addPeer', {socket_id: socket.id, localDescription: this.broadcaster_connection.localDescription})
@@ -134,8 +117,8 @@ export default class StreamingRoom extends Room{
         this.addConnection(socket.id,this.broadcaster_connection)
     }
     
-    async addViewer(socket,constrains,peerId, dissconnectHandler){
-        let viewer = new WebRtcConnection(socket,peerId, constrains,{
+    async addViewer(socket,peerId, disconnectHandler){
+        let viewer = new WebRtcConnection(socket,peerId, null,{
             beforeOffer: (peerConnection) =>{
                     let promises = [];
                     if(this.broadcaster_constrains.video){
@@ -148,7 +131,8 @@ export default class StreamingRoom extends Room{
                     for(let track in this.tracks){
                         peerConnection.addTrack(this.tracks[track])
                     }
-            }
+            },
+            disconnectHandler: disconnectHandler
         })
         await viewer.doOffer({beforeOffer: true});
         this.viewers_connections[socket.id] = viewer
@@ -165,20 +149,34 @@ export default class StreamingRoom extends Room{
         this.triggerConnect(socket)
         if(this.isBroadcaster(peerId) ){
             if(this.active == true){
-                console.log("Room already activated!")
+                console.log("Room already active!")
+                return;
             }
             this.active = true;
             this.addBroadcaster(socket,constrains,peerId, ()=>{
                 this.active = false
+                for(let transceiver of this.broadcaster_transceivers){
+                    transceiver.stop(); 
+                }
+                for(let track in this.tracks){
+                    this.tracks[track].stop();
+                }
+                this.tracks = {}
+                this.topics = []
+                this.broadcaster_transceivers = [];
+                this.broadcaster_connection = null;
+                for(let viewer in this.viewers_connections){
+                    this.viewers_connections[viewer].emit('removePeer', {'socket_id': this.viewers_connections[viewer].socket.id})
+                }
             })
         }else{
             if(this.viewers.indexOf(peerId) != -1){
                 console.log("Viewer already exists!")
+                return;
             }
 
             this.viewers.push(peerId)
-            constrains = null
-            this.addViewer(socket,constrains, peerId, (id)=>{
+            this.addViewer(socket, peerId, (id)=>{
                 this.viewers.splice(this.viewers.indexOf(peerId),1)
                 delete this.viewers_connections[socket.id]
             })

@@ -63,8 +63,11 @@ let room_container = new RoomContainer()
 let call_container = new RoomContainer()
 
 let chat_container = []
-let sockets = {}
+let notify_sockets = {}
+
 const db = new DbManager()
+
+
 db.initializeTables(()=>{
     db.getAllRoomsAndRules().then((rooms,err)=>{
         if(err)
@@ -94,7 +97,6 @@ db.initializeTables(()=>{
                     }
                     options.broadcasters = broadcasters
                     chat_container.push(new Chat(room_container.addRoom(options)))
-
                 })
             }else{
                 chat_container.push(new Chat(room_container.addRoom(options)))
@@ -120,6 +122,7 @@ app.get('/', async(req, res)=>{
         let user = await db.User.findOne({where:{secret: room.owner}})
         if(user)
             room.username = user.dataValues.username
+
     }
     res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     
@@ -134,14 +137,36 @@ app.post('/accept', (req, res)=>{
     if(req.userId != req.body.id){
         db.Friends.findOne({where:{userId: Math.min(req.userId, req.body.id), friendId: Math.max(req.userId, req.body.id)}})
             .then((row)=>{
-                row.update({status: 'friends'}, {fields: ['status']})   
+                row.update({status: 'friends'}, {fields: ['status']})
+                db.User.findOne({where:{id: req.body.id}}).then((user,err)=>{
+                    if(err)
+                        console.log(err)
+                    
+                    for(let room of room_container.where({owner: req.secret, type: 'conferent', operator:'and'})){
+                        room.addBroadcasterId(user.dataValues.secret)
+                    }
+                    for(let room of room_container.where({owner: user.dataValues.secret, type: 'conferent', operator:'and'})){
+                        room.addBroadcasterId(req.secret)
+                    }
+                })
                 res.send('ok')           
             })
     }
 })
 app.post('/remove', (req,res)=>{
-    this.removeFriend(req.userId,req.body.id).then((result)=>{
-            res.send("removed")
+    db.removeFriend(req.userId,req.body.id).then((result)=>{
+        db.User.findOne({where:{id: req.body.id}}).then((user,err)=>{
+            if(err)
+                console.log(err)
+            
+            for(let room of room_container.where({owner: req.secret, type: 'conferent', operator:'and'})){
+                room.removeBroadcasterId(user.dataValues.secret)
+            }
+            for(let room of room_container.where({owner: user.dataValues.secret, type: 'conferent', operator:'and'})){
+                room.removeBroadcasterId(req.secret)
+            }
+        })
+        res.send("removed")
     })
 })
 app.get('/search', async(req,res)=>{
@@ -186,15 +211,6 @@ app.get('/people', (req, res)=>{
                 }
             }
             res.render('people',{people_list:OneDToTwoD(dataValues, 3), auth: req.authenticated, user: req.username})
-        })
-    }
-})
-app.get('/profile',(req, res)=>{
-    if(!req.authenticated) {res.redirect('/login')}
-    else{
-        db.User.findOne({where:{id: req.userId}}).then((usr,err)=>{
-           
-            //console.log(OneDToTwoD(dataValues, 3))
         })
     }
 })
@@ -252,7 +268,7 @@ app.get('/room/list', async (req,res)=>{
     db.getAllRooms().then((rooms, err)=>{
         if(err)
             console.log(err)
-            res.render('list', {"rooms": rooms, "auth": req.authenticated, user: req.username})
+        res.render('list', {"rooms": rooms, "auth": req.authenticated, user: req.username})
     })
 })
 app.get('/register', (req,res)=>{
@@ -290,7 +306,7 @@ app.post('/call', (req,res)=>{
         let call_room = call_container.addRoom(call)
         db.Session.findOne({where:{userId: req.body.id}}).then((ses)=>{
             res.send(call_room.channel)
-            sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
+            notify_sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
         })
         
     })
@@ -373,7 +389,7 @@ io.on('connection', function (socket) {
     if(socket.request.headers.cookie){
         let token = cookie.parse(socket.request.headers.cookie)["sessionToken"]
         if(token){
-            sockets[token] = socket
+            notify_sockets[token] = socket
             socket.on('page_left', (reason)=>{
                 db.getLoggedUser(token).then(user=>{
                     let userId = user.dataValues.user.dataValues.id

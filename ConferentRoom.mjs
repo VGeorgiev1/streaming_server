@@ -1,5 +1,4 @@
 import Room from './Room.mjs'
-import * as fs from 'fs';
 import Connection from './Connection.mjs'
 export default class ConferentRoom extends Room{
     constructor(name,rules,ownerId,channel,broadcasters,io){
@@ -14,28 +13,30 @@ export default class ConferentRoom extends Room{
         this.active = false
         this.setupStartHandlers()
     }
-    addBroadcaster(socket, peerId, constrains,properties,dissconnectHandler)
+    addBroadcaster(socket, peerId, constrains,properties,disconnectHandler)
     {
         this.active_broadcasters.push(socket.id)
-        let broadcaster = new Connection(socket, peerId, constrains, properties, dissconnectHandler) 
+        let broadcaster = new Connection(socket, peerId, constrains, properties, disconnectHandler) 
         this.broadcasters[socket.id] = broadcaster
         this.addConnection(socket.id,broadcaster)
         
         this.connections.forEach((connection, id)=>{
-            if(peerId != this.connections.get(id).peerId){
-                this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains, 'properties': properties})
-                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': this.connections.get(id).constrains, 'properties': this.connections.get(id).properties})
+            if(peerId != connection.peerId){
+                connection.emit('addPeer', {'socket_id': socket.id, 'should_create_offer': false, 'constrains': constrains, 'properties': properties})
+                socket.emit('addPeer', {'socket_id': id, 'should_create_offer': true, 'constrains': connection.constrains, 'properties': connection.properties})
             } 
         })
     }
-    addPeer(socket, peerId, constrains, dissconnectHandler){
+    addPeer(socket, peerId, constrains, disconnectHandler){
         this.viewers_list.push(peerId)
-        let viewer = new Connection(socket, peerId, null, dissconnectHandler) 
+        let viewer = new Connection(socket, peerId, null,null, disconnectHandler) 
         this.viewers[socket.id] = viewer
         this.addConnection(socket.id,viewer)
-        for(let id of this.active_broadcasters){
-            this.connections.get(id).emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
-            socket.emit('addPeer', {'socket_id': id, 'should_create_offer': false, 'constrains':  this.connections.get(id).constrains})
+
+        for(let broadcaster in this.broadcasters){
+
+            this.broadcasters[broadcaster].emit('addPeer', {'socket_id': socket.id, 'should_create_offer': true, 'constrains': constrains})
+            socket.emit('addPeer', {'socket_id': this.broadcasters[broadcaster].socket.id, 'should_create_offer': false, 'constrains':  this.broadcasters[broadcaster].constrains})
         }
     }
     isBroadcaster(id){
@@ -44,16 +45,27 @@ export default class ConferentRoom extends Room{
     addBroadcasterId(id){
         this.broadcasters_list.push(id)
     }
+    removeBroadcasterId(id){
+        this.broadcasters_list.splice(this.broadcasters_list.indexOf(id),1)
+    }
     addSocket(socket,constrains,peerId,properties){
         this.triggerConnect(socket)
         if(!this.isBroadcaster(peerId)){
+            console.log(peerId)
             if(this.viewers_list.indexOf(peerId) != -1){
-                console.log('Viewer alrady exits')
+                console.log('Viewer already exists')
                 return;
             }
-            this.addPeer(socket, peerId)
+            this.addPeer(socket, peerId,null, ()=>{
+                this.viewers_list.splice(this.viewers_list.indexOf(peerId),1)
+            })
         }
         else{
+            console.log(peerId)
+            if(this.active_broadcasters.indexOf(peerId) != -1){
+                console.log('Broadcaster already exists')
+                return;
+            }
             this.active = true;
             this.addBroadcaster(socket, peerId, constrains,properties,()=>{
                 this.active_broadcasters.splice(this.active_broadcasters.indexOf(peerId),1)

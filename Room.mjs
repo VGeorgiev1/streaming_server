@@ -54,7 +54,7 @@ export default class Room{
         this.partHandler(connection)
         this.disconnectHandler(connection)
     }
-    disconnectHandler(connection, disconnectHandler){
+    disconnectHandler(connection){
         connection.on('disconnect', () =>{
             this.removePeer(connection.socket.id)
             if(connection.disconnectHandler)
@@ -70,7 +70,7 @@ export default class Room{
             connection.emit('removePeer', {'socket_id': id})
         })
     }
-    partHandler(connection, disconnectHandler){
+    partHandler(connection){
         connection.on('part', (details)=>{
             this.removePeer(connection.socket.id)
             if(connection.disconnectHandler)

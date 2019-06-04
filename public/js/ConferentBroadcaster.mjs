@@ -6,8 +6,8 @@ let connection = null
 window.Broadcaster = Broadcaster;
 
 window.onload = ()=>{
+    console.log('hello')
 
-    var SIGNALING_SERVER = "http://localhost";
     connection = new Broadcaster(io ,{audio: true, video: false},window.id)
     let players = {}
     let connections = 1;

@@ -169,7 +169,7 @@ export default class Player{
                 this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl())
                 
             })
-            if(this.video_controls){
+            if(!this.media.hasActiveCamera()){
                 camera.html('Start video')
                 camera.removeClass('btn-danger').addClass('btn-success')
             }else{

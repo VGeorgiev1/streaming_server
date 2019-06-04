@@ -16,11 +16,23 @@ export default class Broadcaster extends Connection{
         this.animationId = null;
         this.offers = {}
         this.constrains = CONSTRAINS
-
-
+        this.interval;
+        this.localMediaNegotiation = ()=>{
+            this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
+                this.constrains = new_constrains;
+                this.media_element = new_element;
+                this.media_element.muted = true
+                this.sendConstrains()
+                if(this.onMediaNegotiationCallback){
+                    this.onMediaNegotiationCallback()
+                }
+            })
+        }
         this.createConnectDisconnectHandlers = (callback)=>{
             this.regConnectHandlers(()=> {
+                console.log('connected')
                 this.getRoomDetails((details)=>{
+                    console.log(details)
                     if(details.rules){
                         this.rules = details.rules
                         Object.defineProperty(this, 'rules', {configurable: false, writable: false});
@@ -35,13 +47,17 @@ export default class Broadcaster extends Connection{
                                 }
                                 this.local_media_stream = stream
                                 this.constrains.screen = true;
-                                this.setupScreen(details);
+                                this.media_element = this.setupMedia(this.constrains,this.local_media_stream, {muted: true})
+                                this.media_element.width =  window.screen.availWidth
+                                this.media_element.height = window.screen.availHeight
+                                //this.setupScreen(details);
                                 this.joinChannel(this.constrains)
                                 callback(this.media_element)
                             })
                         })
                     }else{
                         this.findConstrains(details.rules,()=>{
+                            console.log('constrains found')
                             this.setupLocalMedia(this.constrains,
                             (mEl,stream) => {
                                 this.local_media_stream = stream
@@ -54,7 +70,20 @@ export default class Broadcaster extends Connection{
                             })
                         })
                     }
-                    
+                    if(details.type == 'streaming' || this.constrains.video || this.constrains.screen){
+                        cocoSsd.load().then(model => {
+                            this.interval = setInterval(()=>{
+                                if(this.hasActiveVideo())
+                                    model.detect(this.media_element).then(predictions => {
+                                        console.log(predictions)
+                                    this.signaling_socket.emit("topics", predictions);
+                                    });
+                                else{
+                                    clearInterval(this.interval)
+                                }
+                            }, 10000);
+                        });
+                    }
                 })
             })
         }
@@ -118,8 +147,10 @@ export default class Broadcaster extends Connection{
                 this.onMediaNegotiationCallback()
             }
             let track = mixed.getVideoTracks()[0]
-
-            this.checkForSender({replaceIfExist:true})
+            for(let peer in this.peers){
+                let video_sender = this.peers[peer].getSenders().filter(s=>s.track.kind == 'video')[0]
+                video_sender.replaceTrack(track)
+            }
         }
         if(screen){
             this.getDisplayMedia(new_constrains,callback)
@@ -183,15 +214,7 @@ export default class Broadcaster extends Connection{
         if(checkForSender){
             this.checkForSender({replaceIfExist: true})
         }
-        this.attachMediaStream(this.media_element, this.local_media_stream, {returnElm: true}, (new_element, new_constrains)=>{
-            this.media_element = new_element;
-            this.constrains = new_constrains;
-            this.media_element.muted = true;
-            this.sendConstrains()
-            if(this.onMediaNegotiationCallback){
-                this.onMediaNegotiationCallback()
-            }
-        })
+        this.localMediaNegotiation()
     }
     muteAudio(){
         let track = this.local_media_stream.getAudioTracks()[0]
@@ -202,7 +225,7 @@ export default class Broadcaster extends Connection{
     }
     muteVideo(){
         if(!this.animationId){
-            let track = this.local_media_stream.getVideoTracks()[0]
+            let track = this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen'))[0]
             if(track){
                 track.enabled = !track.enabled;
                 this.muteRelay(track.enabled)
@@ -270,15 +293,7 @@ export default class Broadcaster extends Connection{
             this.local_media_stream.addTrack(track)
         })
         this.checkForSender(options)
-        this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
-            this.constrains = new_constrains;
-            this.media_element = new_element;
-            this.media_element.muted = true
-            this.sendConstrains()
-            if(this.onMediaNegotiationCallback){
-                this.onMediaNegotiationCallback()
-            }
-        })
+        this.localMediaNegotiation()
     }
     changeTracks(constrains, options){
         this.getUserMedia(constrains, (stream)=>{
@@ -342,21 +357,13 @@ export default class Broadcaster extends Connection{
                         if(sender.track){
                             if(sender.track.label.includes('screen') || sender.track.label.includes('System')){
                                 this.peers[peer].removeTrack(sender)
-                            } 
+                            }
                         }
                     }
                 }
 
-                this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
-                    this.constrains = new_constrains;
-                    this.media_element = new_element;
-                    this.media_element.muted = true
-                    this.sendConstrains()
-                    if(this.onMediaNegotiationCallback){
-                        this.onMediaNegotiationCallback()
-                    }
-                })
-                this.checkForSender({replaceIfExist:true})
+                this.localMediaNegotiation()
+                //this.checkForSender({replaceIfExist:true})
             })
             callback(stream)
         })

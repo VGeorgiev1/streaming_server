@@ -21,7 +21,7 @@ export default class SurveillanceBroadcast extends Broadcaster{
             this.negotiate(peer_connection, socket_id, this.properties)
         }
     }
-    attachHandlers(){
+    attachControlHandlers(){
         this.signaling_socket.on('request_video', ()=>{
             this.requestVideo()
         })
@@ -54,7 +54,7 @@ export default class SurveillanceBroadcast extends Broadcaster{
 
     }
     joinChannel(constrains){
-        this.attachHandlers()
+        this.attachControlHandlers()
         this.old_mediaNegotiaotion = this.onMediaNegotiationCallback;
         this.signaling_socket.emit('join', {properties:this.properties,media_state:{has_active_video: this.hasActiveVideo(),has_video:this.hasVideo(),has_muted_audio: this.hasMutedAudio(), has_muted_camera: this.hasMutedCamera(), has_active_camera: this.hasActiveCamera(), has_active_audio: this.hasActiveAudio(), isScreen: this.is_screen_share, audioDevices: this.audio_devices, videoDevices: this.video_devices}, "constrains": this.constrains })
     }
