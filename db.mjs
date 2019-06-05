@@ -69,10 +69,9 @@ export default class DbManager {
             this.Rule.create(options).then((rules, err)=>{
                 if(err)
                     console.log(err)
-                this.Room.create({owner: owner_secret, type: req.type, name:req.name,channel: crypto.randomBytes(10).toString("hex"), rulesId:rules.dataValues.id})
-                    .then(room=>{
+                this.Room.create({owner: owner_secret, type: req.type, name:req.name,channel: crypto.randomBytes(10).toString("hex"), rulesId:rules.dataValues.id}).then(room=>{
                         callback(room)
-                    })
+                })
             })
         }else{
             this.Room.create({owner: owner_secret, type: req.type, name:req.name,channel: crypto.randomBytes(10).toString("hex"), rulesId:null})

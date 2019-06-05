@@ -132,14 +132,14 @@ export default class Player{
     }
     getScreenControl(){
         let screen = null;
-        if(!this.media.isScreen()){
+        if(!this.media.isScreen(this.options.socket_id)){
             screen = $('<button class="btn btn-success" id="screen_mute">').html('Share screen')
                 
             screen.click(()=>{
-                if(!this.media.isScreen(this.options.socket_id) && this.media.hasActiveCamera()){
+                if(!this.media.isScreen(this.options.socket_id) && this.media.hasActiveCamera(this.options.socket_id)){
                     this.media.mixVideoSources({audio: true, video: true}, true, Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()))
-                }else if(!this.media.hasActiveCamera()){
-                    this.media.requestScreen({audio:true, video:true});
+                }else if(!this.media.hasActiveCamera(this.options.socket_id)){
+                    this.media.requestScreen({audio:true, video:true}, this.options.socket_id);
                 }
                 
             })
@@ -169,7 +169,7 @@ export default class Player{
                 this.body.append(this.getVideoInputsControl()).append(this.getVideoBitrateControl())
                 
             })
-            if(!this.media.hasActiveCamera()){
+            if(!this.media.hasActiveCamera(this.options.socket_id)){
                 camera.html('Start video')
                 camera.removeClass('btn-danger').addClass('btn-success')
             }else{

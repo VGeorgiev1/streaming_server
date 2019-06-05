@@ -59,6 +59,9 @@ export default class SurveillanceSpectator extends Viewer{
     requestAudio(id){
         this.signaling_socket.emit('request_audio', {socket_id: id})
     }
+    requestScreen(constrains,id){
+        this.signaling_socket.emit('request_screen', {socket_id: id, constrains: constrains})
+    }
     muteAudio(id){
         this.signaling_socket.emit('mute_audio', {socket_id: id})
     }

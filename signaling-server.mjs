@@ -230,9 +230,9 @@ app.post('/room/create', async (req,res)=>{
             let roomObj = {
                 id:room.dataValues.id,
                 name:room.dataValues.name,
-                audio:req.body.audio,
-                video:req.body.video,
-                screen:req.body.screen,
+                audio:req.body.option.includes('audio'),
+                video:req.body.option.includes('video'),
+                screen:req.body.option.includes('screen'),
                 owner: req.secret,
                 type:req.body.type,
                 channel:room.dataValues.channel,

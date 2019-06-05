@@ -44,7 +44,6 @@ export default class StreamingRoom extends Room{
                     }
                 }
                 predictions.map(p=>this.topics.push(p.class))
-                console.log(this.topics)
             }
         }
         this.viewer_handlers ={

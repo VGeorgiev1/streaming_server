@@ -4,7 +4,7 @@ export default class SurveillanceBroadcast extends Broadcaster{
     constructor(IO,CONSTRAINS,ID){
         super(ID,CONSTRAINS,ID)
         this.onMediaNegotiationCallback = ()=>{
-            this.signaling_socket.emit('new_properties', {properties:this.properties,media_state:{has_active_video: this.hasActiveVideo(),has_video:this.hasVideo(),has_muted_audio: this.hasMutedAudio(), has_muted_camera: this.hasMutedCamera(), has_active_camera: this.hasActiveCamera(), has_active_audio: this.hasActiveAudio(), isScreen: this.is_screen_share, audioDevices: this.audio_devices, videoDevices: this.video_devices}, "constrains": this.constrains })
+            this.signaling_socket.emit('new_properties', {properties:this.properties,media_state:{has_active_video: this.hasActiveVideo(),has_video:this.hasVideo(),has_muted_audio: this.hasMutedAudio(), has_muted_camera: this.hasMutedCamera(), has_active_camera: this.hasActiveCamera(), has_active_audio: this.hasActiveAudio(), isScreen: this.constrains.video, audioDevices: this.audio_devices, videoDevices: this.video_devices}, "constrains": this.constrains })
         }
     }
     onMediaNegotion(callback){
@@ -15,7 +15,7 @@ export default class SurveillanceBroadcast extends Broadcaster{
         }
     }
     changeSdpSettings(properties){
-        this.signaling_socket.emit('new_properties', {properties:this.properties,media_state:{has_active_video: this.hasActiveVideo(),has_video:this.hasVideo(),has_muted_audio: this.hasMutedAudio(), has_muted_camera: this.hasMutedCamera(), has_active_camera: this.hasActiveCamera(), has_active_audio: this.hasActiveAudio(), isScreen: this.is_screen_share, audioDevices: this.audio_devices, videoDevices: this.video_devices}, "constrains": this.constrains })
+        this.signaling_socket.emit('new_properties', {properties:this.properties,media_state:{has_active_video: this.hasActiveVideo(),has_video:this.hasVideo(),has_muted_audio: this.hasMutedAudio(), has_muted_camera: this.hasMutedCamera(), has_active_camera: this.hasActiveCamera(), has_active_audio: this.hasActiveAudio(), isScreen: his.constrains.video, audioDevices: this.audio_devices, videoDevices: this.video_devices}, "constrains": this.constrains })
         for(let socket_id in this.peers){
             let peer_connection = this.peers[socket_id]
             this.negotiate(peer_connection, socket_id, this.properties)
@@ -47,6 +47,9 @@ export default class SurveillanceBroadcast extends Broadcaster{
         this.signaling_socket.on('change_audio',(data)=>{
             this.changeAudioTrack(data.device_id);
 
+        })
+        this.signaling_socket.on('request_screen', data=>{
+            this.requestScreen(data.constrains)
         })
         this.signaling_socket.on('change_video', (data)=>{
             this.changeVideoTrack(data.device_id);

@@ -160,6 +160,7 @@ export default class Broadcaster extends Connection{
     requestScreen(constrains){
         if(!this.rules || this.rules.screen){
             this.constrains.video = true;
+            this.constrains.screen = true;
             this.getDisplayMedia(constrains, (stream)=>{
                 this.changeProcedure(stream, {forceAdd: true})
             })
@@ -185,6 +186,7 @@ export default class Broadcaster extends Connection{
         }
     }
     isScreen(){
+        console.log(this.constrains)
         return this.constrains.screen
     }
     hasVideo(){

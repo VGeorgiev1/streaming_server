@@ -66,6 +66,9 @@ export default class SurvillianceRoom extends Room{
         this.spectator.on('change_video', (data)=>{
             this.connections.get(data.socket_id).emit('change_video', {device_id: data.track_id})
         })
+        this.spectator.on('request_screen', (data)=>{
+            this.connections.get(data.socket_id).emit('request_screen', {constrains: data.constrains})
+        })
     }
     isOwner(id){
         return id == this.owner

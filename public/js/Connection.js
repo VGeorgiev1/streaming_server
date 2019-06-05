@@ -37,7 +37,8 @@ export default class Connection {
 
         let should_constrain_audio = stream.getAudioTracks().filter(t => t.enabled).length != 0 
         let should_constrain_video = stream.getVideoTracks().filter(t => t.enabled).length != 0
-        let new_constrains = {audio:should_constrain_audio, video: should_constrain_video}
+        let should_constrain_screen = stream.getVideoTracks().filter(t => t.label.includes('screen')).length != 0
+        let new_constrains = {audio:should_constrain_audio, video: should_constrain_video, screen: should_constrain_screen}
         let new_element;
         if(element != null){
             if((new_constrains.video && element.nodeName == 'AUDIO') ||
