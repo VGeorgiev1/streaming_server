@@ -1,13 +1,13 @@
 import Viewer from './Viewer.js'
 import Player from './Player.js'
-let connection = null;
+window.connection = null;
 
 window.onload = ()=>{
     let connections = 0;
-    connection = new Viewer(io,id)
+    window.connection = new Viewer(io,id)
     let players = {};
-    connection.subscribeTo(window.channel, ()=>{
-        connection.onBroadcaster((socket_id, constrains,mEl)=>{
+    window.connection.subscribeTo(window.channel, ()=>{
+        window.connection.onBroadcaster((socket_id, constrains,mEl)=>{
             
             players[socket_id] = new Player({'media': mEl, 'socket_id': socket_id, 'constrains': constrains, reso: '1by1'},3);
             if(connections / 3 == 1){
@@ -19,10 +19,10 @@ window.onload = ()=>{
         
         })  
         
-        connection.onBroadcastNegotiation((socket_id,constrains,mEl)=>{
+        window.connection.onBroadcastNegotiation((socket_id,constrains,mEl)=>{
             players[socket_id].negotiatePlayer(constrains, mEl)
         })
-        connection.onPeerDiscconect((socket_id)=>{
+        window.connection.onPeerDiscconect((socket_id)=>{
             if(players[socket_id]){
                 players[socket_id].removePlayer()
                 connections--

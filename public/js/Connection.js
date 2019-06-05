@@ -83,7 +83,6 @@ export default class Connection {
             if (socket_id in this.peers) {
                 return;
             }
-            console.log(config)
             var peer_connection = new RTCPeerConnection({
                 sdpSemantics: 'unified-plan'
             });
@@ -151,6 +150,7 @@ export default class Connection {
         })
     }
     sdp(sdp, media, bitrate){
+
         var lines = sdp.split("\n");
         let matchMedia = new RegExp("m="+media)
         let matches = matchMedia.exec(sdp)
@@ -162,13 +162,15 @@ export default class Connection {
                 break;
             }
         }
-        mline++;
+        mline+=2;
         lines.splice(mline,0,"b=AS:"+bitrate)
         return lines.join("\n")
     }
     setProperties(sdp, properties){
         if(properties.audioBitrate){
+          
           sdp = this.sdp(sdp, 'audio', properties.audioBitrate)
+          console.log(sdp)
         }
         if(properties.videoBitrate){
           sdp = this.sdp(sdp, 'video', properties.videoBitrate)
@@ -177,6 +179,7 @@ export default class Connection {
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
+            console.log(config)
             var socket_id = config.socket_id;
             var peer_connection = this.peers[socket_id];
             this.peers[socket_id].properties = config.properties;
@@ -288,7 +291,7 @@ export default class Connection {
     }
     findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
-            console.log(devices)
+            
             for (let i = 0; i < devices.length; i++) {
                 if (devices[i].kind === 'audioinput')  this.audio_devices.push(devices[i]);
                 if (devices[i].kind === 'videoinput')  this.video_devices.push(devices[i]);
@@ -299,7 +302,6 @@ export default class Connection {
     async findConstrains(rules,callback) {
         
         this.findDevices(()=>{
-            console.log('devices found')
             if(rules){
                 if((!rules.audio && rules.audio != null) || !this.constrains.audio) {
                     this.constrains.audio = false
@@ -315,6 +317,7 @@ export default class Connection {
                     this.constrains.video =  this.video_devices.length != 0;
                 }
             }
+           
             callback()
         })
         
@@ -322,11 +325,15 @@ export default class Connection {
 
 
     setupMedia(constrains, stream, options) {
-        let media = constrains.video || constrains.video ?
-          document.createElement('video')
-            :
-          document.createElement('audio');
-
+        let media = null;
+        if(constrains.video || constrains.screen) {
+            media = document.createElement('video')
+            let settings = stream.getVideoTracks()[0].getSettings()
+            media.width = settings.width
+            media.height = settings.height
+        }else{
+            media = document.createElement('audio');
+        }
         media.autoplay = "autoplay"
         media.muted = options.muted 
         media.controls = "controls";

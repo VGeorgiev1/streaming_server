@@ -33,7 +33,6 @@ app.use("/public",express.static(path.join(path.resolve() + '/public')));
 app.set('view engine', 'pug');
 process.on('unhandledRejection', (reason, p) => {
     console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
-    // application specific logging, throwing an error, or other logic here
 });
 var loginware = function (req, res, next) {
     if(req.cookies.sessionToken){
@@ -142,10 +141,10 @@ app.post('/accept', (req, res)=>{
                     if(err)
                         console.log(err)
                     
-                    for(let room of room_container.where({owner: req.secret, type: 'conferent', operator:'and'})){
+                    for(let room of room_container.where({owner: req.secret}).and({type: 'conferent'}).collect()){
                         room.addBroadcasterId(user.dataValues.secret)
                     }
-                    for(let room of room_container.where({owner: user.dataValues.secret, type: 'conferent', operator:'and'})){
+                    for(let room of room_container.where({owner: user.dataValues.secret}).and({type: 'conferent'}).collect()){
                         room.addBroadcasterId(req.secret)
                     }
                 })
@@ -159,10 +158,10 @@ app.post('/remove', (req,res)=>{
             if(err)
                 console.log(err)
             
-            for(let room of room_container.where({owner: req.secret, type: 'conferent', operator:'and'})){
+            for(let room of room_container.where({owner: req.secret}).and({type: 'conferent'}).collect()){
                 room.removeBroadcasterId(user.dataValues.secret)
             }
-            for(let room of room_container.where({owner: user.dataValues.secret, type: 'conferent', operator:'and'})){
+            for(let room of room_container.where({owner: user.dataValues.secret}).and({type: 'conferent'}).collect()){
                 room.removeBroadcasterId(req.secret)
             }
         })
@@ -171,7 +170,7 @@ app.post('/remove', (req,res)=>{
 })
 app.get('/search', async(req,res)=>{
     let topic= req.query.topic
-    let payload = room_container.whereTopic(topic)
+    let payload = room_container.whereTopic(topic).collect()
     for(let room of payload){
         let user = await db.User.findOne({where:{secret: room.owner}})
         room.username = user.dataValues.username
@@ -278,7 +277,7 @@ app.get('/register', (req,res)=>{
     }
 })
 app.get('/call/:channel', (req,res)=>{
-    let room = call_container.where({channel: req.params.channel})[0]
+    let room = call_container.where({channel: req.params.channel}).collect()[0]
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
     let isBroadcaster;
@@ -361,7 +360,7 @@ app.post('/login', async(req,res)=>{
 app.get('/streams', async(req,res)=>{
     if(!req.authenticated){res.redirect('/')}
     else{
-        let payload = room_container.where({type:"streaming"})
+        let payload = room_container.where({type:"streaming"}).collect()
         for(let room of payload){
             let user = await db.User.findOne({where:{secret: room.owner}})
             room.username = user.dataValues.username
@@ -371,7 +370,7 @@ app.get('/streams', async(req,res)=>{
     }
 })
 app.get('/room/:channel',async (req,res)=>{
-    let room = room_container.where({channel: req.params.channel})[0]
+    let room = room_container.where({channel: req.params.channel}).collect()[0]
     if(!room){res.send("Rooms does not exists!");return}
     let userId;
     let isBroadcaster;

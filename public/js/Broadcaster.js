@@ -30,7 +30,6 @@ export default class Broadcaster extends Connection{
         }
         this.createConnectDisconnectHandlers = (callback)=>{
             this.regConnectHandlers(()=> {
-                console.log('connected')
                 this.getRoomDetails((details)=>{
                     console.log(details)
                     if(details.rules){
@@ -39,25 +38,24 @@ export default class Broadcaster extends Connection{
                     }
                     if(this.constrains.screen){
                         this.findDevices(()=>{
-                            this.getDisplayMedia({video: true, audio: true}, (stream)=>{
+                            this.getDisplayMedia({video: this.constrains.video, audio: this.constrains.audio}, (stream)=>{
                                 if(stream.getAudioTracks().length==0){
                                     this.constrains.audio = false;
                                 }else{
                                     this.constrains.audio = true
                                 }
+                                let settings = stream.getVideoTracks()[0].getSettings()
+
                                 this.local_media_stream = stream
                                 this.constrains.screen = true;
                                 this.media_element = this.setupMedia(this.constrains,this.local_media_stream, {muted: true})
-                                this.media_element.width =  window.screen.availWidth
-                                this.media_element.height = window.screen.availHeight
-                                //this.setupScreen(details);
+                                
                                 this.joinChannel(this.constrains)
                                 callback(this.media_element)
                             })
                         })
                     }else{
                         this.findConstrains(details.rules,()=>{
-                            console.log('constrains found')
                             this.setupLocalMedia(this.constrains,
                             (mEl,stream) => {
                                 this.local_media_stream = stream
@@ -332,8 +330,17 @@ export default class Broadcaster extends Connection{
             let mEl = null;
             mEl = this.setupMedia(constrains, stream, { muted: true})
             this.media_element = mEl
-            if(callback)
-                callback(mEl,stream)
+            if(this.audio_devices.filter(t=>t.label.length ==0) !=0 || this.video_devices.filter(t=>t.label.length ==0)!= 0){
+                this.audio_devices = []
+                this.video_devices = []
+                this.findDevices(()=>{
+                    if(callback)
+                        callback(mEl,stream)    
+                })
+            }else{
+                if(callback)
+                    callback(mEl,stream)
+            }
         })
     }
     setupScreen(details){
