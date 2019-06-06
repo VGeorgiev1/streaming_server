@@ -74,8 +74,8 @@ export default class WebRtcConnection extends Connection {
     try{
 
     const offer = await this.peerConnection.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
-   
-    if(options.properties){
+    
+    if(options && options.properties){
       offer.sdp = this.setProperties(offer.sdp,options.properties);
     }
     await this.peerConnection.setLocalDescription(offer);
