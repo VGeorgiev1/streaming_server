@@ -12,7 +12,6 @@ import DbManager from './db.mjs'
 import bcrypt from 'bcryptjs'
 import cookieParser from 'cookie-parser'
 import RoomContainer from './RoomContainer.mjs'
-import Room from './Room.mjs';
 import crypto from 'crypto'
 import Chat from './Chat.mjs'
 import cookie from 'cookie'
@@ -402,7 +401,7 @@ app.get('/room/:channel',async (req,res)=>{
         res.render(room.type, {channel: room.channel, id: req.secret, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
     }else{
         userId = crypto.randomBytes(10).toString("hex")
-        isBroadcaster = false
+        room.type == 'surveillance'? isBroadcaster = true : isBroadcaster = false
         res.render(room.type, {channel: room.channel, id: userId, isBroadcaster: isBroadcaster, auth: req.authenticated, user: req.username});
     }
     

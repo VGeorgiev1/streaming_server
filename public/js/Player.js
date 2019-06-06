@@ -45,7 +45,7 @@ export default class Player{
         if(!this.options.socket_id){
             this.id = 'local'
         }else{
-            this.id = this.options.socket_id.replace('#', '1').replace('/','2');
+            this.id = this.options.socket_id.replace('#', '').replace('/','');
         }
         this.col = $(`<div id = ${this.id} class="card border-dark col-${this.columns} pr-0 pl-0 mr-5 mb-5">`)
         this.col.append($('<h5 class="card-header white-text text-center py-4">').html("steaming"))
@@ -111,7 +111,6 @@ export default class Player{
             div_cont.append(this.iselement ? $(media): $(media.getMediaElement(this.options.socket_id)))
 
         }else{
-            console.log('here')
             div_cont.append(this.iselement ? $(this.media): $(this.media.getMediaElement(this.options.socket_id)))
         }
         return div_cont
@@ -137,7 +136,7 @@ export default class Player{
                 
             screen.click(()=>{
                 if(!this.media.isScreen(this.options.socket_id) && this.media.hasActiveCamera(this.options.socket_id)){
-                    this.media.mixVideoSources({audio: true, video: true}, true, Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()))
+                    this.media.mixVideoSources({audio: true, video: true}, true, Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()), this.options.socket_id)
                 }else if(!this.media.hasActiveCamera(this.options.socket_id)){
                     this.media.requestScreen({audio:true, video:true}, this.options.socket_id);
                 }
@@ -155,7 +154,7 @@ export default class Player{
 
                 if(this.media.isScreen(this.options.socket_id) && !this.media.hasActiveCamera(this.options.socket_id)){
                     if($('input[name="video"]').filter(function(){return $(this).val().length==0}).length == 0){                        
-                        this.media.mixVideoSources({audio:true, video:true},false,Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()));
+                        this.media.mixVideoSources({audio:true, video:true},false,Number($('#startX').val()),Number($('#startY').val()),Number($('#width').val()),Number($('#height').val()),this.options.socket_id);
                     }
                 }else if(this.media.hasActiveCamera(this.options.socket_id) || this.media.hasMutedCamera(this.options.socket_id)){
                     this.media.muteVideo(this.options.socket_id)

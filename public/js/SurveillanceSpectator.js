@@ -53,6 +53,10 @@ export default class SurveillanceSpectator extends Viewer{
     onMediaNegotiation(callback){
         this.onMediaNegotiationCallback = callback;
     }
+    mixVideoSources(constrains,screen,x,y,w,h,id){
+        console.log(id)
+        this.signaling_socket.emit('mix_sources', {socket_id: id, constrains: constrains, screen: screen, x:x,y:y,w:w,h:h})
+    }
     requestVideo(id){
         this.signaling_socket.emit('request_video', {socket_id: id})
     }
