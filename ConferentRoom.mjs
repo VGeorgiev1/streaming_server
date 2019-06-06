@@ -48,6 +48,9 @@ export default class ConferentRoom extends Room{
     removeBroadcasterId(id){
         this.broadcasters_list.splice(this.broadcasters_list.indexOf(id),1)
     }
+    getDetails(){
+        return {type:this.type,rules:this.rules,active:this.active}
+    }
     addSocket(socket,constrains,peerId,properties){
         this.triggerConnect(socket)
         if(!this.isBroadcaster(peerId)){

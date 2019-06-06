@@ -15,7 +15,8 @@ export default class Room{
     setupStartHandlers(){
         this.nsp.on('connection', (socket)=>{
             socket.on('get_room_details', (channel)=>{
-                socket.emit('room_details', {type:this.type,rules:this.rules,active:this.active})
+                this.getDetails();
+                socket.emit('room_details', this.getDetails())
             })
             socket.on('join', (data)=>{
                 this.addSocket(socket,data.constrains, data.id, data.properties,data.media_state)

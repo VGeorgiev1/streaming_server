@@ -54,9 +54,7 @@ export default class Broadcaster extends Connection{
                             })
                         })
                     }else{
-                        console.log('here')
                         this.findConstrains(details.rules,()=>{
-                            console.log('even here')
                             this.setupLocalMedia(this.constrains,
                             (mEl,stream) => {
                                 this.local_media_stream = stream
@@ -80,7 +78,7 @@ export default class Broadcaster extends Connection{
                                 else{
                                     clearInterval(this.interval)
                                 }
-                            }, 10000);
+                            }, details.tick);
                         });
                     }
                 })
@@ -389,8 +387,6 @@ export default class Broadcaster extends Connection{
                     video_sender.replaceTrack(this.local_media_stream.getVideoTracks()[0])
                 }
                 this.localMediaNegotiation()
-                
-                //this.checkForSender({replaceIfExist:true})
             })
             callback(stream)
         })

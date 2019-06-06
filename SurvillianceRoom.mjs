@@ -41,6 +41,9 @@ export default class SurvillianceRoom extends Room{
             }
         }
     }
+    getDetails(){
+        return {type:this.type,active:this.active}
+    }
     attachControlHandlers(){
         this.spectator.on('request_video', (data)=>{
             this.connections.get(data.socket_id).emit('request_video')

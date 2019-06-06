@@ -23,7 +23,11 @@ var app = express()
 var server = http.createServer(app)
 var roomsContainer = []
 let io = new SocketIO(server);
+
 var SALT_ROUNDS = 10
+var MAX_TOPICS = 10
+var PREDICTION_TICK = 200000 //ms
+
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
@@ -85,7 +89,8 @@ db.initializeTables(()=>{
                 options.audio = room.rule.dataValues.audio
                 options.video = room.rule.dataValues.video
                 options.screen = room.rule.dataValues.screen
-                options.max_topics = 10;
+                options.max_topics = MAX_TOPICS;
+                options.tick = PREDICTION_TICK
                 let broadcasters = []
                 broadcasters.push(room.dataValues.owned_by.secret)
                 db.getFriends(room.dataValues.owned_by.id).then((users, err)=>{
@@ -130,6 +135,7 @@ app.get('/', async(req, res)=>{
         res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
     }
 });
+
 app.get('/room/create',(req, res)=>{
     if(!req.authenticated) {res.redirect('/login')}
     else{

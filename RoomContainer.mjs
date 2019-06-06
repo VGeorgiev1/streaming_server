@@ -3,7 +3,6 @@ import StreamingRoom from './StreamingRoom.mjs'
 import ConferentRoom from './ConferentRoom.mjs'
 import SurvillianceRoom from './SurvillianceRoom.mjs'
 
-let MAX_TOPICS = 10;
 import Predicate from './Predicate.mjs'
 
 export default class RoomContainer{
@@ -42,7 +41,7 @@ export default class RoomContainer{
                                 new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.broadcasters, roomObj.io)
                             break;
             case 'streaming':
-                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io,{max_topics: roomObj.max_topics})
+                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io,{max_topics: roomObj.max_topics, tick: roomObj.tick})
                             break;
             case 'surveillance':
                             this.rooms[roomObj.channel] = new SurvillianceRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io)

@@ -10,7 +10,6 @@ export default class WebRtcConnection extends Connection {
 			sdpSemantics: 'unified-plan'
     });
     this.peerConnection.ontrack = options.ontrack
-    this.beforeOffer = options.beforeOffer
     this.onIceCandidate = ((event)=>{
       if (event.candidate) {
           socket.emit('iceCandidate',
@@ -61,22 +60,21 @@ export default class WebRtcConnection extends Connection {
   }
   applyCandidate(candidate){
     if(candidate){
-      console.log(candidate)
       this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e=>{
         console.log(e)
       });
     }
   }
+  
   async doAnswer(){
     const answer = await this.peerConnection.createAnswer();
     await this.peerConnection.setLocalDescription(answer);
   }
   async doOffer(options){
     try{
-    if(options.beforeOffer){
-      await this.beforeOffer(this.peerConnection)
-    }
-    const offer = await this.peerConnection.createOffer();
+
+    const offer = await this.peerConnection.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
+   
     if(options.properties){
       offer.sdp = this.setProperties(offer.sdp,options.properties);
     }
