@@ -6,7 +6,6 @@ export default class StreamingRoom extends Room{
         super(name, 'streaming',channel,io)
         this.settings = settings
         this.owner = ownerId
-
         this.viewers = []
         this.viewers_connections = {}
         this.broadcaster_transceivers = {}
@@ -131,6 +130,7 @@ export default class StreamingRoom extends Room{
         this.addConnection(socket.id,viewer)
     }
     getDetails(){
+        console.log(this.settings)
         return {type:this.type,tick:this.settings.tick,active:this.active}
     }
     addSocket(socket,constrains,peerId){

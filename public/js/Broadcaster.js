@@ -28,6 +28,7 @@ export default class Broadcaster extends Connection{
                 }
             })
         }
+        
         this.createConnectDisconnectHandlers = (callback)=>{
             this.regConnectHandlers(()=> {
                 this.getRoomDetails((details)=>{
@@ -67,16 +68,15 @@ export default class Broadcaster extends Connection{
                             })
                         })
                     }
-                    if(details.type == 'streaming' || this.constrains.video || this.constrains.screen){
+                    if(details.type == 'streaming'){
+                        
                         cocoSsd.load().then(model => {
                             this.interval = setInterval(()=>{
-                                if(this.hasActiveVideo())
+                                if(this.hasActiveVideo()){
                                     model.detect(this.media_element).then(predictions => {
-                                        console.log(predictions)
+                                    console.log(predictions)
                                     this.signaling_socket.emit("topics", predictions);
                                     });
-                                else{
-                                    clearInterval(this.interval)
                                 }
                             }, details.tick);
                         });
@@ -159,9 +159,9 @@ export default class Broadcaster extends Connection{
     }
     requestScreen(constrains){
         if(!this.rules || this.rules.screen){
-            this.constrains.video = true;
-            this.constrains.screen = true;
             this.getDisplayMedia(constrains, (stream)=>{
+                this.constrains.video = true;
+                this.constrains.screen = true;
                 if(this.local_media_stream.getVideoTracks() == 0){
                     this.changeProcedure(stream, {forceAdd: true})
                 }else{
@@ -389,6 +389,8 @@ export default class Broadcaster extends Connection{
                 this.localMediaNegotiation()
             })
             callback(stream)
+        }).catch((e)=>{
+            console.log(e)
         })
     }
 }

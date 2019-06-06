@@ -36,6 +36,7 @@ export default class RoomContainer{
     }
     addRoom(roomObj){
         switch(roomObj.type){
+
             case 'conferent':
                             this.rooms[roomObj.channel] = 
                                 new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.broadcasters, roomObj.io)

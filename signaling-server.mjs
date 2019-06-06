@@ -26,7 +26,7 @@ let io = new SocketIO(server);
 
 var SALT_ROUNDS = 10
 var MAX_TOPICS = 10
-var PREDICTION_TICK = 200000 //ms
+var PREDICTION_TICK = 20 //ms
 
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -89,8 +89,6 @@ db.initializeTables(()=>{
                 options.audio = room.rule.dataValues.audio
                 options.video = room.rule.dataValues.video
                 options.screen = room.rule.dataValues.screen
-                options.max_topics = MAX_TOPICS;
-                options.tick = PREDICTION_TICK
                 let broadcasters = []
                 broadcasters.push(room.dataValues.owned_by.secret)
                 db.getFriends(room.dataValues.owned_by.id).then((users, err)=>{
@@ -105,6 +103,10 @@ db.initializeTables(()=>{
                     chat_container.push(new Chat(room_container.addRoom(options)))
                 })
             }else{
+                if(room.dataValues.type == 'streaming'){
+                    options.max_topics = MAX_TOPICS
+                    options.tick = PREDICTION_TICK
+                }
                 chat_container.push(new Chat(room_container.addRoom(options)))
             }
         }
@@ -269,13 +271,16 @@ app.post('/room/create', async (req,res)=>{
                         for(let option of req.body.option){
                             roomObj[option] = req.body.option.includes(option)
                         }
-                        options.max_topics = 10;
 
                         chat_container.push(new Chat(room_container.addRoom(roomObj)))
                         res.redirect('/room/'+room.dataValues.channel)
                     })
                 })
             }else{
+                if(req.body.type == 'streaming'){
+                    roomObj.max_topics = MAX_TOPICS
+                    roomObj.tick = PREDICTION_TICK
+                }
                 chat_container.push(new Chat(room_container.addRoom(roomObj)))
                 res.redirect('/room/'+room.dataValues.channel)
             }
@@ -310,7 +315,6 @@ app.get('/call/:channel', (req,res)=>{
 app.post('/call', (req,res)=>{
     db.User.findOne({where:{id:req.body.id}}).then((user,err)=>{
         let call = {
-            type: 'conferent',
             id: req.userId,
             name: 'call' + req.userId,
             audio:true,

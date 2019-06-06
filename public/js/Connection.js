@@ -90,7 +90,6 @@ export default class Connection {
             });
            
             peer_connection.ontrack = (event) => {
-                console.log(event)
                 let stream = event.streams[0] || new MediaStream(peer_connection.getReceivers().map(receiver => receiver.track));
                 if (!this.peer_media_elements[socket_id]) {
                     this.attachMediaStream(null,stream,{muted: false}, (new_element, new_constrains)=>{
@@ -135,7 +134,7 @@ export default class Connection {
                 })
                 if(this.mixed_track){
                     peer_connection.addTrack(this.mixed_track) 
-                }else if(this.local_media_stream.getVideoTracks()[0]){    
+                }else if(this.local_media_stream.getVideoTracks().filter(t=>t.enabled)[0]){    
                     peer_connection.addTrack(this.local_media_stream.getVideoTracks()[0], this.local_media_stream); 
                 }
             }
