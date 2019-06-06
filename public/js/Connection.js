@@ -60,9 +60,9 @@ export default class Connection {
         })
     }
     async negotiate(peer_connection, socket_id, properties){
-        if (peer_connection._negotiating == true) return;
         peer_connection._negotiating = true;
         try {
+            if (peer_connection._negotiating == true || peer_connection.signalingState != 'stable') return;
             const offer = await peer_connection.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
             await peer_connection.setLocalDescription(offer);
             if(properties){
@@ -185,6 +185,7 @@ export default class Connection {
             this.peers[socket_id].properties = config.properties;
             
             if(!peer_connection){
+                console.log('create')
                 peer_connection = new RTCPeerConnection({
                     sdpSemantics: 'unified-plan'
                 });
@@ -199,12 +200,14 @@ export default class Connection {
             var stuff = peer_connection.setRemoteDescription(desc)
             .then(() => {
                 if(!peer_connection.onnegotiationneeded){
+                    console.log('on nego')
                     peer_connection.onnegotiationneeded = async(event) =>{
                         this.negotiate(peer_connection, socket_id, this.peers[socket_id].properties)
                     }
                 }
                 if (remote_description.type == "offer") {
                     let offer;
+                    console.log(peer_connection.signalingState)
                     peer_connection.createAnswer()
                         .then((local_description)=>{
                             offer = local_description

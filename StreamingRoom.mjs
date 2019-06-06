@@ -107,11 +107,9 @@ export default class StreamingRoom extends Room{
                             
                             for(let sender of senders){
                                 if(sender.track && sender.track.id == track.id){
-                                    console.log('in replace')
                                     sender.replaceTrack(track)
                                     break;
                                 }else{
-                                    console.log('in add')
                                     this.viewers_connections[viewer].peerConnection.addTrack(track);
                                     break;
                                 }
@@ -148,10 +146,19 @@ export default class StreamingRoom extends Room{
         })
         await viewer.doOffer({beforeOffer: true});
         this.viewers_connections[socket.id] = viewer
-        
+
+        viewer.peerConnection._negotiating = false
         viewer.peerConnection.onnegotiationneeded = async(e)=> {
-            await viewer.doOffer({beforeOffer: false});
-            viewer.emit('sessionDescription', {socket_id: socket.id, session_description: viewer.localDescription})
+            try {
+                if (viewer.peerConnection._negotiating || viewer.peerConnection.signalingState != "stable") return;
+                viewer.peerConnection._negotiating = true;
+                await viewer.doOffer({beforeOffer: false});
+                viewer.emit('sessionDescription', {socket_id: socket.id, session_description: viewer.localDescription})
+            }catch(e){
+                console.log(e)
+            }finally{
+                viewer.peerConnection._negotiating = false;
+            }
         }
 
         viewer.emit('addPeer', {socket_id: socket.id, localDescription: this.viewers_connections[socket.id].localDescription, constrains: this.broadcaster_constrains})
