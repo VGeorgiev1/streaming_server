@@ -230,9 +230,6 @@ app.post('/room/create', async (req,res)=>{
             let roomObj = {
                 id:room.dataValues.id,
                 name:room.dataValues.name,
-                audio:req.body.option.includes('audio'),
-                video:req.body.option.includes('video'),
-                screen:req.body.option.includes('screen'),
                 owner: req.secret,
                 type:req.body.type,
                 channel:room.dataValues.channel,
@@ -252,6 +249,10 @@ app.post('/room/create', async (req,res)=>{
                             }
                         }
                         roomObj.broadcasters = broadcasters
+                        for(let option of req.body.option){
+                            roomObj[option] = req.body.option.includes(option)
+                        }
+                        console.log(roomObj)
                         chat_container.push(new Chat(room_container.addRoom(roomObj)))
                         res.redirect('/room/'+room.dataValues.channel)
                     })
