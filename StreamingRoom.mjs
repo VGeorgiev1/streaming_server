@@ -4,16 +4,16 @@ import { connect } from 'tls';
 export default class StreamingRoom extends Room{
     constructor(name,ownerId,channel,io,settings){
         super(name, 'streaming',channel,io)
-        this.viewers = []
         this.settings = settings
+        this.owner = ownerId
+
+        this.viewers = []
         this.viewers_connections = {}
         this.broadcaster_transceivers = [] 
-        this.owner = ownerId
         this.broadcaster_connection;
         this.active = false;
         this.topics = [];
         this.broadcaster_constrains = {}
-        this.senders = {}
         this.tracks = {}
         this.setupStartHandlers()
         this.broadcaster_handlers = {
@@ -33,7 +33,6 @@ export default class StreamingRoom extends Room{
                 }
             },
             'ready-state': (data)=>{
-
                 this.broadcaster_connection.properties = data.properties
                 this.broadcaster_connection.emit('sessionDescription', {socket_id: data.socket_id, session_description: this.connections.get(data.socket_id).localDescription, properties: this.broadcaster_connection.properties})
             },
@@ -44,6 +43,12 @@ export default class StreamingRoom extends Room{
                     }
                 }
                 predictions.map(p=>this.topics.push(p.class))
+            },
+            'new_constrains': (data)=>{
+                this.broadcaster_connection.constrains = data
+                for(let viewer in this.viewers_connections){
+                    this.viewers_connections[viewer].emit('relayNewConstrains', {"socket_id":this.viewers_connections[viewer].socket.id, "constrains":data})
+                }
             }
         }
         this.viewer_handlers ={
@@ -85,9 +90,12 @@ export default class StreamingRoom extends Room{
             disconnectHandler: disconnectHandler,
             ontrack: (event) =>{
                 let stream = event.streams[0]
+                
                 for(let track of stream.getTracks()){
+                    console.log(track)
+                    this.tracks = {}
+                    
                     if(!this.tracks[track.id]){
-
                         this.tracks[track.id] = track
                         this.broadcaster_constrains[track.kind] = true;
                         for(let viewer in this.viewers_connections){
@@ -96,11 +104,14 @@ export default class StreamingRoom extends Room{
                                 this.viewers_connections[viewer].peerConnection.addTransceiver(track.kind)
                             }
                             senders = this.viewers_connections[viewer].peerConnection.getSenders();
+                            
                             for(let sender of senders){
                                 if(sender.track && sender.track.id == track.id){
+                                    console.log('in replace')
                                     sender.replaceTrack(track)
                                     break;
                                 }else{
+                                    console.log('in add')
                                     this.viewers_connections[viewer].peerConnection.addTrack(track);
                                     break;
                                 }
@@ -129,6 +140,7 @@ export default class StreamingRoom extends Room{
 
                     }
                     for(let track in this.tracks){
+                        console.log(this.tracks)
                         peerConnection.addTrack(this.tracks[track])
                     }
             },

@@ -20,6 +20,7 @@ export default class Broadcaster extends Connection{
         this.localMediaNegotiation = ()=>{
             this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
                 this.constrains = new_constrains;
+                console.log(this.constrains)
                 this.media_element = new_element;
                 this.media_element.muted = true
                 this.sendConstrains()
@@ -242,19 +243,27 @@ export default class Broadcaster extends Connection{
         }
     }
     sendConstrains(){
+        
         this.signaling_socket.emit('new_constrains', this.constrains)
     }
     checkForSender(options){
         for(let peer in this.peers){
             this.local_media_stream.getTracks().forEach(track =>{
-                for(let sender of this.peers[peer].getSenders()){
+                console.log(track)
+                let senders = this.peers[peer].getSenders().filter(s=>s.track)
+                if(senders.length == 0){
+                    this.peers[peer].addTrack(track, this.local_media_stream)
+                    return
+                }
+                
+                for(let sender of senders){
                     if(sender.track){
                         if(sender.track.kind == track.kind && options.replaceIfExist){
                             sender.replaceTrack(track)
                             break;
                         }
                         if(sender.track.id != track.id && options.forceAdd){
-                            sender = this.peers[peer].addTrack(track, this.local_media_stream)
+                            this.peers[peer].addTrack(track, this.local_media_stream)
                             break;
                         }
                     }
@@ -359,17 +368,17 @@ export default class Broadcaster extends Connection{
 
             stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
                 this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
-                
+                console.log(this.local_media_stream.getTracks())
                 this.constrains.screen = false;
-                for(let peer in this.peers){
-                    for(let sender of this.peers[peer].getSenders()){
-                        if(sender.track){
-                            if(sender.track.label.includes('screen') || sender.track.label.includes('System')){
-                                this.peers[peer].removeTrack(sender)
-                            }
-                        }
-                    }
-                }
+                // for(let peer in this.peers){
+                //     for(let sender of this.peers[peer].getSenders()){
+                //         if(sender.track){
+                //             if(sender.track.label.includes('screen') || sender.track.label.includes('System')){
+                //                 this.peers[peer].removeTrack(sender)
+                //             }
+                //         }
+                //     }
+                // }
 
                 this.localMediaNegotiation()
                 //this.checkForSender({replaceIfExist:true})

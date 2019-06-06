@@ -20,10 +20,14 @@ export default class Predicate{
         }
         this.__equals = (a,b) =>{
             return function(x){
-                if(typeof x[a] == 'array'){
-                    return x[a].includes(b)
+                if(x[a]){
+                    if(Array.isArray(x[a])){
+                        
+                        return x[a].includes(b)
+                    }
+                    return x[a] == b
                 }
-                return x[a] == b
+                return false;
             }
         }
     }

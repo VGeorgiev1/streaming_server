@@ -41,7 +41,8 @@ var loginware = function (req, res, next) {
                 console.log(err)
             req.authenticated = false
             if(ses){
-                db.logUser({name: ses.dataValues.user.dataValues.username}, ()=>{
+                db.goOnline({name: ses.dataValues.user.dataValues.username}, ()=>{
+                    
                     req.authenticated = true
                     req.userId = ses.userId
                     req.secret = ses.dataValues.user.dataValues.secret
@@ -80,10 +81,11 @@ db.initializeTables(()=>{
                 channel:room.dataValues.channel,
                 io: io
             }
-            if(room.rule){
+            if(room.dataValues.type == 'conferent'){
                 options.audio = room.rule.dataValues.audio
                 options.video = room.rule.dataValues.video
                 options.screen = room.rule.dataValues.screen
+                options.max_topics = 10;
                 let broadcasters = []
                 broadcasters.push(room.dataValues.owned_by.secret)
                 db.getFriends(room.dataValues.owned_by.id).then((users, err)=>{
@@ -116,15 +118,17 @@ function OneDToTwoD(array,lenght){
 };
 
 app.get('/', async(req, res)=>{
-    let payload = room_container.where({})
-    for(let room of payload){
-        let user = await db.User.findOne({where:{secret: room.owner}})
-        if(user)
-            room.username = user.dataValues.username
-
-    }
-    res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
+    if(!req.authenticated){res.redirect('/login')}
+    else{
+        let payload = room_container.where({owner: req.secret}).or({broadcasters_list: req.secret}).collect()
+        for(let room of payload){
+            let user = await db.User.findOne({where:{secret: room.owner}})
+            if(user)
+                room.username = user.dataValues.username
     
+        }
+        res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
+    }
 });
 app.get('/room/create',(req, res)=>{
     if(!req.authenticated) {res.redirect('/login')}
@@ -218,7 +222,14 @@ function prepareReqeustQuery(id1,id2){
 }
 app.post('/sendrequest', (req,res)=>{
     let otherId = Number(req.body.id)
+    console.log('send request')
     db.Friends.create(prepareReqeustQuery(req.userId, otherId)).then(err=>{
+        db.Session.findOne({where:{userId: otherId}}).then((ses)=>{
+            if(notify_sockets[ses.dataValues.sessionToken]){
+                notify_sockets[ses.dataValues.sessionToken].emit('')
+            }
+            //notify_sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
+        })
         res.send('ok')
     })
 })
@@ -252,7 +263,8 @@ app.post('/room/create', async (req,res)=>{
                         for(let option of req.body.option){
                             roomObj[option] = req.body.option.includes(option)
                         }
-                        console.log(roomObj)
+                        options.max_topics = 10;
+
                         chat_container.push(new Chat(room_container.addRoom(roomObj)))
                         res.redirect('/room/'+room.dataValues.channel)
                     })
@@ -343,7 +355,7 @@ app.get('/logout', async(req,res)=>{
     }
 })
 app.post('/login', async(req,res)=>{
-    db.logUser(req.body,(user)=>{
+    db.goOnline(req.body,(user)=>{
         if(user){
             let authenticated = bcrypt.compareSync(req.body.password, user.dataValues.password)
             if(authenticated){
@@ -386,7 +398,9 @@ app.get('/room/:channel',async (req,res)=>{
     
 })
 io.on('connection', function (socket) {
+    
     if(socket.request.headers.cookie){
+        
         let token = cookie.parse(socket.request.headers.cookie)["sessionToken"]
         if(token){
             notify_sockets[token] = socket

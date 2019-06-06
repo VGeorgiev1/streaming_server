@@ -171,7 +171,6 @@ export default class Connection {
         if(properties.audioBitrate){
           
           sdp = this.sdp(sdp, 'audio', properties.audioBitrate)
-          console.log(sdp)
         }
         if(properties.videoBitrate){
           sdp = this.sdp(sdp, 'video', properties.videoBitrate)
@@ -230,8 +229,10 @@ export default class Connection {
     }
     regChangeConstrainsHandler(){
         this.signaling_socket.on('relayNewConstrains', (options)=>{
-            
+            console.log(options)
+            console.log(this.peer_media_elements)
             if(this.peer_media_elements[options.socket_id]){
+                console.log(options)
                 this.peers[options.socket_id].constrains = options.constrains
                 let element = this.peer_media_elements[options.socket_id];
 
@@ -242,6 +243,7 @@ export default class Connection {
 
                 this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
                     this.peer_media_elements[options.socket_id] = new_element;
+                    console.log(new_constrains)
                     if(this.onBroadcastNegotitaioncallback){
                         this.onBroadcastNegotitaioncallback(options.socket_id,options.constrains,new_element)
                     }

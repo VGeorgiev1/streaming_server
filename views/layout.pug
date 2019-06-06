@@ -5,9 +5,8 @@ html
 		link(href="/public/css/layout.css" rel="stylesheet")
 		script(src='https://cdn.socket.io/socket.io-1.4.5.js')
 		script(src='https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js')
-		<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"> </script>
-		<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
-
+		script(src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs")
+		script(src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd")
 		block scripts
 
 	body
@@ -22,8 +21,6 @@ html
 							a.nav-link(href="/register") Sign up
 						li.nav-item
 							a.nav-link(href="/login") Sign in
-						//- li.nav-item
-						//- 	button.btn.btn-primary(type='button', data-toggle='modal', data-target='#exampleModal') Launch demo modal
 					else
 						li.nav-item
 							a.nav-link(href="/streams") Streams
@@ -34,6 +31,8 @@ html
 						span.navbar-text="Hello, " + user + "!"
 						li.nav-item
 							a.nav-link(href="/people") Friends
+						li.nav-item
+							a.nav-link(href="/myrooms") My Rooms
 						li.nav-item
 							a.nav-link(href="/logout") Logout
 						
@@ -49,26 +48,6 @@ html
 					input.form-control.mr-sm-2(type="search" placeholder="Search" aria-label="Search" name="topic")
 					button.btn.btn-outline-success.my-2.my-sm-0(type="submit") Search
 		block content
-		script.
-			let monitoring_socket = io()
-			window.localLinkClicked = false;
-
-			monitoring_socket.on('call', (data)=>{
-				$('#channel').attr('href', '/call/' + data.channel)
-				$('#callLabel').html(data.caller + ' is calling!')
-				$('#call').modal('show');
-			})
-
-			$("a, button").click(function() {
-				window.localLinkClicked = true;
-			});
-
-			window.onbeforeunload = function() {
-				if (window.localLinkClicked) {
-					window.localLinkClicked = false
-				} else {
-					monitoring_socket.emit('page_left')
-				}
-			}
+		script(src="/public/js/OnlineMonitor.js")
 
 

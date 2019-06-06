@@ -87,7 +87,7 @@ export default class DbManager {
     checkForSessionOrCreate(id, crypto){
         return this.Session.findOrCreate({where: {userId: id}, defaults:{sessionToken: crypto}})
     }
-    logUser(req,callback,errorback){
+    goOnline(req,callback,errorback){
         this.User.findOne({where: {username: req.name}}).then(async(user)=>{
             await user.update({online: true}, {fields: ['online']})
             callback(user)

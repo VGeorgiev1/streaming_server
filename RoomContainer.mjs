@@ -10,7 +10,6 @@ export default class RoomContainer{
     constructor(server) {
         this.rooms = {}
         this.oncollect = (predicate)=>{
-            
             return Object.values(this.rooms).filter(predicate)
         }   
     }
@@ -26,22 +25,24 @@ export default class RoomContainer{
     whereTopic(topic){
         let topics = topic.split(" ")
         let filtered = []
-        let streams = this.where({type:'streaming'})
-        console.log()
+        let predicate = null
         for(let topic of topics){
-            streams.and({topics: topic})
+            if(predicate)
+                predicate.or({topics: topic})
+            else{
+                predicate = this.where({topics:topic})
+            }
         }
-        return streams
+        return predicate
     }
     addRoom(roomObj){
         switch(roomObj.type){
             case 'conferent':
                             this.rooms[roomObj.channel] = 
                                 new ConferentRoom(roomObj.name,{audio: roomObj.audio, video: roomObj.video, screen: roomObj.screen} ,roomObj.owner,roomObj.channel, roomObj.broadcasters, roomObj.io)
-
                             break;
             case 'streaming':
-                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io,{max_topics: MAX_TOPICS})
+                            this.rooms[roomObj.channel] = new StreamingRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io,{max_topics: roomObj.max_topics})
                             break;
             case 'surveillance':
                             this.rooms[roomObj.channel] = new SurvillianceRoom(roomObj.name,roomObj.owner,roomObj.channel,roomObj.io)
