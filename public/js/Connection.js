@@ -15,6 +15,7 @@ export default class Connection {
     subscribeTo(channel, callback){
         this.channel = channel
         this.signaling_socket = io('/' + this.channel);
+        console.log(this.signaling_socket)
         this.createConnectDisconnectHandlers(callback)
     }
     onBroadcastNegotiation(callback){
@@ -60,7 +61,7 @@ export default class Connection {
         })
     }
     async negotiate(peer_connection, socket_id, properties){
-        peer_connection._negotiating = true;
+        peer_connection._negotiating = false;
         try {
             if (peer_connection._negotiating == true || peer_connection.signalingState != 'stable') return;
             const offer = await peer_connection.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
@@ -73,7 +74,7 @@ export default class Connection {
         } catch (e) {
             console.log(e)
         } finally {
-            peer_connection._negotiating = false;
+            peer_connection._negotiating = true;
         }
         
     }
@@ -89,6 +90,7 @@ export default class Connection {
             });
            
             peer_connection.ontrack = (event) => {
+                console.log(event)
                 let stream = event.streams[0] || new MediaStream(peer_connection.getReceivers().map(receiver => receiver.track));
                 if (!this.peer_media_elements[socket_id]) {
                     this.attachMediaStream(null,stream,{muted: false}, (new_element, new_constrains)=>{
@@ -128,10 +130,14 @@ export default class Connection {
                 }
             }
             if (this.constrains != null) {
-                this.senders[socket_id] = {}
-                this.local_media_stream.getTracks().filter(t=>t.enabled).map((track) =>{
+                this.local_media_stream.getAudioTracks().map(track=>{
                     peer_connection.addTrack(track, this.local_media_stream);
-                });
+                })
+                if(this.mixed_track){
+                    peer_connection.addTrack(this.mixed_track) 
+                }else if(this.local_media_stream.getVideoTracks()[0]){    
+                    peer_connection.addTrack(this.local_media_stream.getVideoTracks()[0], this.local_media_stream); 
+                }
             }
             if (config.should_create_offer) {
                 if(this.constrains != null){
@@ -179,13 +185,11 @@ export default class Connection {
     }
     regSessionDescriptor() {
         this.regHandler('sessionDescription', (config) => {
-            console.log(config)
             var socket_id = config.socket_id;
             var peer_connection = this.peers[socket_id];
             this.peers[socket_id].properties = config.properties;
             
             if(!peer_connection){
-                console.log('create')
                 peer_connection = new RTCPeerConnection({
                     sdpSemantics: 'unified-plan'
                 });
@@ -200,14 +204,12 @@ export default class Connection {
             var stuff = peer_connection.setRemoteDescription(desc)
             .then(() => {
                 if(!peer_connection.onnegotiationneeded){
-                    console.log('on nego')
                     peer_connection.onnegotiationneeded = async(event) =>{
                         this.negotiate(peer_connection, socket_id, this.peers[socket_id].properties)
                     }
                 }
                 if (remote_description.type == "offer") {
                     let offer;
-                    console.log(peer_connection.signalingState)
                     peer_connection.createAnswer()
                         .then((local_description)=>{
                             offer = local_description
@@ -232,10 +234,8 @@ export default class Connection {
     }
     regChangeConstrainsHandler(){
         this.signaling_socket.on('relayNewConstrains', (options)=>{
-            console.log(options)
-            console.log(this.peer_media_elements)
+            
             if(this.peer_media_elements[options.socket_id]){
-                console.log(options)
                 this.peers[options.socket_id].constrains = options.constrains
                 let element = this.peer_media_elements[options.socket_id];
 
@@ -246,7 +246,6 @@ export default class Connection {
 
                 this.attachMediaStream(element, element.srcObject, {returnElm: true}, (new_element, new_constrains)=>{
                     this.peer_media_elements[options.socket_id] = new_element;
-                    console.log(new_constrains)
                     if(this.onBroadcastNegotitaioncallback){
                         this.onBroadcastNegotitaioncallback(options.socket_id,options.constrains,new_element)
                     }
@@ -262,6 +261,7 @@ export default class Connection {
                 this.regAddPeer();
 
         this.regHandler('connect', () => {
+            console.log('connect')
             if (callback)
                 callback()
         })
@@ -297,6 +297,7 @@ export default class Connection {
     }
     findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
+            console.log('here?')
             
             for (let i = 0; i < devices.length; i++) {
                 if (devices[i].kind === 'audioinput')  this.audio_devices.push(devices[i]);

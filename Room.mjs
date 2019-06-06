@@ -94,6 +94,7 @@ export default class Room{
     }
     handshakeHandlers(connection,relaySessionDescription){
         connection.on('relayICECandidate', (config) => {
+            
             this.connections.get(config.socket_id).emit('iceCandidate', {'socket_id': connection.socket.id, 'ice_candidate':  config.ice_candidate} 
         )})
         connection.on('relaySessionDescription', (config) => {

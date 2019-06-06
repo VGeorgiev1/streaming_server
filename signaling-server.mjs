@@ -406,8 +406,10 @@ io.on('connection', function (socket) {
             notify_sockets[token] = socket
             socket.on('page_left', (reason)=>{
                 db.getLoggedUser(token).then(user=>{
-                    let userId = user.dataValues.user.dataValues.id
-                    db.goOffline(userId)
+                    if(user){
+                        let userId = user.dataValues.user.dataValues.id
+                        db.goOffline(userId)
+                    }
                 })
             })
         }

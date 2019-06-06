@@ -6,7 +6,6 @@ export default class Broadcaster extends Connection{
         super(IO,ID)
         this.constrains = {};
         this.media_element = null
-        this.senders = {}
         this.audio_devices = []
         this.video_devices = []
         this.properties = {
@@ -14,13 +13,13 @@ export default class Broadcaster extends Connection{
             videoBitrate : 256
         }
         this.animationId = null;
-        this.offers = {}
+        this.mixed_track = null
         this.constrains = CONSTRAINS
         this.interval;
         this.localMediaNegotiation = ()=>{
-            this.attachMediaStream(this.media_element, this.local_media_stream,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
+            let filtered = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.enabled))
+            this.attachMediaStream(this.media_element, filtered,{muted:true, returnElm: true}, (new_element,new_constrains)=>{
                 this.constrains = new_constrains;
-                console.log(this.constrains)
                 this.media_element = new_element;
                 this.media_element.muted = true
                 this.sendConstrains()
@@ -32,7 +31,6 @@ export default class Broadcaster extends Connection{
         this.createConnectDisconnectHandlers = (callback)=>{
             this.regConnectHandlers(()=> {
                 this.getRoomDetails((details)=>{
-                    console.log(details)
                     if(details.rules){
                         this.rules = details.rules
                         Object.defineProperty(this, 'rules', {configurable: false, writable: false});
@@ -56,7 +54,9 @@ export default class Broadcaster extends Connection{
                             })
                         })
                     }else{
+                        console.log('here')
                         this.findConstrains(details.rules,()=>{
+                            console.log('even here')
                             this.setupLocalMedia(this.constrains,
                             (mEl,stream) => {
                                 this.local_media_stream = stream
@@ -103,7 +103,7 @@ export default class Broadcaster extends Connection{
     }
     getVideoTrack(){
         let replacement = this.media_element.cloneNode(true)
-        replacement.srcObject = new MediaStream(this.local_media_stream.getTracks())
+        replacement.srcObject = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.enabled))
         return replacement
     }
     getStream(){
@@ -128,7 +128,7 @@ export default class Broadcaster extends Connection{
         return canvas.captureStream(30);
     }
     mixVideoSources(new_constrains,screen, x,y,w,h){
-        let old_track = this.local_media_stream.getVideoTracks()[0];
+        let old_track = this.local_media_stream.getVideoTracks().filter(t=>t.enabled)[0];
         let callback = (stream)=>{
             this.local_media_stream.addTrack(stream.getVideoTracks()[0])
             let videoForCanvas = document.createElement('video')
@@ -146,8 +146,9 @@ export default class Broadcaster extends Connection{
                 this.onMediaNegotiationCallback()
             }
             let track = mixed.getVideoTracks()[0]
+            this.mixed_track = track
             for(let peer in this.peers){
-                let video_sender = this.peers[peer].getSenders().filter(s=>s.track.kind == 'video')[0]
+                let video_sender = this.peers[peer].getSenders().filter(s=>s.track && s.track.kind == 'video')[0]
                 video_sender.replaceTrack(track)
             }
         }
@@ -163,7 +164,11 @@ export default class Broadcaster extends Connection{
             this.constrains.video = true;
             this.constrains.screen = true;
             this.getDisplayMedia(constrains, (stream)=>{
-                this.changeProcedure(stream, {forceAdd: true})
+                if(this.local_media_stream.getVideoTracks() == 0){
+                    this.changeProcedure(stream, {forceAdd: true})
+                }else{
+                    this.changeProcedure(stream, {replaceIfExist: true})
+                }
             })
         }
     }
@@ -187,7 +192,6 @@ export default class Broadcaster extends Connection{
         }
     }
     isScreen(){
-        console.log(this.constrains)
         return this.constrains.screen
     }
     hasVideo(){
@@ -225,6 +229,7 @@ export default class Broadcaster extends Connection{
         }
     }
     muteVideo(){
+        console.log('muteVideo')
         if(!this.animationId){
             let track = this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen'))[0]
             if(track){
@@ -233,6 +238,8 @@ export default class Broadcaster extends Connection{
             }
         }else{
             cancelAnimationFrame(this.animationId)
+            this.animationId = null;
+            this.mixed_track = null
             this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen')).map(t=>t.stop())
             this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
             this.media_element.srcObject = this.local_media_stream
@@ -248,7 +255,7 @@ export default class Broadcaster extends Connection{
     }
     checkForSender(options){
         for(let peer in this.peers){
-            this.local_media_stream.getTracks().forEach(track =>{
+            this.local_media_stream.getTracks().filter(t=> t.enabled).forEach(track =>{
                 console.log(track)
                 let senders = this.peers[peer].getSenders().filter(s=>s.track)
                 if(senders.length == 0){
@@ -258,7 +265,11 @@ export default class Broadcaster extends Connection{
                 
                 for(let sender of senders){
                     if(sender.track){
+                        console.log(sender.track.kind)
+                        console.log(track.kind)
+                        console.log(options)
                         if(sender.track.kind == track.kind && options.replaceIfExist){
+                            console.log('replace')
                             sender.replaceTrack(track)
                             break;
                         }
@@ -287,6 +298,7 @@ export default class Broadcaster extends Connection{
     getRoomDetails(callback){
         this.signaling_socket.emit('get_room_details', this.channel)
         this.regHandler('room_details', (data)=>{
+            console.log(data)
             callback(data)
         })
     }
@@ -359,28 +371,25 @@ export default class Broadcaster extends Connection{
         this.media_element.srcObject = this.local_media_stream
         this.media_element.autoplay = 'autoplay'
         this.media_element.muted = true
-
-        
     }
     getDisplayMedia(constrains, callback){
 
         navigator.mediaDevices.getDisplayMedia(constrains).then((stream)=>{
 
-            stream.getVideoTracks()[0].addEventListener('ended', ()=>{                               
+            stream.getVideoTracks()[0].addEventListener('ended', ()=>{
                 this.local_media_stream = new MediaStream(this.local_media_stream.getTracks().filter(t=>t.readyState!='ended'))
-                console.log(this.local_media_stream.getTracks())
                 this.constrains.screen = false;
-                // for(let peer in this.peers){
-                //     for(let sender of this.peers[peer].getSenders()){
-                //         if(sender.track){
-                //             if(sender.track.label.includes('screen') || sender.track.label.includes('System')){
-                //                 this.peers[peer].removeTrack(sender)
-                //             }
-                //         }
-                //     }
-                // }
-
+                if(this.animationId){
+                    cancelAnimationFrame(this.animationId)
+                    this.mixed_track = null
+                    this.animationId = null;
+                }
+                for(let peer in this.peers){
+                    let video_sender = this.peers[peer].getSenders().filter(s=>s.track && s.track.kind == 'video')[0]
+                    video_sender.replaceTrack(this.local_media_stream.getVideoTracks()[0])
+                }
                 this.localMediaNegotiation()
+                
                 //this.checkForSender({replaceIfExist:true})
             })
             callback(stream)

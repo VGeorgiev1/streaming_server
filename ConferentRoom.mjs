@@ -51,7 +51,6 @@ export default class ConferentRoom extends Room{
     addSocket(socket,constrains,peerId,properties){
         this.triggerConnect(socket)
         if(!this.isBroadcaster(peerId)){
-            console.log(peerId)
             if(this.viewers_list.indexOf(peerId) != -1){
                 console.log('Viewer already exists')
                 return;
@@ -61,7 +60,6 @@ export default class ConferentRoom extends Room{
             })
         }
         else{
-            console.log(peerId)
             if(this.active_broadcasters.indexOf(peerId) != -1){
                 console.log('Broadcaster already exists')
                 return;
