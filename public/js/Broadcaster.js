@@ -10,10 +10,11 @@ export default class Broadcaster extends Connection{
         this.video_devices = []
         this.properties = {
             audioBitrate : 50,
-            videoBitrate : 256
+            videoBitrate : 25
         }
         this.animationId = null;
         this.mixed_track = null
+        
         this.constrains = CONSTRAINS
         this.interval;
         this.localMediaNegotiation = ()=>{
@@ -56,6 +57,7 @@ export default class Broadcaster extends Connection{
                         })
                     }else{
                         this.findConstrains(details.rules,()=>{
+                            console.log(this.constrains)
                             this.setupLocalMedia(this.constrains,
                             (mEl,stream) => {
                                 this.local_media_stream = stream
@@ -330,6 +332,7 @@ export default class Broadcaster extends Connection{
         this.changeTracks({audio: {deviceId: { exact: id}, video: false}},{replaceIfExist:true})
     }
     getUserMedia(constrains,callback){
+        console.log(constrains)
          navigator.mediaDevices.getUserMedia(constrains)
         .then(
             (stream) => {
@@ -340,6 +343,7 @@ export default class Broadcaster extends Connection{
         })    
     }
     setupLocalMedia(constrains, callback) {
+        console.log(constrains)
         this.getUserMedia(constrains, (stream)=>{
             let mEl = null;
             mEl = this.setupMedia(constrains, stream, { muted: true})

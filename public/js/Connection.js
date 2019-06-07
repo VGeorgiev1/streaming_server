@@ -2,7 +2,7 @@ export default class Connection {
     constructor(io, id) {
         this.channel = channel;
         this.id = id
-        
+        this.io = io
         this.peers = {};
         this.peer_media_elements = {};
         this.onBroadcasterCallback = null
@@ -14,7 +14,7 @@ export default class Connection {
     
     subscribeTo(channel, callback){
         this.channel = channel
-        this.signaling_socket = io('/' + this.channel);
+        this.signaling_socket = this.io('/' + this.channel);
         this.createConnectDisconnectHandlers(callback)
     }
     onBroadcastNegotiation(callback){

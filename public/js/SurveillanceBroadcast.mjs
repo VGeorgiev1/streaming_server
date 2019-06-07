@@ -1,8 +1,8 @@
 import Broadcaster from "./Broadcaster.js"
 
 export default class SurveillanceBroadcast extends Broadcaster{
-    constructor(CONSTRAINS,ID){
-        super(ID,CONSTRAINS,ID)
+    constructor(IO,CONSTRAINS,ID){
+        super(IO,CONSTRAINS,ID)
         this.onMediaNegotiationCallback = ()=>{
             this.signaling_socket.emit('new_properties', {properties:this.properties,media_state:{has_active_video: this.hasActiveVideo(),has_video:this.hasVideo(),has_muted_audio: this.hasMutedAudio(), has_muted_camera: this.hasMutedCamera(), has_active_camera: this.hasActiveCamera(), has_active_audio: this.hasActiveAudio(), isScreen: this.constrains.screen, audioDevices: this.audio_devices, videoDevices: this.video_devices}, "constrains": this.constrains })
         }
