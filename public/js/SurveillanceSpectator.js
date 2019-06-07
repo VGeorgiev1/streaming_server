@@ -19,7 +19,6 @@ export default class SurveillanceSpectator extends Viewer{
         return this.peers[id].constrains
     }
     getMediaElement(id){
-        console.log(this.peer_media_elements[id])
         return this.peer_media_elements[id]
     }
     hasVideo(id){
@@ -54,7 +53,6 @@ export default class SurveillanceSpectator extends Viewer{
         this.onMediaNegotiationCallback = callback;
     }
     mixVideoSources(constrains,screen,x,y,w,h,id){
-        console.log(id)
         this.signaling_socket.emit('mix_sources', {socket_id: id, constrains: constrains, screen: screen, x:x,y:y,w:w,h:h})
     }
     requestVideo(id){
@@ -70,7 +68,6 @@ export default class SurveillanceSpectator extends Viewer{
         this.signaling_socket.emit('mute_audio', {socket_id: id})
     }
     muteVideo(id){
-        console.log('mute video')
         this.signaling_socket.emit('mute_video', {socket_id: id})
     }
     setAudioBitrates(val,id){

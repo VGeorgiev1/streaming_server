@@ -6,14 +6,13 @@ window.connection = null
 window.Broadcaster = Broadcaster;
 
 window.onload = ()=>{
-    console.log('hello')
 
     window.connection = new Broadcaster(io ,{audio: true, video: false},window.id)
     let players = {}
     let connections = 1;
     let columnsOnMedia = 3;
     window.connection.subscribeTo(window.channel, (mEl)=>{
-        console.log('subbed')
+        
         let broadcaster = new Player({'media': window.connection,'constrains': window.connection.getConstrains(), 'reso': '1by1'},3)
         let chat = new Chat(window.connection.getSocket())
         $('.row:nth-child(1)').append(broadcaster.getPlayer())

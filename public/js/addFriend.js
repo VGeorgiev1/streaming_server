@@ -9,10 +9,8 @@ function sendRequest(id){
         })
 }
 function call(id){
-    console.log(id)
     makeRequest("/call", "POST", JSON.stringify({'id': id}), "application/json; charset=utf-8")
         .then((res)=>{
-           console.log(res)
            window.location.href = '/call/' + res
         })
         .catch(e=>{

@@ -25,7 +25,7 @@ let io = new SocketIO(server);
 
 var SALT_ROUNDS = 10
 var MAX_TOPICS = 10
-var PREDICTION_TICK = 20 //ms
+var PREDICTION_TICK = 10000 //ms
 
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -124,7 +124,7 @@ function OneDToTwoD(array,lenght){
 };
 
 app.get('/', async(req, res)=>{
-    if(!req.authenticated){res.redirect('/login')}
+    if(!req.authenticated){res.redirect('/streams')}
     else{
         let payload = room_container.where({owner: req.secret}).or({broadcasters_list: req.secret}).collect()
         for(let room of payload){
@@ -229,14 +229,7 @@ function prepareReqeustQuery(id1,id2){
 }
 app.post('/sendrequest', (req,res)=>{
     let otherId = Number(req.body.id)
-    console.log('send request')
     db.Friends.create(prepareReqeustQuery(req.userId, otherId)).then(err=>{
-        db.Session.findOne({where:{userId: otherId}}).then((ses)=>{
-            if(notify_sockets[ses.dataValues.sessionToken]){
-                notify_sockets[ses.dataValues.sessionToken].emit('')
-            }
-            //notify_sockets[ses.dataValues.sessionToken].emit('call', {channel: call_room.channel, caller: req.username})
-        })
         res.send('ok')
     })
 })
@@ -380,8 +373,7 @@ app.post('/login', async(req,res)=>{
     })
 })
 app.get('/streams', async(req,res)=>{
-    if(!req.authenticated){res.redirect('/')}
-    else{
+  
         let payload = room_container.where({type:"streaming"}).collect()
         for(let room of payload){
             let user = await db.User.findOne({where:{secret: room.owner}})
@@ -389,7 +381,7 @@ app.get('/streams', async(req,res)=>{
 
         }
         res.render("list", {room_rows: OneDToTwoD(payload,3), auth: req.authenticated, user: req.username})
-    }
+    
 })
 app.get('/room/:channel',async (req,res)=>{
     let room = room_container.where({channel: req.params.channel}).collect()[0]

@@ -82,7 +82,6 @@ export default class StreamingRoom extends Room{
             ontrack: (event) =>{
                 let stream = event.streams[0]
                 for(let track of stream.getTracks()){
-                    console.log(track.kind)
                     
                     if(!this.tracks[track.id]){
                         this.tracks[track.id] = track
@@ -130,7 +129,6 @@ export default class StreamingRoom extends Room{
         this.addConnection(socket.id,viewer)
     }
     getDetails(){
-        console.log(this.settings)
         return {type:this.type,tick:this.settings.tick,active:this.active}
     }
     addSocket(socket,constrains,peerId){

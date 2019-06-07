@@ -19,7 +19,6 @@ export default class SurvillianceRoom extends Room{
         broadcaster.media_state = media_state
         this.addConnection(socket.id,broadcaster)
         broadcaster.on('new_properties', (data)=>{
-            
             broadcaster.properties = data.properties
             broadcaster.constrains = data.constrains
             broadcaster.media_state = data.media_state

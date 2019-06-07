@@ -227,7 +227,6 @@ export default class Broadcaster extends Connection{
         }
     }
     muteVideo(){
-        console.log('muteVideo')
         if(!this.animationId){
             let track = this.local_media_stream.getVideoTracks().filter(t=>!t.label.includes('screen'))[0]
             if(track){
@@ -254,7 +253,6 @@ export default class Broadcaster extends Connection{
     checkForSender(options){
         for(let peer in this.peers){
             this.local_media_stream.getTracks().filter(t=> t.enabled).forEach(track =>{
-                console.log(track)
                 let senders = this.peers[peer].getSenders().filter(s=>s.track)
                 if(senders.length == 0){
                     this.peers[peer].addTrack(track, this.local_media_stream)
@@ -263,11 +261,8 @@ export default class Broadcaster extends Connection{
                 
                 for(let sender of senders){
                     if(sender.track){
-                        console.log(sender.track.kind)
-                        console.log(track.kind)
-                        console.log(options)
                         if(sender.track.kind == track.kind && options.replaceIfExist){
-                            console.log('replace')
+                            
                             sender.replaceTrack(track)
                             break;
                         }
@@ -296,7 +291,6 @@ export default class Broadcaster extends Connection{
     getRoomDetails(callback){
         this.signaling_socket.emit('get_room_details', this.channel)
         this.regHandler('room_details', (data)=>{
-            console.log(data)
             callback(data)
         })
     }

@@ -110,7 +110,6 @@ export default class Room{
     }
 
     closeRoom(){
-        
         for(let connection in this.connections){
             this.kickUser(connection);
         }

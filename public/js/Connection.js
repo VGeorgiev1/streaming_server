@@ -15,7 +15,6 @@ export default class Connection {
     subscribeTo(channel, callback){
         this.channel = channel
         this.signaling_socket = io('/' + this.channel);
-        console.log(this.signaling_socket)
         this.createConnectDisconnectHandlers(callback)
     }
     onBroadcastNegotiation(callback){
@@ -114,7 +113,9 @@ export default class Connection {
             this.peers[socket_id] = peer_connection;
             this.peers[socket_id].properties = config.properties
             this.peers[socket_id].constrains = config.constrains
-            this.peers[socket_id].media_state = config.media_state
+            if(config.media_state){
+                this.peers[socket_id].media_state = config.media_state
+            }
 
 
             peer_connection.onicecandidate = (event) => {
@@ -260,7 +261,6 @@ export default class Connection {
                 this.regAddPeer();
 
         this.regHandler('connect', () => {
-            console.log('connect')
             if (callback)
                 callback()
         })
@@ -296,7 +296,7 @@ export default class Connection {
     }
     findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
-            console.log('here?')
+           
             
             for (let i = 0; i < devices.length; i++) {
                 if (devices[i].kind === 'audioinput')  this.audio_devices.push(devices[i]);
