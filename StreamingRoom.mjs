@@ -116,6 +116,9 @@ export default class StreamingRoom extends Room{
         let viewer = new WebRtcConnection(socket,peerId, null,{
             disconnectHandler: disconnectHandler
         })
+        for(let track in this.tracks){
+            viewer.peerConnection.addTrack(this.tracks[track])
+        }
         await viewer.doOffer();
         this.viewers_connections[socket.id] = viewer
 
@@ -126,6 +129,7 @@ export default class StreamingRoom extends Room{
         }
 
         viewer.emit('addPeer', {socket_id: socket.id, localDescription: this.viewers_connections[socket.id].localDescription, constrains: this.broadcaster_constrains})
+        
         this.addConnection(socket.id,viewer)
     }
     getDetails(){

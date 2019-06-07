@@ -162,7 +162,7 @@ export default class Broadcaster extends Connection{
             this.getDisplayMedia(constrains, (stream)=>{
                 this.constrains.video = true;
                 this.constrains.screen = true;
-                if(this.local_media_stream.getVideoTracks() == 0){
+                if(this.local_media_stream.getVideoTracks().filter(t=>!t.enabled) == 0){
                     this.changeProcedure(stream, {forceAdd: true})
                 }else{
                     this.changeProcedure(stream, {replaceIfExist: true})
@@ -262,7 +262,6 @@ export default class Broadcaster extends Connection{
                 for(let sender of senders){
                     if(sender.track){
                         if(sender.track.kind == track.kind && options.replaceIfExist){
-                            
                             sender.replaceTrack(track)
                             break;
                         }

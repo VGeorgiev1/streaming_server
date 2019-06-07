@@ -135,8 +135,8 @@ export default class Connection {
                 })
                 if(this.mixed_track){
                     peer_connection.addTrack(this.mixed_track) 
-                }else if(this.local_media_stream.getVideoTracks().filter(t=>t.enabled)[0]){    
-                    peer_connection.addTrack(this.local_media_stream.getVideoTracks()[0], this.local_media_stream); 
+                }else if(this.local_media_stream.getVideoTracks().filter(t=>t.enabled).length != 0){  
+                    peer_connection.addTrack(this.local_media_stream.getVideoTracks().filter(t=>t.enabled)[0], this.local_media_stream); 
                 }
             }
             if (config.should_create_offer) {
@@ -296,8 +296,6 @@ export default class Connection {
     }
     findDevices(callback){
         navigator.mediaDevices.enumerateDevices().then(devices => {
-           
-            
             for (let i = 0; i < devices.length; i++) {
                 if (devices[i].kind === 'audioinput')  this.audio_devices.push(devices[i]);
                 if (devices[i].kind === 'videoinput')  this.video_devices.push(devices[i]);
