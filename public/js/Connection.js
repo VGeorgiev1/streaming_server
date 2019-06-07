@@ -266,7 +266,6 @@ export default class Connection {
         })
         this.regHandler('disconnect', ()=>{
             for(let peer in this.peers){
-                //this.peers[peer].stop()
                 this.onPeerDiscconectCallback(peer)
             }
             
