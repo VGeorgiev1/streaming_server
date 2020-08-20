@@ -6,7 +6,7 @@
     "start": "nodemon --experimental-modules signaling-server.mjs"
   },
   "dependencies": {
-    "bcrypt": "^3.0.2",
+    "bcrypt": "^5.0.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.15.2",
     "bootstrap": ">=4.3.1",
